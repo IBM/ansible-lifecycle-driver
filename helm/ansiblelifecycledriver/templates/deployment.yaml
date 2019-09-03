@@ -1,0 +1,35 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: ansible-lifecycle-driver
+spec:
+  replicas: {{ .Values.app.replicas }}
+  template:
+    metadata:
+      labels:
+        app: ansible-lifecycle-driver
+    spec:
+      hostAliases:
+      {{- if .Values.app.config.kafka.hostEnabled }}
+        - ip: {{ .Values.app.config.kafka.host }}
+          hostnames:
+          - "kafka"
+      {{- end }}
+      containers:
+        - name: ansible-lifecycle-driver
+          image: {{ .Values.docker.image }}:{{ .Values.docker.version }}
+          imagePullPolicy: {{ .Values.docker.imagePullPolicy }}
+          ports:
+          - containerPort: 8293
+            protocol: TCP
+          envFrom:
+          - configMapRef:
+              name: ansible-lifecycle-driver-env
+          volumeMounts:
+          - name: config
+            mountPath: /var/ansible-lifecycle-driver/avd_config.yml
+            subPath: avd_config.yml
+      volumes:
+      - name: config
+        configMap:
+          name: ansible-lifecycle-driver

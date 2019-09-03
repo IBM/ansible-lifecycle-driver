@@ -102,3 +102,9 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Driver 
+AnsibleVNFCDriver_boot
+
+# Docker whls
+docker/whls/

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+uwsgi --http :$DRIVER_PORT --master --processes $NUM_PROCESSES --threads $NUM_THREADS --module "ansibledriver:create_wsgi_app()"

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ansible-lifecycle-driver
+data:
+  avd_config.yml: |
+{{- if .Values.app.config.override }}
+{{ toYaml .Values.app.config.override | indent 4 }}
+{{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ansible-lifecycle-driver-env
+data:
+{{- if .Values.app.config.env }}
+{{ toYaml .Values.app.config.env | indent 2 }}
+{{- end }}
+  "LOG_LEVEL": {{ .Values.app.config.log.level }}

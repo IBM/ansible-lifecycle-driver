@@ -1,0 +1,16 @@
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    ingress.kubernetes.io/rewrite-target: /  # This line is only needed when deploying on IBM Cloud Private.
+  name: ald-ingress  # The ingress name must be unique for each ingress rule created.
+spec:
+  rules:
+  - host: {{ .Values.app.config.ingress.host }}
+    http:
+      paths:
+      - path: /  # This is the url path used to access the service externally.
+        backend:
+         serviceName: ansible-lifecycle-driver
+         servicePort: 8293

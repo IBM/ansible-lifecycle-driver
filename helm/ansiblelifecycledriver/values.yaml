@@ -1,0 +1,95 @@
+## Docker Image for the osslm-ansible-rm application
+docker:
+  ## Make this the full path, including registry host and port if using one
+  image: accanto/ansible-lifecycle-driver
+  version: 0.1.0dev0
+  imagePullPolicy: IfNotPresent
+
+## Configuration for the application deployment
+app:
+  ## Number of pods to deploy 
+  replicas: 1
+  ## ansible-lifecycle-driver specific configuration
+  config:
+    kafka:
+      ## Assumes the responseKafkaConnectionUrl value provided as part of the clientConfigFile is still kafka:9092 - which means we must have a "kafka" host available
+      ## There 2 options for this
+
+      ## Option 1 (enabled by default)
+      ## Access an existing Kafka installed by the Lifecycle Manager in the same Kubernetes namespace
+      ## This creates an additional service that forwards traffic to the existing Kafka pods
+      ## Expects a Kafka installed using helm-foundation provided with the Lifecycle Manager
+      useExisting: true
+      existingSelectors:
+        app: kafka
+        release: foundation
+
+      ## Option 2 
+      ## Fixed IP. This is added as a host entry to the container.
+      hostEnabled: false
+      host: 
+
+    ## Configure logging 
+    log:
+      level: DEBUG
+
+    ## Pass additional environment variables to the application containers
+    env:
+      ## to support indexing of logs in Elasticsearch using Filebeat, we use logstash format. This allows
+      ## us to bundle the log message and other metadata in a json log message and let Fielbeat extract them
+      ## as top level fields in the Elasticsearch index.
+      LOG_TYPE: logstash
+
+      ## configuration for WSGI container
+      ## WSGI_CONTAINER can be uwsgi or gunicorn
+      WSGI_CONTAINER: uwsgi
+      ## the number of processes and threads to spawn to handle requests
+      ## number of processes is 1 because the driver handles process management
+      NUM_PROCESSES: "1"
+      NUM_THREADS: "2"
+
+    ingress:
+      ## The host used to access the service externally i.e. http://<server.ingress.hostname>/
+      ## If not making use of a DNS to resolve this host you must add this to the client hosts file with the K8s IP
+      ## E.g.
+      ## 10.220.1.2     ald.lm
+      host: ald.lm
+
+    ## ald-config.yml (driver configuration) overrides
+    override:
+      ansible:
+        ## unreachability retries
+        ## sleep between retries (in seconds)
+        unreachable_sleep_seconds: 5
+        ## maximum number of retries before a failure
+        max_unreachable_retries: 1000
+
+        ## output properties are set using set_fact in the Ansible script and prefixed with this string
+        ## so that the driver knows they are intended to be exported to Brent.
+        output_prop_prefix: 'output__'
+
+      process:
+        ## the maximum number of processes to spawn to handle requests
+        max_concurrent_ansible_processes: 10
+        ## the maximum size of the request queue before requests are rejected
+        max_queue_size: 100
+        ## whether to use threads or processes to read and process requests on the request queue
+        is_threaded: False
+
+      ## response cache holds Ansible playbook responses
+      response_cache:
+        ## in seconds
+        cache_expiry: 1200
+        max_cache_capacity: 1000
+
+      messaging:
+        connection_address: kafka:9092
+
+      lifecycle:
+        ## workspace for holding lifecycle scripts
+        scripts_workspace: /var/ald/lifecycle_scripts
+
+service:
+  # Using NodePort allows access to the IPs through http://k8s-host:nodePort/
+  type: NodePort
+  nodePort: 31680

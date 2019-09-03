@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+gunicorn -w $NUM_PROCESSES -b :$DRIVER_PORT "ansibledriver:create_wsgi_app()"

@@ -1,0 +1,26 @@
+---
+application:
+  port: 8293
+
+ansible:
+  unreachable_sleep_seconds: 5
+  max_unreachable_retries: 1000
+  output_prop_prefix: 'output__'
+
+process:
+  process_pool_size: 10
+  max_concurrenty_ansible_processes: 10
+  max_queue_size: 100
+  use_pool: False
+  is_threaded: False
+
+response_cache:
+  # in seconds
+  cache_expiry: 300
+  max_cache_capacity: 1000
+
+messaging:
+  connection_address: kafka:9092
+
+lifecycle:
+  scripts_workspace: ./lifecycle_scripts

@@ -1,0 +1,5 @@
+include ansibledriver/pkg_info.yaml
+include ansibledriver/api_specs/ansible.yaml
+include ansibledriver/bin/*
+include ansibledriver/config/*.yml
+include ansibledriver/config/*.cfg

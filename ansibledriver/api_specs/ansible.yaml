@@ -1,0 +1,33 @@
+openapi: 3.0.0
+info:
+  description: "RPC API to inspect the Ansible VNFc Driver request queue"
+  version: "1.0.0-oas3"
+  title: Ansible VNFc Driver Queue
+servers:
+  - url: /api/queue
+tags:
+  - name: ansible_vnfc
+    description: Ansible VNFc
+paths:
+  /status:
+    get:
+      tags:
+        - ansible_vnfc
+      summary: Get Queue
+      description: >-
+        Get Queue
+      operationId: .queue_status
+      responses:
+        "200":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Queue"
+components:
+  schemas:
+    Queue:
+      type: object
+      properties:
+        size:
+          type: integer

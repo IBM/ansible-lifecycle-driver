@@ -1,0 +1,14 @@
+name: ansiblelifecycledriver
+version: 0.1.0dev0
+appVersion: 0.1.0dev0
+apiVersion: v1
+description: A Helm chart for the Ansible Lifecycle Driver
+keywords:
+- OSS
+- LM
+- OSSLM
+- Resource Manager
+- Brent
+- Ansible
+- Accanto
+engine: gotpl
