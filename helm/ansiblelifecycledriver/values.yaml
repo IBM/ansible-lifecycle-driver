@@ -2,7 +2,7 @@
 docker:
   ## Make this the full path, including registry host and port if using one
   image: accanto/ansible-lifecycle-driver
-  version: 0.1.0dev0
+  version: 0.1.0
   imagePullPolicy: IfNotPresent
 
 ## Configuration for the application deployment
@@ -12,22 +12,14 @@ app:
   ## ansible-lifecycle-driver specific configuration
   config:
     kafka:
-      ## Assumes the responseKafkaConnectionUrl value provided as part of the clientConfigFile is still kafka:9092 - which means we must have a "kafka" host available
-      ## There 2 options for this
+      ## note: assumes that Kafka is accessible at 'app.config.override.messaging.connection_address'
 
-      ## Option 1 (enabled by default)
-      ## Access an existing Kafka installed by the Lifecycle Manager in the same Kubernetes namespace
-      ## This creates an additional service that forwards traffic to the existing Kafka pods
-      ## Expects a Kafka installed using helm-foundation provided with the Lifecycle Manager
-      useExisting: true
-      existingSelectors:
-        app: kafka
-        release: foundation
-
-      ## Option 2 
-      ## Fixed IP. This is added as a host entry to the container.
+      ## There is an additional option for configuring access to Kafka by fixed IP. This is added as a host entry to the container.
       hostEnabled: false
-      host: 
+      ## the host must match the value of 'app.config.override.messaging.connection_address', if it is set
+      host: "foundation-kafka"
+      ## this must be set to the Kafka IP address
+      ip:
 
     ## Configure logging 
     log:
@@ -83,7 +75,7 @@ app:
         max_cache_capacity: 1000
 
       messaging:
-        connection_address: kafka:9092
+        connection_address: foundation-kafka:9092
 
       lifecycle:
         ## workspace for holding lifecycle scripts

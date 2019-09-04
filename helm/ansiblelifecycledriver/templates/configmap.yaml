@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: ansible-lifecycle-driver
 data:
-  avd_config.yml: |
+  ald_config.yml: |
 {{- if .Values.app.config.override }}
 {{ toYaml .Values.app.config.override | indent 4 }}
 {{- end }}

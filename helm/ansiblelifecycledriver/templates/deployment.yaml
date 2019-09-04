@@ -27,8 +27,8 @@ spec:
               name: ansible-lifecycle-driver-env
           volumeMounts:
           - name: config
-            mountPath: /var/ansible-lifecycle-driver/avd_config.yml
-            subPath: avd_config.yml
+            mountPath: /var/ansible-lifecycle-driver/ald_config.yml
+            subPath: ald_config.yml
       volumes:
       - name: config
         configMap:

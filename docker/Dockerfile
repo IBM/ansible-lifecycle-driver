@@ -1,13 +1,5 @@
 FROM python:3.7-alpine
 
-ARG PYPI_REPO_IP
-ENV PYPI_REPO_IP ${PYPI_REPO_IP:-nexus.accanto.com}
-ARG PYPI_REPO_PORT
-ENV PYPI_REPO_PORT ${PYPI_REPO_PORT:-8081}
-ARG PYPI_REPO_URI
-ENV PYPI_REPO_URI ${PYPI_REPO_URI:-http://$PYPI_REPO_IP:$PYPI_REPO_PORT/repository/pypi/simple}
-ARG DRIVER_VERSION
-ENV DRIVER_VERSION ${DRIVER_VERSION:-0.1.0.dev0}
 ARG DRIVER_PORT
 ENV DRIVER_PORT ${DRIVER_PORT:-8293}
 ARG NUM_PROCESSES
@@ -17,21 +9,28 @@ ENV NUM_THREADS ${NUM_THREADS:-2}
 ARG WSGI_CONTAINER
 ENV WSGI_CONTAINER ${WSGI_CONTAINER:-uwsgi}
 
-COPY ansibledriver/config/ansible.cfg /etc/ansible/ansible.cfg
-
-# copy any Ansible driver config overrides to Docker container
-COPY docker/ald_config.yml /var/ansible-lifecycle-driver/ald_config.yml
+ENV PATH="/home/ald/.local/bin:${PATH}"
+COPY ansible.cfg /etc/ansible/ansible.cfg
 
 RUN addgroup -S ald \
  && adduser -S ald -G ald \
  && mkdir -p /var/ald/lifecycle_scripts \
  && chown -R ald:ald /var/ald \
  && apk add --no-cache bash openssh sshpass \
- # These packages need to be installed so that we can install the Python dependencies.
- # We make this virtual so that we can remove them later
- && apk add --no-cache --virtual .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make \
- && pip3 install --trusted-host $PYPI_REPO_IP --extra-index-url $PYPI_REPO_URI ansible-lifecycle-driver==$DRIVER_VERSION \
- && apk del .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make 
+ && apk add --no-cache --virtual .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git
+
+USER ald
+
+COPY --chown=ald:ald whls/*.whl /home/ald/whls/
+COPY --chown=ald:ald ald_config.yml /var/ansible-lifecycle-driver/ald_config.yml
+
+# These packages need to be installed so that we can install the Python dependencies.
+# We make this virtual so that we can remove them later
+RUN for i in /home/ald/whls/*.whl; do pip install --no-warn-script-location --user "$i"; done
+
+USER root
+
+RUN apk del .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git
 
 USER ald
 WORKDIR /home/ald

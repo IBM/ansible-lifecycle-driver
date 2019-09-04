@@ -13,9 +13,9 @@ The following steps detail how the Ansible Lifecycle driver release is produced.
 }
 ```
 
-1.2. Ensure the `docker.version` in `helm/ansibledriver/values.yaml` includes the correct version number.
+1.2. Ensure the `docker.version` in `helm/ansiblelifecycledriver/values.yaml` includes the correct version number.
 
-1.3. Ensure the `version` and `appVersion` in `helm/ansibledriver/Chart.yaml` includes the correct version number
+1.3. Ensure the `version` and `appVersion` in `helm/ansiblelifecycledriver/Chart.yaml` includes the correct version number
 
 1.4 Push all version number changes to Github so the may be tagged by the release
 
@@ -39,7 +39,7 @@ tar -cvzf ansible-lifecycle-driver-<release version number>-docs.tgz docs/ --tra
 
 ## 4. Build Docker Image
 
-4.1. Move the whl now in `dist` to the `docker/whl` directory (ensure no additional whls are in the docker directory)
+4.1. Move the whl now in `dist` to the `docker/whls` directory (ensure no additional whls are in the docker directory)
 
 ```
 cp dist/ansible_lifecycle_driver-<release version number>-py3-none-any.whl docker/whls/
