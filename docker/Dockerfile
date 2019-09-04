@@ -17,6 +17,8 @@ RUN addgroup -S ald \
  && mkdir -p /var/ald/lifecycle_scripts \
  && chown -R ald:ald /var/ald \
  && apk add --no-cache bash openssh sshpass \
+ # These packages need to be installed so that we can install the Python dependencies.
+ # We make this virtual so that we can remove them later
  && apk add --no-cache --virtual .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git
 
 USER ald
@@ -24,8 +26,6 @@ USER ald
 COPY --chown=ald:ald whls/*.whl /home/ald/whls/
 COPY --chown=ald:ald ald_config.yml /var/ansible-lifecycle-driver/ald_config.yml
 
-# These packages need to be installed so that we can install the Python dependencies.
-# We make this virtual so that we can remove them later
 RUN for i in /home/ald/whls/*.whl; do pip install --no-warn-script-location --user "$i"; done
 
 USER root
