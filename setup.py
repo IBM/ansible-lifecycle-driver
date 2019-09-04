@@ -19,7 +19,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'ignition-framework{0}'.format(_pkg_info['ignition-version']),
-        'ansible==2.7.0',
+        'ansible==2.7.12',
         'Jinja2>=2.10.1',
         'python-common-cache>=0.1',
         'uwsgi>=2.0.18',
