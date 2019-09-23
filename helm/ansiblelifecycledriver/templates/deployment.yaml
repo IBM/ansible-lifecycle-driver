@@ -25,6 +25,8 @@ spec:
           envFrom:
           - configMapRef:
               name: ansible-lifecycle-driver-env
+          resources:
+{{ toYaml .Values.app.resources | indent 12 }}
           volumeMounts:
           - name: config
             mountPath: /var/ansible-lifecycle-driver/ald_config.yml
