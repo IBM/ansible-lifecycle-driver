@@ -9,6 +9,18 @@ docker:
 app:
   ## Number of pods to deploy 
   replicas: 1
+  
+  ## Configure resource requests and limits for each container of the application
+  ## Default is to have no limit
+  ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  resources: {}
+    # limits:
+    #  cpu: 250m
+    #  memory: 384Mi
+    # requests:
+    #  cpu: 250m
+    #  memory: 384Mi
+    
   ## ansible-lifecycle-driver specific configuration
   config:
     kafka:
