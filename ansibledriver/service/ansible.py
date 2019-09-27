@@ -2,7 +2,6 @@ import json
 import logging
 import time
 import os
-from ansibledriver.model.kubeconfig import KubeConfig
 from collections import namedtuple
 from ansible.parsing.dataloader import DataLoader
 from ansible.vars.manager import VariableManager
