@@ -16,7 +16,8 @@ RUN addgroup -S ald \
  && adduser -S ald -G ald \
  && mkdir -p /var/ald/lifecycle_scripts \
  && chown -R ald:ald /var/ald \
- && apk add --no-cache bash openssh sshpass \
+ && chown -R ald:ald /home/ald \
+ && apk add --no-cache bash openssh sshpass curl \
  # These packages need to be installed so that we can install the Python dependencies.
  # We make this virtual so that we can remove them later
  && apk add --no-cache --virtual .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git
@@ -30,6 +31,7 @@ RUN for i in /home/ald/whls/*.whl; do pip install --no-warn-script-location --us
 
 USER root
 
+# clean up packages used to install Python packages
 RUN apk del .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git
 
 USER ald

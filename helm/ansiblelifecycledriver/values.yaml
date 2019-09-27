@@ -80,18 +80,13 @@ app:
         ## whether to use threads or processes to read and process requests on the request queue
         is_threaded: False
 
-      ## response cache holds Ansible playbook responses
-      response_cache:
-        ## in seconds
-        cache_expiry: 1200
-        max_cache_capacity: 1000
-
       messaging:
         connection_address: foundation-kafka:9092
 
       lifecycle:
         ## workspace for holding lifecycle scripts
         scripts_workspace: /var/ald/lifecycle_scripts
+        async_messaging_enabled: False
 
 service:
   # Using NodePort allows access to the IPs through http://k8s-host:nodePort/

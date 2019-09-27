@@ -19,7 +19,7 @@ def create_app():
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
 
-    app_builder = ignition.build_vnfc_driver('AnsibleVNFCDriver')
+    app_builder = ignition.build_vnfc_driver('AnsibleLifecycleDriver')
     app_builder.include_file_config_properties(default_config_path, required=False)
     # custom config file e.g. for K8s populated from Helm chart values
     app_builder.include_file_config_properties('/var/ansible-lifecycle-driver/ald_config.yml', required=False)

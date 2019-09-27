@@ -4,6 +4,7 @@ import time
 import uuid
 import shutil
 import os
+import sys
 from unittest.mock import patch, MagicMock, ANY
 from ansibledriver.service.ansible import AnsibleClient, AnsibleProperties
 from ansibledriver.service.cache import CacheProperties
@@ -12,10 +13,12 @@ from ignition.model.lifecycle import LifecycleExecution, STATUS_COMPLETE, STATUS
 from ignition.utils.file import DirectoryTree
 from ignition.boot.config import BootstrapApplicationConfiguration, PropertyGroups
 
+logger = logging.getLogger()
+logger.level = logging.INFO
+
 class TestAnsible(unittest.TestCase):
 
     def assertLifecycleExecutionEqual(self, resp, expected_resp):
-        print(str(resp))
         self.assertEqual(resp.status, expected_resp.status)
         self.assertEqual(resp.outputs, expected_resp.outputs)
         self.assertEqual(resp.request_id, expected_resp.request_id)
@@ -34,37 +37,41 @@ class TestAnsible(unittest.TestCase):
         self.ansible_client = AnsibleClient(self.configuration)
 
     def test_run_lifecycle(self):
-        request_id = uuid.uuid4().hex
+        # configure so that we can see logging from the code under test
+        stream_handler = logging.StreamHandler(sys.stdout)
+        logger.addHandler(stream_handler)
+        try:
+            request_id = uuid.uuid4().hex
 
-        properties = {
-            'hello_world_private_ip': '10.220.217.113',
-            'ansible_ssh_user': 'accanto',
-            'ansible_ssh_pass': 'accanto',
-            'ansible_become_pass': 'accanto'
-        }
-        system_properties = {
-        }
-        # ansible.run_lifecycle_playbook('tests/resources/ansible', 'install', properties, system_properties)
-
-        cwd = os.getcwd()
-        print('cwd=' + cwd)
-        src = cwd + '/tests/resources/ansible'
-        dst = cwd + '/tests/resources/ansible-copy'
-        shutil.rmtree(dst, ignore_errors=True)
-        shutil.copytree(src, dst)
-
-        resp = self.ansible_client.run_lifecycle_playbook({
-          'lifecycle_name': 'install',
-          'lifecycle_path': DirectoryTree(dst),
-          'system_properties': system_properties,
-          'properties': properties,
-          'deployment_location': {
-            'name': 'winterfell',
-            'type': "type",
-            'properties': {
+            properties = {
+                'hello_world_private_ip': '10.220.217.113',
+                'ansible_ssh_user': 'accanto',
+                'ansible_ssh_pass': 'accanto',
+                'ansible_become_pass': 'accanto'
             }
-          },
-          'request_id': request_id
-        })
+            system_properties = {
+            }
 
-        self.assertLifecycleExecutionEqual(resp, LifecycleExecution(request_id, STATUS_COMPLETE, None, {'msg': "hello there!"}))
+            cwd = os.getcwd()
+            src = cwd + '/tests/resources/ansible'
+            dst = cwd + '/tests/resources/ansible-copy'
+            shutil.rmtree(dst, ignore_errors=True)
+            shutil.copytree(src, dst)
+
+            resp = self.ansible_client.run_lifecycle_playbook({
+            'lifecycle_name': 'install',
+            'lifecycle_path': DirectoryTree(dst),
+            'system_properties': system_properties,
+            'properties': properties,
+            'deployment_location': {
+                'name': 'winterfell',
+                'type': "type",
+                'properties': {
+                }
+            },
+            'request_id': request_id
+            })
+
+            self.assertLifecycleExecutionEqual(resp, LifecycleExecution(request_id, STATUS_COMPLETE, None, {'msg': "hello there!"}))
+        finally:
+            logger.removeHandler(stream_handler)

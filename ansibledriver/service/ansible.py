@@ -31,10 +31,7 @@ class AnsibleClient():
   def __init__(self, configuration):
     self.ansible_properties = configuration.property_groups.get_property_group(AnsibleProperties)
 
-  def run_playbook(self, request_id, inventory_path, playbook_path, lifecycle, all_properties):
-    # TODO needs to go in to the inventory
-    connectionType = 'ssh'
-
+  def run_playbook(self, request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties):
     Options = namedtuple('Options', ['connection',
                                      'forks',
                                      'become',
@@ -49,7 +46,7 @@ class AnsibleClient():
                                      'diff'])
     # initialize needed objects
     loader = DataLoader()
-    options = Options(connection=connectionType,
+    options = Options(connection=connection_type,
                       listhosts=None,
                       listtasks=None,
                       listtags=None,
@@ -57,18 +54,17 @@ class AnsibleClient():
                       module_path=None,
                       become=None,
                       become_method='sudo',
+                      # TODO fix this
                       become_user='ubuntu',
                       check=False,
                       diff=False,
                       forks=20)
-    # passwords = dict(vault_pass='secret')
     passwords = {'become_pass': ''}
 
     # create inventory and pass to var manager
     inventory = InventoryManager(loader=loader, sources=inventory_path)
     variable_manager = VariableManager(loader=loader, inventory=inventory)
     variable_manager.extra_vars = all_properties
-
     # Setup playbook executor, but don't run until run() called
     pbex = PlaybookExecutor(
         playbooks=[playbook_path],
@@ -107,10 +103,12 @@ class AnsibleClient():
       inventory_path = config_path.get_file_path('inventory')
       playbook_path = get_lifecycle_playbook_path(scripts_path, lifecycle)
       if playbook_path is not None:
+        connection_type = "ssh"
+
         all_properties = {
           'properties': properties,
           'system_properties': system_properties,
-          'dl_properties': deployment_location['properties']
+          'dl_properties': deployment_location.get('properties', {})
         }
 
         logger.debug('config_path = ' + config_path.get_path())
@@ -128,7 +126,7 @@ class AnsibleClient():
             num_retries = 1
 
           for i in range(0, num_retries):
-            ret = self.run_playbook(request_id, inventory_path, playbook_path, lifecycle, all_properties)
+            ret = self.run_playbook(request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties)
             if not ret.host_unreachable:
               break
 
@@ -145,7 +143,8 @@ class AnsibleClient():
         return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, msg), {})
     except InvalidRequestException as ire:
       return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, ire.msg), {})
-    except Exception as e:
+    except Exception:
+      logger.exception("Unexpected exception running playbook")
       return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {})
 
 class ResultCallback(CallbackBase):
@@ -161,7 +160,6 @@ class ResultCallback(CallbackBase):
         self.request_id = request_id
         self.facts = {}
         self.results = []
-        # self.pipe = pipe
         self.lifecycle = lifecycle
 
         self.playbook_failed = False
@@ -278,9 +276,6 @@ class ResultCallback(CallbackBase):
         self.failure_details = FailureDetails(FAILURE_CODE_INFRASTRUCTURE_ERROR, self.failure_reason)
         self.playbook_failed = True
 
-    def v2_playbook_on_task_start(self, task, is_conditional):
-        logger.info("v2_playbook_on_task_start {0}".format(task))
-
     def v2_runner_on_skipped(self, result):
         logger.info('v2_runner_on_skipped {0}'.format(result))
 
@@ -295,9 +290,6 @@ class ResultCallback(CallbackBase):
         """
         logger.info('v2_runner_on_ok {0}'.format(result))
 
-        host = result._host
-
-        task = result._task.get_name()
         if 'results' in result._result.keys():
             self.facts = result._result['results']
         else:

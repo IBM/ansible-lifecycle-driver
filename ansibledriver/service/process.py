@@ -12,7 +12,6 @@ from ignition.model.lifecycle import LifecycleExecution, STATUS_COMPLETE, STATUS
 from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_ERROR, FAILURE_CODE_INTERNAL_ERROR, FAILURE_CODE_RESOURCE_NOT_FOUND, FAILURE_CODE_INSUFFICIENT_CAPACITY
 from ignition.service.lifecycle import LifecycleDriverCapability
 from ignition.service.framework import Service, Capability, interface
-from ansibledriver.service.cache import ResponseCache
 from ansibledriver.service.queue import SHUTDOWN_MESSAGE
 from ignition.service.config import ConfigurationPropertiesGroup
 
@@ -36,14 +35,15 @@ class ProcessProperties(ConfigurationPropertiesGroup):
         self.is_threaded = False
 
 class AnsibleProcessorService(Service, AnsibleProcessorCapability):
-    def __init__(self, configuration, request_queue, ansible_client, responses_cache):
+    def __init__(self, configuration, request_queue, ansible_client, **kwargs):
+        if 'messaging_service' not in kwargs:
+            raise ValueError('messaging_service argument not provided')
+        self.messaging_service = kwargs.get('messaging_service')
+
         self.process_properties = configuration.property_groups.get_property_group(ProcessProperties)
 
         # lifecycle requests are placed on this queue
         self.request_queue = request_queue
-
-        # lifecycle responses are added to this cache
-        self.responses_cache = responses_cache
 
         self.ansible_client = ansible_client
         self.counter = Counter()
@@ -77,12 +77,6 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
         if self.queue_thread is not None:
           self.queue_thread.start()
 
-    def get_lifecycle_execution(self, request_id, deployment_location):
-        return self.ansible_processor.get_lifecycle_execution(request_id)
-
-    def queue_status(self):
-      return self.ansible_processor.queue_status()
-
     def run_lifecycle(self, request):
       if 'request_id' not in request:
         raise ValueError('Request must have a request_id')
@@ -94,30 +88,15 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
       logger.debug('request_queue.size {0} max_queue_size {1}'.format(self.request_queue.size(), self.process_properties.max_queue_size))
       if self.active == True:
         if self.request_queue.size() >= self.process_properties.max_queue_size:
-          self.update_response(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Request cannot be handled, driver is overloaded"), {}))
+          self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Request cannot be handled, driver is overloaded"), {}))
         else:
-          self.responses_cache.update_response(LifecycleExecution(request['request_id'], STATUS_IN_PROGRESS, None, {}))
           self.request_queue.put(request)
       else:
-        # inactive, response handling will just return a standard respobse
-        pass
-
-    def get_lifecycle_execution(self, request_id):
-      if self.active == False:
-        resp = LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Driver is inactive"), {})
-      else:
-        resp = self.responses_cache.get_response(request_id)
-
-      logger.debug('Getting lifecycle_execution response {0} for request id {1}'.format(resp, request_id))
-
-      return resp
+        # inactive, just return a standard response
+        self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Driver is inactive"), {}))
 
     def queue_status(self):
       return self.request_queue.queue_status()
-
-    def update_response(self, result):
-      self.responses_cache.update_response(result)
-      self.counter.decrement()
 
     def ansible_process_worker(self, request_queue, send_pipe):
       logger.info('ansible_queue_worker init')
@@ -149,7 +128,6 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
 
       self.request_queue.shutdown()
       self.send_pipe.close()
-      self.responses_cache.close()
 
     def to_lifecycle_execution(self, json):
       if json.get('failure_details', None) is not None:
@@ -189,7 +167,7 @@ class QueueThread(threading.Thread):
                   if self.process_properties.is_threaded:
                     worker = AnsibleWorkerThread(self.ansible_client, request, self.send_pipe)
                     worker.start()
-                    logger.info('Request processing started for request {0} with thread {1}'.format(request, worker.get_ident()))
+                    logger.info('Request processing started for request {0} with thread {1}'.format(request, worker.ident))
                   else:
                     worker = AnsibleWorkerProcess(self.ansible_processor.sigchld_handler, self.ansible_client, request, self.send_pipe)
                     worker.start()
@@ -282,7 +260,7 @@ class ResponsesThread(threading.Thread):
           result = self.recv_pipe.recv()
           if result is not None:
             logger.info('responses thread received {0}'.format(result))
-            self.ansible_processor_service.update_response(result)
+            self.ansible_processor_service.messaging_service.send_lifecycle_execution(result)
           else:
             # nothing to do
             pass
