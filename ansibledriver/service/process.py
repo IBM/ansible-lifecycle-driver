@@ -92,8 +92,8 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
         else:
           self.request_queue.put(request)
       else:
-        # inactive, response handling will just return a standard response
-        pass
+        # inactive, just return a standard response
+        self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Driver is inactive"), {}))
 
     def queue_status(self):
       return self.request_queue.queue_status()

@@ -55,18 +55,17 @@ class AnsibleClient():
                       module_path=None,
                       become=None,
                       become_method='sudo',
+                      # TODO fix this
                       become_user='ubuntu',
                       check=False,
                       diff=False,
                       forks=20)
-    # passwords = dict(vault_pass='secret')
     passwords = {'become_pass': ''}
 
     # create inventory and pass to var manager
     inventory = InventoryManager(loader=loader, sources=inventory_path)
     variable_manager = VariableManager(loader=loader, inventory=inventory)
     variable_manager.extra_vars = all_properties
-
     # Setup playbook executor, but don't run until run() called
     pbex = PlaybookExecutor(
         playbooks=[playbook_path],
@@ -110,7 +109,7 @@ class AnsibleClient():
         all_properties = {
           'properties': properties,
           'system_properties': system_properties,
-          'dl_properties': deployment_location['properties']
+          'dl_properties': deployment_location.get('properties', {})
         }
 
         logger.debug('config_path = ' + config_path.get_path())
@@ -145,7 +144,8 @@ class AnsibleClient():
         return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, msg), {})
     except InvalidRequestException as ire:
       return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, ire.msg), {})
-    except Exception as e:
+    except Exception:
+      logger.exception("Unexpected exception running playbook")
       return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {})
 
 class ResultCallback(CallbackBase):
@@ -161,7 +161,6 @@ class ResultCallback(CallbackBase):
         self.request_id = request_id
         self.facts = {}
         self.results = []
-        # self.pipe = pipe
         self.lifecycle = lifecycle
 
         self.playbook_failed = False

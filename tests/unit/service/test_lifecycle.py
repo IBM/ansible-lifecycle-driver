@@ -10,8 +10,8 @@ from ignition.utils.file import DirectoryTree
 class TestLifecycle(unittest.TestCase):
 
     def setUp(self):
-        self.mock_ansible_service = MagicMock()
-        self.lifecycle = AnsibleLifecycleDriver(self.mock_ansible_service)
+        self.mock_ansible_processor_service = MagicMock()
+        self.lifecycle_driver = AnsibleLifecycleDriver(self.mock_ansible_processor_service)
 
     def assertLifecycleExecutionEqual(self, resp, expected_resp):
         self.assertEqual(resp.status, expected_resp.status)
@@ -23,28 +23,7 @@ class TestLifecycle(unittest.TestCase):
             self.assertEqual(resp.failure_details.failure_code, expected_resp.failure_details.failure_code)
             self.assertEqual(resp.failure_details.description, expected_resp.failure_details.description)
 
-    def get_response(self, request_id):
-      for i in range(10):
-        resp = self.lifecycle.get_lifecycle_execution(request_id, {})
-        if resp is not None and resp.status != STATUS_IN_PROGRESS:
-          return resp
-        else:
-          time.sleep(1)
-      else:
-        self.fail('Timeout waiting for response')
-
     def test_run_lifecycle(self):
-        request_id = uuid.uuid4().hex
-
-        self.mock_ansible_service.get_lifecycle_execution.return_value = LifecycleExecution(request_id, STATUS_COMPLETE, None, {
-            'prop1': 'output__value1'
-          })
-
-        self.lifecycle.execute_lifecycle('install', DirectoryTree('./'), {}, {}, {})
-
-        expected_resp = LifecycleExecution(request_id, STATUS_COMPLETE, None, {
-            'prop1': 'output__value1'
-            })
-
-        response = self.get_response(request_id)
-        self.assertLifecycleExecutionEqual(response, expected_resp)
+        resp = self.lifecycle_driver.execute_lifecycle('install', DirectoryTree('./'), {}, {}, {})
+        self.assertIsNotNone(resp)
+        self.assertIsNotNone(resp.request_id)

@@ -24,13 +24,39 @@ def sleep(request_id, *args, **kwargs):
   time.sleep(1)
   return LifecycleExecution(request_id, STATUS_COMPLETE, None, {})
 
+class LifecycleExecutionMatcher:
+  def __init__(self, expected):
+    self.expected = expected
+
+  def compare(self, other):
+    if not type(self.expected) == type(other):
+      return False
+    if other.status != self.expected.status:
+      return False
+    if other.request_id != self.expected.request_id:
+      return False
+    if len(self.expected.outputs.items() - other.outputs.items()) > 0:
+      return False
+    if self.expected.failure_details is not None:
+        if other.failure_details is None:
+            return False
+        if other.failure_details.failure_code != self.expected.failure_details.failure_code:
+          return False
+        if other.failure_details.description != self.expected.failure_details.description:
+          return False
+
+    return True
+
+  # "other" is the actual argument, to be compared against self.expected
+  def __eq__(self, other):
+    return self.compare(other)
+
 class TestProcess(unittest.TestCase):
 
     def setUp(self):
         self.request_queue = RequestQueue()
         self.mock_ansible_client = MagicMock()
         self.mock_messaging_service = MagicMock()
-
         property_groups = PropertyGroups()
         property_groups.add_property_group(AnsibleProperties())
         property_groups.add_property_group(ProcessProperties())
@@ -50,11 +76,12 @@ class TestProcess(unittest.TestCase):
             self.assertEqual(resp.failure_details.failure_code, expected_resp.failure_details.failure_code)
             self.assertEqual(resp.failure_details.description, expected_resp.failure_details.description)
 
-    def get_response(self, request_id):
+    def check_response(self, lifecycle_execution):
       for i in range(10):
-        resp = self.ansible_processor.get_lifecycle_execution(request_id)
-        if resp is not None and resp.status != STATUS_IN_PROGRESS:
-          return resp
+        call_count = self.mock_messaging_service.send_lifecycle_execution.call_count
+        if call_count > 0:
+          self.mock_messaging_service.send_lifecycle_execution.assert_called_once_with(LifecycleExecutionMatcher(lifecycle_execution))
+          break
         else:
           time.sleep(1)
       else:
@@ -103,10 +130,10 @@ class TestProcess(unittest.TestCase):
     def test_run_lifecycle(self):
         request_id = uuid.uuid4().hex
 
-        self.mock_ansible_client.run_lifecycle_playbook.return_value = LifecycleExecution(request_id, STATUS_COMPLETE, None, {
-            'prop1': 'output__value1'
-          })
-        self.mock_messaging_service.return_value.send_lifecycle_execution.return_value = LifecycleExecution("1", "Complete")
+        lifecycle_execution = LifecycleExecution(request_id, STATUS_COMPLETE, None, {
+          'prop1': 'output__value1'
+        })
+        self.mock_ansible_client.run_lifecycle_playbook.return_value = lifecycle_execution
 
         self.ansible_processor.run_lifecycle({
           'lifecycle_name': 'install',
@@ -120,13 +147,7 @@ class TestProcess(unittest.TestCase):
           'request_id': request_id
         })
 
-        expected_resp = LifecycleExecution(request_id, STATUS_COMPLETE, None, {
-            'prop1': 'output__value1'
-            })
-
-
-        response = self.get_response(request_id)
-        self.assertLifecycleExecutionEqual(response, expected_resp)
+        self.check_response(lifecycle_execution)
 
     def test_shutdown(self):
       self.ansible_processor.shutdown()
@@ -145,9 +166,7 @@ class TestProcess(unittest.TestCase):
         'request_id': request_id
       })
 
-      expected_resp = LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Driver is inactive"), {})
-      response = self.get_response(request_id)
-      self.assertLifecycleExecutionEqual(response, expected_resp)
+      self.check_response(LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Driver is inactive"), {}))
 
     def test_max_queue_size(self):
         request_id1 = uuid.uuid4().hex
@@ -195,7 +214,4 @@ class TestProcess(unittest.TestCase):
           'request_id': request_id2
         })
 
-        expected_resp = LifecycleExecution(request_id2, STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Request cannot be handled, driver is overloaded"), {})
-
-        response = self.get_response(request_id2)
-        self.assertLifecycleExecutionEqual(response, expected_resp)
+        self.check_response(LifecycleExecution(request_id2, STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Request cannot be handled, driver is overloaded"), {}))
