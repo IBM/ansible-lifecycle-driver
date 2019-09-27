@@ -7,7 +7,7 @@ from ignition.model.lifecycle import LifecycleExecuteResponse
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-class AnsibleVNFCDriver(Service, LifecycleDriverCapability):
+class AnsibleLifecycleDriver(Service, LifecycleDriverCapability):
     def __init__(self, ansible_processor_service):
         self.ansible_processor_service = ansible_processor_service
 
@@ -26,4 +26,5 @@ class AnsibleVNFCDriver(Service, LifecycleDriverCapability):
         return LifecycleExecuteResponse(request_id)
 
     def get_lifecycle_execution(self, request_id, deployment_location):
-        return self.ansible_processor_service.get_lifecycle_execution(request_id)
+        # noop - the driver does not use the Ignition job queue, but sends the response directly on the lifecycle responses Kafka topic
+        return None

@@ -2,6 +2,7 @@ import json
 import logging
 import time
 import os
+from ansibledriver.model.kubeconfig import KubeConfig
 from collections import namedtuple
 from ansible.parsing.dataloader import DataLoader
 from ansible.vars.manager import VariableManager
@@ -31,10 +32,7 @@ class AnsibleClient():
   def __init__(self, configuration):
     self.ansible_properties = configuration.property_groups.get_property_group(AnsibleProperties)
 
-  def run_playbook(self, request_id, inventory_path, playbook_path, lifecycle, all_properties):
-    # TODO needs to go in to the inventory
-    connectionType = 'ssh'
-
+  def run_playbook(self, request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties):
     Options = namedtuple('Options', ['connection',
                                      'forks',
                                      'become',
@@ -49,7 +47,7 @@ class AnsibleClient():
                                      'diff'])
     # initialize needed objects
     loader = DataLoader()
-    options = Options(connection=connectionType,
+    options = Options(connection=connection_type,
                       listhosts=None,
                       listtasks=None,
                       listtags=None,
@@ -107,6 +105,8 @@ class AnsibleClient():
       inventory_path = config_path.get_file_path('inventory')
       playbook_path = get_lifecycle_playbook_path(scripts_path, lifecycle)
       if playbook_path is not None:
+        connection_type = "ssh"
+
         all_properties = {
           'properties': properties,
           'system_properties': system_properties,
@@ -128,7 +128,7 @@ class AnsibleClient():
             num_retries = 1
 
           for i in range(0, num_retries):
-            ret = self.run_playbook(request_id, inventory_path, playbook_path, lifecycle, all_properties)
+            ret = self.run_playbook(request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties)
             if not ret.host_unreachable:
               break
 
@@ -278,9 +278,6 @@ class ResultCallback(CallbackBase):
         self.failure_details = FailureDetails(FAILURE_CODE_INFRASTRUCTURE_ERROR, self.failure_reason)
         self.playbook_failed = True
 
-    def v2_playbook_on_task_start(self, task, is_conditional):
-        logger.info("v2_playbook_on_task_start {0}".format(task))
-
     def v2_runner_on_skipped(self, result):
         logger.info('v2_runner_on_skipped {0}'.format(result))
 
@@ -295,9 +292,6 @@ class ResultCallback(CallbackBase):
         """
         logger.info('v2_runner_on_ok {0}'.format(result))
 
-        host = result._host
-
-        task = result._task.get_name()
         if 'results' in result._result.keys():
             self.facts = result._result['results']
         else:

@@ -8,7 +8,7 @@ from unittest.mock import patch, MagicMock, ANY, DEFAULT
 from ignition.boot.config import BootstrapApplicationConfiguration, PropertyGroups
 from ignition.model.lifecycle import LifecycleExecuteResponse, LifecycleExecution, STATUS_COMPLETE, STATUS_FAILED, STATUS_IN_PROGRESS
 from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_ERROR, FAILURE_CODE_INTERNAL_ERROR, FAILURE_CODE_RESOURCE_NOT_FOUND, FAILURE_CODE_INSUFFICIENT_CAPACITY
-from ansibledriver.service.cache import ResponseCache, CacheProperties
+from ansibledriver.service.cache import CacheProperties
 from ansibledriver.service.queue import RequestQueue
 from ansibledriver.service.process import AnsibleProcessorService, ProcessProperties
 from ansibledriver.service.ansible import AnsibleProperties
@@ -29,15 +29,13 @@ class TestProcess(unittest.TestCase):
     def setUp(self):
         self.request_queue = RequestQueue()
         self.mock_ansible_client = MagicMock()
+        self.mock_messaging_service = MagicMock()
 
         property_groups = PropertyGroups()
         property_groups.add_property_group(AnsibleProperties())
         property_groups.add_property_group(ProcessProperties())
-        property_groups.add_property_group(CacheProperties())
         self.configuration = BootstrapApplicationConfiguration(app_name='test', property_sources=[], property_groups=property_groups, service_configurators=[], api_configurators=[], api_error_converter=None)
-
-        self.responses_cache = ResponseCache(self.configuration)
-        self.ansible_processor = AnsibleProcessorService(self.configuration, self.request_queue, self.mock_ansible_client, self.responses_cache)
+        self.ansible_processor = AnsibleProcessorService(self.configuration, self.request_queue, self.mock_ansible_client, messaging_service=self.mock_messaging_service)
 
     def tearDown(self):
         self.ansible_processor.shutdown()
@@ -108,6 +106,7 @@ class TestProcess(unittest.TestCase):
         self.mock_ansible_client.run_lifecycle_playbook.return_value = LifecycleExecution(request_id, STATUS_COMPLETE, None, {
             'prop1': 'output__value1'
           })
+        self.mock_messaging_service.return_value.send_lifecycle_execution.return_value = LifecycleExecution("1", "Complete")
 
         self.ansible_processor.run_lifecycle({
           'lifecycle_name': 'install',
@@ -124,6 +123,7 @@ class TestProcess(unittest.TestCase):
         expected_resp = LifecycleExecution(request_id, STATUS_COMPLETE, None, {
             'prop1': 'output__value1'
             })
+
 
         response = self.get_response(request_id)
         self.assertLifecycleExecutionEqual(response, expected_resp)
@@ -149,9 +149,6 @@ class TestProcess(unittest.TestCase):
       response = self.get_response(request_id)
       self.assertLifecycleExecutionEqual(response, expected_resp)
 
-    def test_get_unknown_request(self):
-        self.assertIsNone(self.ansible_processor.get_lifecycle_execution(uuid.uuid4().hex))
-
     def test_max_queue_size(self):
         request_id1 = uuid.uuid4().hex
         request_id2 = uuid.uuid4().hex
@@ -172,10 +169,8 @@ class TestProcess(unittest.TestCase):
         property_groups.add_property_group(process_properties)
         property_groups.add_property_group(CacheProperties())
         configuration = BootstrapApplicationConfiguration(app_name='test', property_sources=[], property_groups=property_groups, service_configurators=[], api_configurators=[], api_error_converter=None)
-        self.ansible_processor = AnsibleProcessorService(configuration, self.request_queue, self.mock_ansible_client, self.responses_cache)
+        self.ansible_processor = AnsibleProcessorService(configuration, self.request_queue, self.mock_ansible_client, messaging_service=self.mock_messaging_service)
 
-        # self.ansible_processor = AnsibleProcessor(self.request_queue, self.mock_ansible_client, self.responses_cache)
-            # config=AnsibleProcessorConfig(process_pool_size=1, max_concurrent_ansible_processes=1, max_queue_size=1, use_pool=False))
         self.ansible_processor.run_lifecycle({
           'lifecycle_name': 'install',
           'lifecycle_path': DirectoryTree('./'),

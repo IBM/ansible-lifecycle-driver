@@ -1,16 +1,17 @@
 import unittest
 import uuid
+import time
 from unittest.mock import patch, MagicMock, ANY
 from ignition.model.lifecycle import LifecycleExecuteResponse, LifecycleExecution, STATUS_COMPLETE, STATUS_FAILED, STATUS_IN_PROGRESS
 from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_ERROR, FAILURE_CODE_INTERNAL_ERROR, FAILURE_CODE_RESOURCE_NOT_FOUND, FAILURE_CODE_INSUFFICIENT_CAPACITY
-from ansibledriver.service.lifecycle import AnsibleVNFCDriver
+from ansibledriver.service.lifecycle import AnsibleLifecycleDriver
 from ignition.utils.file import DirectoryTree
 
 class TestLifecycle(unittest.TestCase):
 
     def setUp(self):
         self.mock_ansible_service = MagicMock()
-        self.lifecycle = AnsibleVNFCDriver(self.mock_ansible_service)
+        self.lifecycle = AnsibleLifecycleDriver(self.mock_ansible_service)
 
     def assertLifecycleExecutionEqual(self, resp, expected_resp):
         self.assertEqual(resp.status, expected_resp.status)
