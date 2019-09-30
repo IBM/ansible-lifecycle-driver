@@ -105,14 +105,15 @@ class AnsibleClient():
 
       private_key_file_path = get_private_key_path(request)
 
-      inventory_path = config_path.get_file_path('inventory')
       playbook_path = get_lifecycle_playbook_path(scripts_path, lifecycle)
       if playbook_path is not None:
         if deployment_location['type'] == 'Kubernetes':
           deployment_location['properties']['kubeconfig_path'] = self.create_kube_config(deployment_location)
           connection_type = "k8s"
+          inventory_path = config_path.get_file_path('inventory.k8s')
         else:
           connection_type = "ssh"
+          inventory_path = config_path.get_file_path('inventory')
 
         all_properties = {
           'properties': properties,
@@ -152,7 +153,7 @@ class AnsibleClient():
         return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, msg), {})
     except InvalidRequestException as ire:
       return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, ire.msg), {})
-    except Exception:
+    except Exception as e:
       logger.exception("Unexpected exception running playbook")
       return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {})
 
@@ -229,7 +230,6 @@ class ResultCallback(CallbackBase):
         }
 
         logger.info('v2_playbook_on_stats {0}'.format(json.dumps(output, indent=4, sort_keys=True)))
-        logger.info(stats.summarize('testhost'))
 
     def v2_playbook_on_no_hosts_matched(self):
         logger.info('v2_playbook_on_no_hosts_matched')

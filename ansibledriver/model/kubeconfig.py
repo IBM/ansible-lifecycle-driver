@@ -8,7 +8,7 @@ class KubeConfig():
             "clusters": [{
                 "name": "mycluster",
                 "cluster": {
-                    "insecure-skip-tls-verify": "true",
+                    "insecure-skip-tls-verify": True,
                     "server": k8sServer
                 }
             }],
@@ -31,7 +31,7 @@ class KubeConfig():
         }
 
     def write(self):
-        filename = '/var/dl_' + self.name + '.yml'
+        filename = '/var/ald/dl_' + self.name + '.yml'
         with open(filename, 'w') as outfile:
             yaml.dump(self.kubeConfig, outfile, default_flow_style=False)
         return filename
