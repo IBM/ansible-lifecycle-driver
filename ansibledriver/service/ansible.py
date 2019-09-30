@@ -15,6 +15,7 @@ from jinja2 import Environment, FileSystemLoader
 from ignition.model.lifecycle import LifecycleExecution, STATUS_COMPLETE, STATUS_FAILED, STATUS_IN_PROGRESS
 from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_ERROR, FAILURE_CODE_INTERNAL_ERROR, FAILURE_CODE_RESOURCE_NOT_FOUND
 from ignition.service.config import ConfigurationPropertiesGroup
+from ansibledriver.model.kubeconfig import KubeConfig
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -30,6 +31,10 @@ class AnsibleProperties(ConfigurationPropertiesGroup):
 class AnsibleClient():
   def __init__(self, configuration):
     self.ansible_properties = configuration.property_groups.get_property_group(AnsibleProperties)
+
+  def create_kube_config(self, deployment_location):
+    dl_properties = deployment_location['properties']
+    return KubeConfig(deployment_location['name'], dl_properties['k8s-server'], dl_properties['k8s-token']).write()
 
   def run_playbook(self, request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties):
     Options = namedtuple('Options', ['connection',
@@ -103,7 +108,11 @@ class AnsibleClient():
       inventory_path = config_path.get_file_path('inventory')
       playbook_path = get_lifecycle_playbook_path(scripts_path, lifecycle)
       if playbook_path is not None:
-        connection_type = "ssh"
+        if deployment_location['type'] == 'Kubernetes':
+          deployment_location['properties']['kubeconfig_path'] = self.create_kube_config(deployment_location)
+          connection_type = "k8s"
+        else:
+          connection_type = "ssh"
 
         all_properties = {
           'properties': properties,
