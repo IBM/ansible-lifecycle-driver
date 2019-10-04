@@ -8,7 +8,7 @@ spec:
     metadata:
       labels:
         app: ansible-lifecycle-driver
-        part-of: alm
+        part-of: lm
     spec:
       hostAliases:
       {{- if .Values.app.config.kafka.hostEnabled }}
