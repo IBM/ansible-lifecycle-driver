@@ -13,7 +13,7 @@ ENV PATH="/home/ald/.local/bin:${PATH}"
 COPY ansible.cfg /etc/ansible/ansible.cfg
 
 RUN addgroup -S ald \
- && adduser -S ald -G ald \
+ && adduser -S ald -G ald -u 100 \
  && mkdir -p /var/ald/lifecycle_scripts \
  && chown -R ald:ald /var/ald \
  && chown -R ald:ald /home/ald \
