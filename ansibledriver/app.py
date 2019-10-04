@@ -12,13 +12,6 @@ default_config_dir_path = str(pathlib.Path(ansibledriverconfig.__file__).parent.
 default_config_path = os.path.join(default_config_dir_path, 'ald_config.yml')
 
 def create_app():
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    console.setFormatter(formatter)
-    # add the handler to the root logger
-    logging.getLogger('').addHandler(console)
-
     app_builder = ignition.build_vnfc_driver('AnsibleLifecycleDriver')
     app_builder.include_file_config_properties(default_config_path, required=False)
     # custom config file e.g. for K8s populated from Helm chart values

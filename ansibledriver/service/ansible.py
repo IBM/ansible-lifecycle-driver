@@ -59,8 +59,7 @@ class AnsibleClient():
                       module_path=None,
                       become=None,
                       become_method='sudo',
-                      # TODO fix this
-                      become_user='ubuntu',
+                      become_user='root',
                       check=False,
                       diff=False,
                       forks=20)
