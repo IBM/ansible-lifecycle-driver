@@ -10,6 +10,39 @@ app:
   ## Number of pods to deploy 
   replicas: 1
   
+  ## Affinity for pod assignment
+  ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+  affinity:
+    podAntiAffinity:
+      ## Default anti-affinity rule is to try and schedule multiple pods of this app on different nodes
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          topologyKey: "kubernetes.io/hostname"
+          labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - ansible-lifecycle-driver
+    ## Example of node affinity rule to require this pod is only scheduled on a Node with a label (key=value) of "Stateless=True"
+    #nodeAffinity:
+    #  requiredDuringSchedulingIgnoredDuringExecution:
+    #    nodeSelectorTerms:
+    #    - matchExpressions:
+    #      - key: Stateless
+    #        operator: In
+    #        values:
+    #        - "True"
+    
+  ## Node tolerations for pod assignment
+  ## Ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+  tolerations: []
+  ## Example of allowing this pod to be deployed onto a Node that has been tainted with "ReservedForLm"
+  #- key: ReservedForLm
+  #  operator: Exists
+  #  effect: NoSchedule
+
   ## Configure resource requests and limits for each container of the application
   ## Default is to have no limit
   ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
