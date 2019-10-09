@@ -2,7 +2,8 @@ import json
 import logging
 import time
 import os
-import sys, traceback
+import sys
+import traceback
 import threading
 import signal
 from multiprocessing import Process, RawValue, Lock, Pipe
@@ -14,6 +15,7 @@ from ignition.service.lifecycle import LifecycleDriverCapability
 from ignition.service.framework import Service, Capability, interface
 from ansibledriver.service.queue import SHUTDOWN_MESSAGE
 from ignition.service.config import ConfigurationPropertiesGroup
+from ignition.service.logging import logging_context
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -62,13 +64,11 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
           self.pool = [None] * self.process_properties.process_pool_size
           for i in range(self.process_properties.process_pool_size):
             self.pool[i] = Process(target=self.ansible_process_worker, args=(self.request_queue, self.send_pipe, ))
-            # self.pool[i].daemon = True
             self.pool[i].start()
         else:
           self.queue_thread = QueueThread(self, self.ansible_client, self.send_pipe, self.process_properties, self.request_queue, self.counter)
 
-        # Ansible process reponse thread listens for messages on the recv_pipe and updates
-        # the set of responses
+        # Ansible process reponse thread listens for messages on the recv_pipe sends the response to Kafka
         self.responses_thread = ResponsesThread(self, self.recv_pipe)
 
         self.active = True
@@ -84,6 +84,9 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
         raise ValueError('Request must have a lifecycle_name')
       if 'lifecycle_path' not in request:
         raise ValueError('Request must have a lifecycle_path')
+
+      # add logging context to request
+      request['logging_context'] = logging_context.get_all()
 
       logger.debug('request_queue.size {0} max_queue_size {1}'.format(self.request_queue.size(), self.process_properties.max_queue_size))
       if self.active == True:
@@ -196,6 +199,9 @@ class AnsibleWorkerThread(threading.Thread):
     def run(self):
       try:
         if self.request is not None:
+          if self.request.get('logging_context', None) is not None:
+            logging_context.set_from_dict(self.request['logging_context'])
+
           resp = self.ansible_client.run_lifecycle_playbook(self.request)
           if resp is not None:
             logger.info('Ansible worker finished for request {0} response {1}'.format(self.request, resp))
@@ -211,6 +217,8 @@ class AnsibleWorkerThread(threading.Thread):
         # don't want the worker to die without knowing the cause, so catch all exceptions
         if self.request is not None:
           self.send_pipe.send(LifecycleExecution(self.request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {}))
+      finally:
+        logging_context.clear()
 
 class AnsibleWorkerProcess(Process):
 
@@ -219,10 +227,6 @@ class AnsibleWorkerProcess(Process):
       self.request = request
       self.send_pipe = send_pipe
       self.sigchld_handler = sigchld_handler
-      # need to reset SIGCHLD handler (setting is inherited from parent process) so that Ansible can override it
-      # signal.signal(signal.SIGCHLD, sigchld_handler)
-      # # we want to handle child process termination
-      # self.daemon = False
       super().__init__(daemon = False)
 
     def run(self):
@@ -231,6 +235,9 @@ class AnsibleWorkerProcess(Process):
 
       try:
         if self.request is not None:
+          if self.request.get('logging_context', None) is not None:
+            logging_context.set_from_dict(self.request['logging_context'])
+
           resp = self.ansible_client.run_lifecycle_playbook(self.request)
           if resp is not None:
             logger.info('Ansible worker finished for request {0} response {1}'.format(self.request, resp))
@@ -246,6 +253,8 @@ class AnsibleWorkerProcess(Process):
         # don't want the worker to die without knowing the cause, so catch all exceptions
         if self.request is not None:
           self.send_pipe.send(LifecycleExecution(self.request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {}))
+      finally:
+        logging_context.clear()
 
 class ResponsesThread(threading.Thread):
 
