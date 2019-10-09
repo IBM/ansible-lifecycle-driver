@@ -16,6 +16,14 @@ spec:
           hostnames:
           - "kafka"
       {{- end }}
+{{- if .Values.app.affinity }}
+      affinity:
+{{ toYaml .Values.app.affinity | indent 8 }}
+{{- end }}
+{{- if .Values.app.tolerations }}
+      tolerations:
+{{ toYaml .Values.app.tolerations | indent 8 }}
+{{- end }}
       containers:
         - name: ansible-lifecycle-driver
           image: {{ .Values.docker.image }}:{{ .Values.docker.version }}
