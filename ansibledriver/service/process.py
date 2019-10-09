@@ -64,13 +64,11 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
           self.pool = [None] * self.process_properties.process_pool_size
           for i in range(self.process_properties.process_pool_size):
             self.pool[i] = Process(target=self.ansible_process_worker, args=(self.request_queue, self.send_pipe, ))
-            # self.pool[i].daemon = True
             self.pool[i].start()
         else:
           self.queue_thread = QueueThread(self, self.ansible_client, self.send_pipe, self.process_properties, self.request_queue, self.counter)
 
-        # Ansible process reponse thread listens for messages on the recv_pipe and updates
-        # the set of responses
+        # Ansible process reponse thread listens for messages on the recv_pipe sends the response to Kafka
         self.responses_thread = ResponsesThread(self, self.recv_pipe)
 
         self.active = True
@@ -229,10 +227,6 @@ class AnsibleWorkerProcess(Process):
       self.request = request
       self.send_pipe = send_pipe
       self.sigchld_handler = sigchld_handler
-      # need to reset SIGCHLD handler (setting is inherited from parent process) so that Ansible can override it
-      # signal.signal(signal.SIGCHLD, sigchld_handler)
-      # # we want to handle child process termination
-      # self.daemon = False
       super().__init__(daemon = False)
 
     def run(self):
