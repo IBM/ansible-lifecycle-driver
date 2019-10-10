@@ -127,11 +127,8 @@ class AnsibleClient():
         process_templates(config_path, all_properties, private_key_file_path)
 
         if(os.path.exists(playbook_path)):
-          # retry on unreachable only for 'install'
-          if lifecycle.lower() == 'install':
-            num_retries = self.ansible_properties.max_unreachable_retries
-          else:
-            num_retries = 1
+          # always retry on unreachable
+          num_retries = self.ansible_properties.max_unreachable_retries
 
           for i in range(0, num_retries):
             ret = self.run_playbook(request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties)
