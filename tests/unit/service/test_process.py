@@ -77,7 +77,7 @@ class TestProcess(unittest.TestCase):
             self.assertEqual(resp.failure_details.description, expected_resp.failure_details.description)
 
     def check_response(self, lifecycle_execution):
-      for i in range(10):
+      for i in range(30):
         call_count = self.mock_messaging_service.send_lifecycle_execution.call_count
         if call_count > 0:
           self.mock_messaging_service.send_lifecycle_execution.assert_called_once_with(LifecycleExecutionMatcher(lifecycle_execution))
