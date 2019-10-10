@@ -129,7 +129,6 @@ class AnsibleClient():
         if(os.path.exists(playbook_path)):
           # always retry on unreachable
           num_retries = self.ansible_properties.max_unreachable_retries
-          # num_retries = 1
 
           for i in range(0, num_retries):
             ret = self.run_playbook(request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties)
