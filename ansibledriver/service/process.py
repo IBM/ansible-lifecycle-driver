@@ -16,7 +16,6 @@ from ansibledriver.service.queue import SHUTDOWN_MESSAGE
 from ignition.service.config import ConfigurationPropertiesGroup
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 class AnsibleProcessorCapability(Capability):
 

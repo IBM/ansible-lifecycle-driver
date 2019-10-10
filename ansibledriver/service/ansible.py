@@ -18,7 +18,6 @@ from ignition.service.config import ConfigurationPropertiesGroup
 from ansibledriver.model.kubeconfig import KubeConfig
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 class AnsibleProperties(ConfigurationPropertiesGroup):
     def __init__(self):

@@ -5,7 +5,6 @@ from ignition.service.lifecycle import LifecycleDriverCapability
 from ignition.model.lifecycle import LifecycleExecuteResponse
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 class AnsibleLifecycleDriver(Service, LifecycleDriverCapability):
     def __init__(self, ansible_processor_service):

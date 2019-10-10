@@ -2,7 +2,6 @@ import logging
 from ignition.service.config import ConfigurationPropertiesGroup
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 class CacheProperties(ConfigurationPropertiesGroup):
     def __init__(self):

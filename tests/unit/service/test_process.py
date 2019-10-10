@@ -15,9 +15,6 @@ from ansibledriver.service.ansible import AnsibleProperties
 from ignition.utils.file import DirectoryTree
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-stream_handler = logging.StreamHandler(sys.stdout)
-logger.addHandler(stream_handler)
 
 def sleep(request_id, *args, **kwargs):
   logger.info('sleeping for request {0}...'.format(request_id))
