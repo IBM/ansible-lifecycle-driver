@@ -2,9 +2,10 @@ import json
 import logging
 import time
 import os
-import sys, traceback
+import sys
+import traceback
 import threading
-import signal
+from signal import signal, SIGINT, SIGTERM, SIGQUIT, SIGCHLD, SIG_IGN, SIG_DFL
 from multiprocessing import Process, RawValue, Lock, Pipe
 from multiprocessing.pool import Pool
 from collections import namedtuple
@@ -14,6 +15,7 @@ from ignition.service.lifecycle import LifecycleDriverCapability
 from ignition.service.framework import Service, Capability, interface
 from ansibledriver.service.queue import SHUTDOWN_MESSAGE
 from ignition.service.config import ConfigurationPropertiesGroup
+from ignition.service.logging import logging_context
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +53,8 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
         self.recv_pipe, self.send_pipe = Pipe(False)
 
         # acknowledge but ignore child process exits (to prevent zombie child processes)
-        self.sigchld_handler = signal.signal(signal.SIGCHLD, signal.SIG_IGN)
-        signal.signal(signal.SIGINT, self.sigint_handler)
+        self.sigchld_handler = signal(SIGCHLD, SIG_IGN)
+        signal(SIGINT, self.sigint_handler)
 
         if self.process_properties.use_pool:
           # a pool of (Ansible) processes reads from the request_queue
@@ -61,13 +63,11 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
           self.pool = [None] * self.process_properties.process_pool_size
           for i in range(self.process_properties.process_pool_size):
             self.pool[i] = Process(target=self.ansible_process_worker, args=(self.request_queue, self.send_pipe, ))
-            # self.pool[i].daemon = True
             self.pool[i].start()
         else:
           self.queue_thread = QueueThread(self, self.ansible_client, self.send_pipe, self.process_properties, self.request_queue, self.counter)
 
-        # Ansible process reponse thread listens for messages on the recv_pipe and updates
-        # the set of responses
+        # Ansible process reponse thread listens for messages on the recv_pipe sends the response to Kafka
         self.responses_thread = ResponsesThread(self, self.recv_pipe)
 
         self.active = True
@@ -75,6 +75,9 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
         self.responses_thread.start()
         if self.queue_thread is not None:
           self.queue_thread.start()
+
+    def ansible_process_done(self):
+      self.counter.decrement()
 
     def run_lifecycle(self, request):
       if 'request_id' not in request:
@@ -84,11 +87,15 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
       if 'lifecycle_path' not in request:
         raise ValueError('Request must have a lifecycle_path')
 
-      logger.debug('request_queue.size {0} max_queue_size {1}'.format(self.request_queue.size(), self.process_properties.max_queue_size))
+      # add logging context to request
+      request['logging_context'] = logging_context.get_all()
+
+      logger.info('request_queue.size {0} max_queue_size {1}'.format(self.request_queue.size(), self.process_properties.max_queue_size))
       if self.active == True:
         if self.request_queue.size() >= self.process_properties.max_queue_size:
           self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Request cannot be handled, driver is overloaded"), {}))
         else:
+          logger.debug('Adding request {0} to queue'.format(request))
           self.request_queue.put(request)
       else:
         # inactive, just return a standard response
@@ -100,7 +107,7 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
     def ansible_process_worker(self, request_queue, send_pipe):
       logger.info('ansible_queue_worker init')
       # make sure Ansible processes are acknowledged to avoid zombie processes
-      signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+      signal(SIGCHLD, SIG_IGN)
       while(True):
         try:
           request = request_queue.next()
@@ -168,7 +175,9 @@ class QueueThread(threading.Thread):
                     worker.start()
                     logger.info('Request processing started for request {0} with thread {1}'.format(request, worker.ident))
                   else:
+                    logger.debug('Creating worker process')
                     worker = AnsibleWorkerProcess(self.ansible_processor.sigchld_handler, self.ansible_client, request, self.send_pipe)
+                    logger.debug('Created worker process')
                     worker.start()
                     logger.info('Request processing started for request {0} with pid {1}'.format(request, worker.pid))
               finally:
@@ -195,6 +204,9 @@ class AnsibleWorkerThread(threading.Thread):
     def run(self):
       try:
         if self.request is not None:
+          if self.request.get('logging_context', None) is not None:
+            logging_context.set_from_dict(self.request['logging_context'])
+
           resp = self.ansible_client.run_lifecycle_playbook(self.request)
           if resp is not None:
             logger.info('Ansible worker finished for request {0} response {1}'.format(self.request, resp))
@@ -210,6 +222,8 @@ class AnsibleWorkerThread(threading.Thread):
         # don't want the worker to die without knowing the cause, so catch all exceptions
         if self.request is not None:
           self.send_pipe.send(LifecycleExecution(self.request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {}))
+      finally:
+        logging_context.clear()
 
 class AnsibleWorkerProcess(Process):
 
@@ -218,18 +232,17 @@ class AnsibleWorkerProcess(Process):
       self.request = request
       self.send_pipe = send_pipe
       self.sigchld_handler = sigchld_handler
-      # need to reset SIGCHLD handler (setting is inherited from parent process) so that Ansible can override it
-      # signal.signal(signal.SIGCHLD, sigchld_handler)
-      # # we want to handle child process termination
-      # self.daemon = False
       super().__init__(daemon = False)
 
     def run(self):
       # need to reset SIGCHLD handler (setting is inherited from parent process) so that Ansible can override it
-      signal.signal(signal.SIGCHLD, self.sigchld_handler)
+      signal(SIGCHLD, self.sigchld_handler)
 
       try:
         if self.request is not None:
+          if self.request.get('logging_context', None) is not None:
+            logging_context.set_from_dict(self.request['logging_context'])
+
           resp = self.ansible_client.run_lifecycle_playbook(self.request)
           if resp is not None:
             logger.info('Ansible worker finished for request {0} response {1}'.format(self.request, resp))
@@ -245,6 +258,8 @@ class AnsibleWorkerProcess(Process):
         # don't want the worker to die without knowing the cause, so catch all exceptions
         if self.request is not None:
           self.send_pipe.send(LifecycleExecution(self.request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {}))
+      finally:
+        logging_context.clear()
 
 class ResponsesThread(threading.Thread):
 
@@ -257,6 +272,8 @@ class ResponsesThread(threading.Thread):
       while self.ansible_processor_service.active:
         try:
           result = self.recv_pipe.recv()
+          self.ansible_processor_service.ansible_process_done()
+
           if result is not None:
             logger.info('responses thread received {0}'.format(result))
             self.ansible_processor_service.messaging_service.send_lifecycle_execution(result)
