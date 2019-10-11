@@ -17,6 +17,9 @@ from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_E
 from ignition.service.config import ConfigurationPropertiesGroup
 from ansibledriver.model.kubeconfig import KubeConfig
 
+INVENTORY = "inventory"
+INVENTORY_K8S = "inventory.k8s"
+
 logger = logging.getLogger(__name__)
 
 class AnsibleProperties(ConfigurationPropertiesGroup):
@@ -108,10 +111,10 @@ class AnsibleClient():
         if deployment_location['type'] == 'Kubernetes':
           deployment_location['properties']['kubeconfig_path'] = self.create_kube_config(deployment_location)
           connection_type = "k8s"
-          inventory_path = config_path.get_file_path('inventory.k8s')
+          inventory_path = config_path.get_file_path(INVENTORY_K8S)
         else:
           connection_type = "ssh"
-          inventory_path = config_path.get_file_path('inventory')
+          inventory_path = config_path.get_file_path(INVENTORY)
 
         all_properties = {
           'properties': properties,
