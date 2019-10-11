@@ -5,7 +5,7 @@ import os
 import sys
 import traceback
 import threading
-import signal
+from signal import signal, SIGINT, SIGTERM, SIGQUIT, SIGCHLD, SIG_IGN, SIG_DFL
 from multiprocessing import Process, RawValue, Lock, Pipe
 from multiprocessing.pool import Pool
 from collections import namedtuple
@@ -54,8 +54,8 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
         self.recv_pipe, self.send_pipe = Pipe(False)
 
         # acknowledge but ignore child process exits (to prevent zombie child processes)
-        self.sigchld_handler = signal.signal(signal.SIGCHLD, signal.SIG_IGN)
-        signal.signal(signal.SIGINT, self.sigint_handler)
+        self.sigchld_handler = signal(SIGCHLD, SIG_IGN)
+        signal(SIGINT, self.sigint_handler)
 
         if self.process_properties.use_pool:
           # a pool of (Ansible) processes reads from the request_queue
@@ -77,6 +77,9 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
         if self.queue_thread is not None:
           self.queue_thread.start()
 
+    def ansible_process_done(self):
+      self.counter.decrement()
+
     def run_lifecycle(self, request):
       if 'request_id' not in request:
         raise ValueError('Request must have a request_id')
@@ -88,11 +91,12 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
       # add logging context to request
       request['logging_context'] = logging_context.get_all()
 
-      logger.debug('request_queue.size {0} max_queue_size {1}'.format(self.request_queue.size(), self.process_properties.max_queue_size))
+      logger.info('request_queue.size {0} max_queue_size {1}'.format(self.request_queue.size(), self.process_properties.max_queue_size))
       if self.active == True:
         if self.request_queue.size() >= self.process_properties.max_queue_size:
           self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Request cannot be handled, driver is overloaded"), {}))
         else:
+          logger.debug('Adding request {0} to queue'.format(request))
           self.request_queue.put(request)
       else:
         # inactive, just return a standard response
@@ -104,7 +108,7 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
     def ansible_process_worker(self, request_queue, send_pipe):
       logger.info('ansible_queue_worker init')
       # make sure Ansible processes are acknowledged to avoid zombie processes
-      signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+      signal(SIGCHLD, SIG_IGN)
       while(True):
         try:
           request = request_queue.next()
@@ -172,7 +176,9 @@ class QueueThread(threading.Thread):
                     worker.start()
                     logger.info('Request processing started for request {0} with thread {1}'.format(request, worker.ident))
                   else:
+                    logger.debug('Creating worker process')
                     worker = AnsibleWorkerProcess(self.ansible_processor.sigchld_handler, self.ansible_client, request, self.send_pipe)
+                    logger.debug('Created worker process')
                     worker.start()
                     logger.info('Request processing started for request {0} with pid {1}'.format(request, worker.pid))
               finally:
@@ -231,7 +237,7 @@ class AnsibleWorkerProcess(Process):
 
     def run(self):
       # need to reset SIGCHLD handler (setting is inherited from parent process) so that Ansible can override it
-      signal.signal(signal.SIGCHLD, self.sigchld_handler)
+      signal(SIGCHLD, self.sigchld_handler)
 
       try:
         if self.request is not None:
@@ -267,8 +273,10 @@ class ResponsesThread(threading.Thread):
       while self.ansible_processor_service.active:
         try:
           result = self.recv_pipe.recv()
+          self.ansible_processor_service.ansible_process_done()
+
           if result is not None:
-            logger.info('responses thread received {0}'.format(result))
+            logger.info('Responses thread received {0}'.format(result))
             self.ansible_processor_service.messaging_service.send_lifecycle_execution(result)
           else:
             # nothing to do
