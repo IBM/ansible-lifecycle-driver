@@ -276,7 +276,7 @@ class ResponsesThread(threading.Thread):
           self.ansible_processor_service.ansible_process_done()
 
           if result is not None:
-            logger.info('responses thread received {0}'.format(result))
+            logger.info('Responses thread received {0}'.format(result))
             self.ansible_processor_service.messaging_service.send_lifecycle_execution(result)
           else:
             # nothing to do
