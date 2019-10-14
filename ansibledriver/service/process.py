@@ -18,7 +18,6 @@ from ignition.service.config import ConfigurationPropertiesGroup
 from ignition.service.logging import logging_context
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 class AnsibleProcessorCapability(Capability):
 

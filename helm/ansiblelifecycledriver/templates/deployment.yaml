@@ -41,7 +41,7 @@ spec:
 {{ toYaml .Values.app.resources | indent 12 }}
           volumeMounts:
           - name: config
-            mountPath: /var/ansible-lifecycle-driver/ald_config.yml
+            mountPath: /var/ald/ald_config.yml
             subPath: ald_config.yml
       volumes:
       - name: config

@@ -80,7 +80,7 @@ class TestProcess(unittest.TestCase):
             self.assertEqual(resp.failure_details.description, expected_resp.failure_details.description)
 
     def check_response(self, lifecycle_execution):
-      for i in range(30):
+      for i in range(50):
         call_count = self.mock_messaging_service.send_lifecycle_execution.call_count
         if call_count > 0:
           self.mock_messaging_service.send_lifecycle_execution.assert_called_with(LifecycleExecutionMatcher(lifecycle_execution))
@@ -92,7 +92,7 @@ class TestProcess(unittest.TestCase):
 
     def check_responses(self, lifecycle_executions):
       # loop until there are at least two calls to the Kafka messaging, and then check that the messages are what we expect
-      for i in range(30):
+      for i in range(50):
         call_count = self.mock_messaging_service.send_lifecycle_execution.call_count
         if call_count >= len(lifecycle_executions):
           assert self.mock_messaging_service.send_lifecycle_execution.call_args_list == list(map(lambda lifecycle_execution: call(LifecycleExecutionMatcher(lifecycle_execution)), lifecycle_executions))
