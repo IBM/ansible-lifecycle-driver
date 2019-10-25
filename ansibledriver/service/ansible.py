@@ -19,6 +19,8 @@ from ansibledriver.model.kubeconfig import KubeConfig
 
 INVENTORY = "inventory"
 INVENTORY_K8S = "inventory.k8s"
+TEMPLATE_LM_VAR_START_STRING = "{{{"
+TEMPLATE_LM_VAR_END_STRING = "}}}"
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +129,7 @@ class AnsibleClient():
         logger.debug("playbook_path=" + playbook_path)
         logger.debug("inventory_path=" + inventory_path)
 
-        process_templates(config_path, all_properties, private_key_file_path)
+        TemplateProcessor(config_path, all_properties).process_templates()
 
         if(os.path.exists(playbook_path)):
           # always retry on unreachable
@@ -152,7 +154,7 @@ class AnsibleClient():
     except InvalidRequestException as ire:
       return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, ire.msg), {})
     except Exception as e:
-      logger.exception("Unexpected exception running playbook")
+      logger.exception("Unexpected exception running playbook: {0}".format(e))
       return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {})
 
 class ResultCallback(CallbackBase):
@@ -326,6 +328,30 @@ class InvalidRequestException(Exception):
   def __init__(self, msg):
     self.msg = msg
 
+class TemplateProcessor():
+  def __init__(self, parent_dir, all_properties):
+    self.parent_dir = parent_dir
+    self.all_properties = all_properties
+
+  def process_templates(self):
+    path = self.parent_dir.get_path()
+    logger.info('Process templates: walking {0}'.format(path))
+
+    for root, dirs, files in os.walk(path):
+      logger.debug('Process templates: files = '.format(files))
+      for file in files:
+        path = root + '/' + file
+
+        try:
+          j2_env = Environment(loader=FileSystemLoader(root), trim_blocks=True, variable_start_string=TEMPLATE_LM_VAR_START_STRING, variable_end_string=TEMPLATE_LM_VAR_END_STRING)
+          logger.info('Process templates: writing to file {0}'.format(path))
+          template = j2_env.get_template(file).render(**self.all_properties)
+          logger.info('Process templates: template {0}'.format(template))
+          with open(path, "w") as text_file:
+              text_file.write(template)
+        except Exception as e:
+          logger.warning("Unexpected exception processing template {0}: {1}".format(path, e))
+
 def get_lifecycle_playbook_path(root_path, transition_name):
     try:
       return root_path.get_file_path(transition_name + ".yaml")
@@ -336,21 +362,6 @@ def get_lifecycle_playbook_path(root_path, transition_name):
       except ValueError as e:
         # no playbook
         return None
-
-def process_templates(parent_dir, all_properties, private_key_file_path):
-  path = parent_dir.get_path()
-  logger.info('Process templates: walking {0}'.format(path))
-
-  for root, dirs, files in os.walk(path):
-    logger.debug('Process templates: files = '.format(files))
-    for file in files:
-        j2_env = Environment(loader=FileSystemLoader(root), trim_blocks=True)
-        path = root + '/' + file
-        logger.info('Process templates: writing to file {0}'.format(path))
-        template = j2_env.get_template(file).render(**all_properties)
-        logger.info('Process templates: template {0}'.format(template))
-        with open(path, "w") as text_file:
-            text_file.write(template)
 
 def write_private_key(private_key):
   private_key_file_path = NamedTemporaryFile(delete=False)
