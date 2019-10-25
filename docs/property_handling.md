@@ -1,5 +1,18 @@
 # Property Handling
 
+## Lifecycle Requests
+
+The following properties must be set in the lifecycle request "deploymentLocation.properties":
+
+| Name            | Default | Required                           | Detail                                                                                                                     |
+| --------------- | ------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| k8s-namespace      | -       | Y                                  | The K8s namespace containing the pod |
+| kubeconfig_path | -    | Y                                  | The path to a kubeconfig file configured to communicate with pods. Note that this is automatically created by the Ansible Lifecycle Driver and the property is set to point to it |
+
+The lifecycle request "deploymentLocation.type" property value determines whether Ansible Lifecycle Driver will look for an "inventory"
+
+Kubernetes
+
 ## Returning properties to LM
 
 Properties can be returned to LM by setting facts with a prefix "output__". For example, to set a property "msg":

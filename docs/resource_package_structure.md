@@ -1,6 +1,6 @@
 # Resource Package Structure for Ansible Lifecycle Driver
 
-The Ansible Lifecycle Driver expects a specific structure in the Brent resource package under the 'Lifecycle/ansible' directory, as follows:
+The Brent resource package contains Ansible inventory configuration and scripts used by the Ansible Lifecycle Driver. The structure of the directory within the package is defined by the driver. Under this top level directory the driver expects the following directory structure:
 
 ```
 config
