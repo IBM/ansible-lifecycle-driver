@@ -20,9 +20,22 @@ config
 
 The Ansible Lifecycle Driver supports the substitution of LM properties in inventory files under the "config" directory, using [Jinja2 template variables](https://jinja.palletsprojects.com/en/2.10.x/templates/#variables). The following properties are available:
 
-* properties: the set of LM request properties.
-* system_properties: the set of system properties.
-* dl_properties: deployment location properties.
+* properties: a dictionary of LM request properties.
+* system_properties: a dictionary of system properties.
+* dl_properties: a dictionary of deployment location properties.
+
+The system properties comprise the following:
+
+| Property Name  | Description |
+| ------------------------- | -------------- |
+| resourceId                | The LM resource instance id |
+| requestId                         | The LM orchestration request ID     |
+| metricKey                         | The LM resource metric key (if set)     |
+| resourceManagerId                         | The LM resource manager id     |
+| deploymentLocation                         | The name of the LM deployment location name in which the resource instance resides    |
+| resourceType                         | The resource instance type |
+
+In addition, any LM orchestration request context properties are added in here.
 
 For example, the following inventory file substitutes the LM property "properties.mgmt_ip_address" for "ansible_host":
 
