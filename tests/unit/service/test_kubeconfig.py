@@ -1,10 +1,5 @@
 import logging
 import unittest
-import time
-import uuid
-import shutil
-import os
-import sys
 from unittest.mock import patch, MagicMock, ANY
 from ansibledriver.model.kubeconfig import KubeConfig
 from ansibledriver.model.kubeconfig import K8S_SERVER_PROP, K8S_TOKEN_PROP, K8S_CERT_AUTH_DATA_PROP, K8S_CLIENT_CERT_DATA_PROP, K8S_CLIENT_KEY_DATA_PROP

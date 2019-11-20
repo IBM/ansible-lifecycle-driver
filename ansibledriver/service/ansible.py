@@ -35,6 +35,7 @@ class AnsibleClient():
   def __init__(self, configuration):
     self.ansible_properties = configuration.property_groups.get_property_group(AnsibleProperties)
 
+  # create a kubeconfig file based on the deployment location that can be consumed by the Python Kubernetes library
   def create_kube_config(self, deployment_location):
     return KubeConfig(deployment_location).write()
 
