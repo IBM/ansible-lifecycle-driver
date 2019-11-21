@@ -22,6 +22,8 @@ python3 setup.py bdist_wheel
 cp dist/ansible_lifecycle_driver-<driver-version>-py3-none-any.whl docker/whls/
 ```
 
+If using a development version (`.dev` version) of Ignition (check `ansibledriver/pkg_info.json`) then you need to build and copy the Ignition whl to the `docker/whls` directory as well.
+
 3. Navigate to the `docker` directory
 
 ```
