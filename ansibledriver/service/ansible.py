@@ -2,6 +2,7 @@ import json
 import logging
 import time
 import os
+import tempfile
 from collections import namedtuple
 from ansible.parsing.dataloader import DataLoader
 from ansible.vars.manager import VariableManager
@@ -34,9 +35,9 @@ class AnsibleClient():
   def __init__(self, configuration):
     self.ansible_properties = configuration.property_groups.get_property_group(AnsibleProperties)
 
+  # create a kubeconfig file based on the deployment location that can be consumed by the Python Kubernetes library
   def create_kube_config(self, deployment_location):
-    dl_properties = deployment_location['properties']
-    return KubeConfig(deployment_location['name'], dl_properties['k8s-server'], dl_properties['k8s-token']).write()
+    return KubeConfig(deployment_location).write()
 
   def run_playbook(self, request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties):
     Options = namedtuple('Options', ['connection',
