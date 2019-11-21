@@ -21,8 +21,8 @@ setup(
         'ignition-framework{0}'.format(_pkg_info['ignition-version']),
         'ansible==2.7.12',
         'Jinja2>=2.10.1',
-        'uwsgi>=2.0.18',
-        'gunicorn>=19.9.0'
+        'uwsgi>=2.0.18,<3.0',
+        'gunicorn>=19.9.0,<20.0'
     ],
     entry_points='''
         [console_scripts]
