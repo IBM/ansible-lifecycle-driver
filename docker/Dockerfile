@@ -17,7 +17,7 @@ RUN addgroup -S ald \
  && mkdir -p /var/ald/lifecycle_scripts \
  && chown -R ald:ald /var/ald \
  && chown -R ald:ald /home/ald \
- && apk add --no-cache bash openssh sshpass curl \
+ && apk add --no-cache bash openssh sshpass curl binutils libc-dev \
  # These packages need to be installed so that we can install the Python dependencies.
  # We make this virtual so that we can remove them later
  && apk add --no-cache --virtual .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git
