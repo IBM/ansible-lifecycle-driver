@@ -27,7 +27,8 @@ USER ald
 COPY --chown=ald:ald whls/*.whl /home/ald/whls/
 COPY --chown=ald:ald ald_config.yml /var/ald/ald_config.yml
 
-RUN for i in /home/ald/whls/*.whl; do pip install --no-warn-script-location --user "$i"; done \
+RUN for i in /home/ald/whls/ignition*.whl; do if [ "$i" != "/home/ald/whls/ignition*.whl" ]; then pip install --no-warn-script-location --user "$i"; fi done \
+ && for i in /home/ald/whls/*.whl; do pip install --no-warn-script-location --user "$i"; done \
  && curl -L https://storage.googleapis.com/kubernetes-release/release/v1.16.0/bin/linux/amd64/kubectl -o /home/ald/.local/bin/kubectl \
  && chmod +x /home/ald/.local/bin/kubectl
 
