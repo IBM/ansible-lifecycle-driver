@@ -13,14 +13,6 @@ class AnsibleLifecycleDriver(Service, LifecycleDriverCapability):
     def execute_lifecycle(self, lifecycle_name, lifecycle_scripts_tree, system_properties, properties, deployment_location):
         request_id = uuid.uuid4().hex
 
-        # self.ansible_processor_service.run_lifecycle({
-        #   'lifecycle_name': lifecycle_name,
-        #   'lifecycle_path': lifecycle_scripts_tree.get_directory_tree('.'),
-        #   'system_properties': system_properties.get_props(),
-        #   'properties': properties.get_props(),
-        #   'deployment_location': deployment_location,
-        #   'request_id': request_id
-        # })
         self.ansible_processor_service.run_lifecycle({
           'lifecycle_name': lifecycle_name,
           'lifecycle_path': lifecycle_scripts_tree.get_directory_tree('.'),

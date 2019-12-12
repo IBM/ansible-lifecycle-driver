@@ -13,6 +13,7 @@ from ansibledriver.service.queue import RequestQueue
 from ansibledriver.service.process import AnsibleProcessorService, ProcessProperties
 from ansibledriver.service.ansible import AnsibleProperties
 from ignition.utils.file import DirectoryTree
+from ignition.utils.propvaluemap import PropValueMap
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -110,12 +111,12 @@ class TestProcess(unittest.TestCase):
           self.ansible_processor.run_lifecycle({
             'lifecycle_name': 'install',
             'lifecycle_path': DirectoryTree('./'),
-            'system_properties': {
-            },
-            'properties': {
-            },
-            'deployment_location': {
-            }
+            'system_properties': PropValueMap({
+            }),
+            'properties': PropValueMap({
+            }),
+            'deployment_location': PropValueMap({
+            })
           })
         self.assertEqual(str(context.exception), 'Request must have a request_id')
 
@@ -123,12 +124,12 @@ class TestProcess(unittest.TestCase):
           self.ansible_processor.run_lifecycle({
             'request_id': uuid.uuid4().hex,
             'lifecycle_path': DirectoryTree('./'),
-            'system_properties': {
-            },
-            'properties': {
-            },
-            'deployment_location': {
-            }
+            'system_properties': PropValueMap({
+            }),
+            'properties': PropValueMap({
+            }),
+            'deployment_location': PropValueMap({
+            })
           })
         self.assertEqual(str(context.exception), 'Request must have a lifecycle_name')
 
@@ -136,10 +137,10 @@ class TestProcess(unittest.TestCase):
           self.ansible_processor.run_lifecycle({
             'request_id': uuid.uuid4().hex,
             'lifecycle_name': 'install',
-            'system_properties': {
-            },
-            'properties': {
-            },
+            'system_properties': PropValueMap({
+            }),
+            'properties': PropValueMap({
+            }),
             'deployment_location': {
             }
           })
@@ -159,10 +160,10 @@ class TestProcess(unittest.TestCase):
         self.ansible_processor.run_lifecycle({
           'lifecycle_name': 'install',
           'lifecycle_path': DirectoryTree('./'),
-          'system_properties': {
-          },
-          'properties': {
-          },
+          'system_properties': PropValueMap({
+          }),
+          'properties': PropValueMap({
+          }),
           'deployment_location': {
           },
           'request_id': request_id
@@ -181,10 +182,10 @@ class TestProcess(unittest.TestCase):
         self.ansible_processor.run_lifecycle({
           'lifecycle_name': 'install',
           'lifecycle_path': DirectoryTree('./'),
-          'system_properties': {
-          },
-          'properties': {
-          },
+          'system_properties': PropValueMap({
+          }),
+          'properties': PropValueMap({
+          }),
           'deployment_location': {
           },
           'request_id': request_id
@@ -224,10 +225,10 @@ class TestProcess(unittest.TestCase):
         self.ansible_processor.run_lifecycle({
           'lifecycle_name': 'install',
           'lifecycle_path': DirectoryTree('./'),
-          'system_properties': {
-          },
-          'properties': {
-          },
+          'system_properties': PropValueMap({
+          }),
+          'properties': PropValueMap({
+          }),
           'deployment_location': {
           },
           'request_id': request_id1
@@ -236,10 +237,10 @@ class TestProcess(unittest.TestCase):
         self.ansible_processor.run_lifecycle({
           'lifecycle_name': 'install',
           'lifecycle_path': DirectoryTree('./'),
-          'system_properties': {
-          },
-          'properties': {
-          },
+          'system_properties': PropValueMap({
+          }),
+          'properties': PropValueMap({
+          }),
           'deployment_location': {
           },
           'request_id': request_id2
