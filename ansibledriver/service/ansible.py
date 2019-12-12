@@ -369,27 +369,38 @@ class KeyPropertyProcessor():
     self.dl_properties = dl_properties
     self.key_files = []
 
+  """
+  Process (input) key properties by writing the private key out to a file so that it can be
+  referenced in e.g. inventory files.
+  """
   def process_key_properties(self):
     self.process_keys(self.properties)
     self.process_keys(self.system_properties)
     self.process_keys(self.dl_properties)
 
   def process_keys(self, properties):
-    logger.info('process_keys1 for {0}'.format(properties))
-    logger.info('process_keys2 for {0}'.format(properties.get_keys()))
-    for prop in properties.get_keys().items():
-      logger.info('Processing key property {0}'.format(prop))
+    for prop in properties.get_keys().items_with_types():
       self.write_private_key(properties, prop[0], prop[1])
 
   def write_private_key(self, properties, key_prop_name, private_key):
     with NamedTemporaryFile(delete=False, mode='w') as private_key_file:
       logger.info('Writing private key file {0}'.format(private_key_file.name))
+      private_key = private_key.get('privateKey', None)
       private_key_file.write(private_key)
       private_key_file.flush()
       self.key_files.append(private_key_file)
-      logger.info('Setting property {0}.path'.format(key_prop_name))
+
+      logger.info('Setting property {0}_path'.format(key_prop_name))
       properties[key_prop_name + '_path'] = private_key_file.name
 
+      logger.info('Setting property {0}_name'.format(key_prop_name))
+      key_name = private_key.get('keyName', None)
+      properties[key_prop_name + '_name'] = key_name
+
+  """
+  Remove any private key files generated during the Ansible run.
+  """
   def clear_key_files(self):
     for key_file in self.key_files:
+      logger.info('Removing private key file {0}'.format(key_file.name))
       os.unlink(key_file.name)
