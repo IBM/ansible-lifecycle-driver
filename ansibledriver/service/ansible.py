@@ -385,8 +385,8 @@ class KeyPropertyProcessor():
   def write_private_key(self, properties, key_prop_name, private_key):
     with NamedTemporaryFile(delete=False, mode='w') as private_key_file:
       logger.info('Writing private key file {0}'.format(private_key_file.name))
-      private_key = private_key.get('privateKey', None)
-      private_key_file.write(private_key)
+      private_key_value = private_key.get('privateKey', None)
+      private_key_file.write(private_key_value)
       private_key_file.flush()
       self.key_files.append(private_key_file)
 
