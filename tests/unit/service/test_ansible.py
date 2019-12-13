@@ -12,6 +12,7 @@ from ansibledriver.service.process import ProcessProperties
 from ignition.model.lifecycle import LifecycleExecution, STATUS_COMPLETE, STATUS_FAILED, STATUS_IN_PROGRESS
 from ignition.utils.file import DirectoryTree
 from ignition.boot.config import BootstrapApplicationConfiguration, PropertyGroups
+from ignition.utils.propvaluemap import PropValueMap
 
 logger = logging.getLogger()
 logger.level = logging.INFO
@@ -43,14 +44,26 @@ class TestAnsible(unittest.TestCase):
         try:
             request_id = uuid.uuid4().hex
 
-            properties = {
-                'hello_world_private_ip': '10.220.217.113',
-                'ansible_ssh_user': 'accanto',
-                'ansible_ssh_pass': 'accanto',
-                'ansible_become_pass': 'accanto'
-            }
-            system_properties = {
-            }
+            properties = PropValueMap({
+                'hello_world_private_ip': {
+                    'value': '10.220.217.113',
+                    'type': 'string'
+                },
+                'ansible_ssh_user': {
+                    'value': 'accanto',
+                    'type': 'string'
+                },
+                'ansible_ssh_pass': {
+                    'value': 'accanto',
+                    'type': 'string'
+                },
+                'ansible_become_pass': {
+                    'value': 'accanto',
+                    'type': 'string'
+                }
+            })
+            system_properties = PropValueMap({
+            })
 
             cwd = os.getcwd()
             src = cwd + '/tests/resources/ansible'
@@ -66,8 +79,8 @@ class TestAnsible(unittest.TestCase):
             'deployment_location': {
                 'name': 'winterfell',
                 'type': "type",
-                'properties': {
-                }
+                'properties': PropValueMap({
+                })
             },
             'request_id': request_id
             })

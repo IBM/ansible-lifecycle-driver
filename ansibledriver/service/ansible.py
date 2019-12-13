@@ -3,6 +3,7 @@ import logging
 import time
 import os
 import tempfile
+from tempfile import NamedTemporaryFile
 from collections import namedtuple
 from ansible.parsing.dataloader import DataLoader
 from ansible.vars.manager import VariableManager
@@ -16,6 +17,7 @@ from jinja2 import Environment, FileSystemLoader
 from ignition.model.lifecycle import LifecycleExecution, STATUS_COMPLETE, STATUS_FAILED, STATUS_IN_PROGRESS
 from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_ERROR, FAILURE_CODE_INTERNAL_ERROR, FAILURE_CODE_RESOURCE_NOT_FOUND
 from ignition.service.config import ConfigurationPropertiesGroup
+from ignition.utils.propvaluemap import PropValueMap
 from ansibledriver.model.kubeconfig import KubeConfig
 
 INVENTORY = "inventory"
@@ -91,44 +93,49 @@ class AnsibleClient():
     return callback
 
   def run_lifecycle_playbook(self, request):
+    request_id = request['request_id']
+    lifecycle_path = request['lifecycle_path']
+    lifecycle = request['lifecycle_name']
+    properties = request['properties']
+    system_properties = request['system_properties']
+    deployment_location = request['deployment_location']
+    if not isinstance(deployment_location, dict):
+      return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Deployment Location must be an object"), {})
+    dl_properties = PropValueMap(deployment_location.get('properties', {}))
+
+    key_property_processor = KeyPropertyProcessor(properties, system_properties, dl_properties)
+
     try:
-      deployment_location = request['deployment_location']
-      if not isinstance(deployment_location, dict):
-        raise ValueError('Deployment Location must be an object')
-
-      request_id = request['request_id']
-      lifecycle_path = request['lifecycle_path']
-      lifecycle = request['lifecycle_name']
-      properties = request['properties']
-      system_properties = request['system_properties']
-
       config_path = lifecycle_path.get_directory_tree('config')
       scripts_path = lifecycle_path.get_directory_tree('scripts')
-
-      private_key_file_path = get_private_key_path(request)
 
       playbook_path = get_lifecycle_playbook_path(scripts_path, lifecycle)
       if playbook_path is not None:
         if deployment_location['type'] == 'Kubernetes':
-          deployment_location['properties']['kubeconfig_path'] = self.create_kube_config(deployment_location)
+          dl_properties['kubeconfig_path'] = self.create_kube_config(deployment_location)
           connection_type = "k8s"
           inventory_path = config_path.get_file_path(INVENTORY_K8S)
         else:
           connection_type = "ssh"
           inventory_path = config_path.get_file_path(INVENTORY)
 
-        all_properties = {
-          'properties': properties,
-          'system_properties': system_properties,
-          'dl_properties': deployment_location.get('properties', {})
-        }
+        # process key properties by writing them out to a temporary file and adding an
+        # entry to the property dictionary that maps the "[key_name].path" to the key file path
+        key_property_processor.process_key_properties()
 
         logger.debug('config_path = ' + config_path.get_path())
         logger.debug('lifecycle_path = ' + scripts_path.get_path())
         logger.debug("playbook_path=" + playbook_path)
         logger.debug("inventory_path=" + inventory_path)
 
-        process_templates(config_path, all_properties, private_key_file_path)
+        all_properties = {
+          'properties': properties,
+          'system_properties': system_properties,
+          'dl_properties': dl_properties
+        }
+        logger.info('properties={0}'.format(properties))
+        logger.info('dl_properties={0}'.format(dl_properties))
+        process_templates(config_path, all_properties)
 
         if(os.path.exists(playbook_path)):
           # always retry on unreachable
@@ -155,6 +162,8 @@ class AnsibleClient():
     except Exception as e:
       logger.exception("Unexpected exception running playbook")
       return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {})
+    finally:
+      key_property_processor.clear_key_files()
 
 class ResultCallback(CallbackBase):
     """A sample callback plugin used for performing an action as results come in
@@ -338,7 +347,7 @@ def get_lifecycle_playbook_path(root_path, transition_name):
         # no playbook
         return None
 
-def process_templates(parent_dir, all_properties, private_key_file_path):
+def process_templates(parent_dir, all_properties):
   path = parent_dir.get_path()
   logger.info('Process templates: walking {0}'.format(path))
 
@@ -353,22 +362,45 @@ def process_templates(parent_dir, all_properties, private_key_file_path):
         with open(path, "w") as text_file:
             text_file.write(template)
 
-def write_private_key(private_key):
-  private_key_file_path = NamedTemporaryFile(delete=False)
-  with open(private_key_file_path, "wb") as private_key_file:
-    private_key_file.write(private_key)
-  return private_key_file_path
+class KeyPropertyProcessor():
+  def __init__(self, properties, system_properties, dl_properties):
+    self.properties = properties
+    self.system_properties = system_properties
+    self.dl_properties = dl_properties
+    self.key_files = []
 
-def get_private_key_path(request):
-  private_key_file_path = None
+  """
+  Process (input) key properties by writing the private key out to a file so that it can be
+  referenced in e.g. inventory files.
+  """
+  def process_key_properties(self):
+    self.process_keys(self.properties)
+    self.process_keys(self.system_properties)
+    self.process_keys(self.dl_properties)
 
-  system_properties = request['system_properties']
-  private_key = system_properties.get('ansible_ssh_private_key', None)
-  if private_key is None:
-    properties = request['properties']
-    private_key = properties.get('ansible_ssh_private_key', None)
+  def process_keys(self, properties):
+    for prop in properties.get_keys().items_with_types():
+      self.write_private_key(properties, prop[0], prop[1])
 
-  if private_key is not None:
-    private_key_file_path = write_private_key(private_key)
+  def write_private_key(self, properties, key_prop_name, private_key):
+    with NamedTemporaryFile(delete=False, mode='w') as private_key_file:
+      logger.info('Writing private key file {0}'.format(private_key_file.name))
+      private_key_value = private_key.get('privateKey', None)
+      private_key_file.write(private_key_value)
+      private_key_file.flush()
+      self.key_files.append(private_key_file)
 
-  return private_key_file_path
+      logger.info('Setting property {0}_path'.format(key_prop_name))
+      properties[key_prop_name + '_path'] = private_key_file.name
+
+      logger.info('Setting property {0}_name'.format(key_prop_name))
+      key_name = private_key.get('keyName', None)
+      properties[key_prop_name + '_name'] = key_name
+
+  """
+  Remove any private key files generated during the Ansible run.
+  """
+  def clear_key_files(self):
+    for key_file in self.key_files:
+      logger.info('Removing private key file {0}'.format(key_file.name))
+      os.unlink(key_file.name)
