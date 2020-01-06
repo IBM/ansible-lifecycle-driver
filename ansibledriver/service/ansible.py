@@ -32,6 +32,7 @@ class AnsibleProperties(ConfigurationPropertiesGroup):
         self.unreachable_sleep_seconds = 5 # in seconds
         self.max_unreachable_retries = 1000
         self.output_prop_prefix = 'output__'
+        self.tmp_dir = '.'
 
 class AnsibleClient():
   def __init__(self, configuration):
@@ -39,7 +40,7 @@ class AnsibleClient():
 
   # create a kubeconfig file based on the deployment location that can be consumed by the Python Kubernetes library
   def create_kube_config(self, deployment_location):
-    return KubeConfig(deployment_location).write()
+    return KubeConfig(deployment_location, self.ansible_properties).write()
 
   def run_playbook(self, request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties):
     Options = namedtuple('Options', ['connection',
@@ -86,7 +87,7 @@ class AnsibleClient():
 
     callback = ResultCallback(self.ansible_properties, request_id, lifecycle)
     pbex._tqm._stdout_callback = callback
-    logger.info("Running playbook {0} with properties {1}".format(playbook_path, all_properties))
+    logger.info("Running playbook {0} with properties {1}, system_properties {2}".format(playbook_path, all_properties['properties'].get_safelog_props(), all_properties['system_properties'].get_safelog_props()))
     pbex.run()
     logger.info("Playbook finished {0}".format(playbook_path))
 
@@ -133,8 +134,7 @@ class AnsibleClient():
           'system_properties': system_properties,
           'dl_properties': dl_properties
         }
-        logger.info('properties={0}'.format(properties))
-        logger.info('dl_properties={0}'.format(dl_properties))
+
         process_templates(config_path, all_properties)
 
         if(os.path.exists(playbook_path)):
@@ -142,6 +142,8 @@ class AnsibleClient():
           num_retries = self.ansible_properties.max_unreachable_retries
 
           for i in range(0, num_retries):
+            logger.info("Running Ansible playbook, iteration {0}".format(str(i)))
+
             ret = self.run_playbook(request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties)
             if not ret.host_unreachable:
               break

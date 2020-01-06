@@ -4,14 +4,15 @@ application:
 
 ansible:
   unreachable_sleep_seconds: 5
-  max_unreachable_retries: 1000
+  max_unreachable_retries: 5
   output_prop_prefix: 'output__'
+  tmp_dir: /var/ald
 
 process:
   process_pool_size: 10
   max_concurrenty_ansible_processes: 10
   max_queue_size: 100
-  use_pool: False
+  use_pool: True
   is_threaded: False
 
 messaging:
@@ -20,3 +21,16 @@ messaging:
 lifecycle:
   scripts_workspace: ./lifecycle_scripts
   async_messaging_enabled: False
+  request_queue:
+    enabled: True
+    group_id: request_queue_consumer
+    topic:
+      # name: inf_requests
+      auto_create: True
+      num_partitions: 20
+      replication_factor: 1
+      config:
+        # 1 day
+        retention.ms: 86400000
+        message.timestamp.difference.max.ms: 86400000
+        file.delete.delay.ms: 86400000

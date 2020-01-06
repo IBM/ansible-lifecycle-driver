@@ -106,6 +106,7 @@ venv.bak/
 # Driver 
 AnsibleVNFCDriver_boot
 AnsibleLifecycleDriver_boot
+lifecycle_scripts/**
 
 # Docker whls
 docker/whls/

@@ -13,9 +13,9 @@ from ignition.model.lifecycle import LifecycleExecution, STATUS_COMPLETE, STATUS
 from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_ERROR, FAILURE_CODE_INTERNAL_ERROR, FAILURE_CODE_RESOURCE_NOT_FOUND, FAILURE_CODE_INSUFFICIENT_CAPACITY
 from ignition.service.lifecycle import LifecycleDriverCapability
 from ignition.service.framework import Service, Capability, interface
-from ansibledriver.service.queue import SHUTDOWN_MESSAGE
 from ignition.service.config import ConfigurationPropertiesGroup
 from ignition.service.logging import logging_context
+from ansibledriver.service.queue import SHUTDOWN_MESSAGE
 
 logger = logging.getLogger(__name__)
 
@@ -36,15 +36,18 @@ class ProcessProperties(ConfigurationPropertiesGroup):
         self.is_threaded = False
 
 class AnsibleProcessorService(Service, AnsibleProcessorCapability):
-    def __init__(self, configuration, request_queue, ansible_client, **kwargs):
+    def __init__(self, configuration, ansible_client, **kwargs):
         if 'messaging_service' not in kwargs:
             raise ValueError('messaging_service argument not provided')
+        if 'request_queue_service' not in kwargs:
+            raise ValueError('request_queue_service argument not provided')
+
         self.messaging_service = kwargs.get('messaging_service')
 
         self.process_properties = configuration.property_groups.get_property_group(ProcessProperties)
 
         # lifecycle requests are placed on this queue
-        self.request_queue = request_queue
+        self.request_queue_service = kwargs.get('request_queue_service')
 
         self.ansible_client = ansible_client
         self.counter = Counter()
@@ -62,10 +65,12 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
           # create sub-processes (and Ansible requires this)
           self.pool = [None] * self.process_properties.process_pool_size
           for i in range(self.process_properties.process_pool_size):
-            self.pool[i] = Process(target=self.ansible_process_worker, args=(self.request_queue, self.send_pipe, ))
+            self.pool[i] = Process(target=self.ansible_process_worker, args=(self.request_queue_service, self.send_pipe, str(i), ))
             self.pool[i].start()
         else:
-          self.queue_thread = QueueThread(self, self.ansible_client, self.send_pipe, self.process_properties, self.request_queue, self.counter)
+          self.queue_thread = QueueThread(self, self.ansible_client, self.send_pipe, self.process_properties, self.request_queue_service, self.counter)
+          if self.queue_thread is not None:
+            self.queue_thread.start()
 
         # Ansible process reponse thread listens for messages on the recv_pipe sends the response to Kafka
         self.responses_thread = ResponsesThread(self, self.recv_pipe)
@@ -73,8 +78,6 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
         self.active = True
 
         self.responses_thread.start()
-        if self.queue_thread is not None:
-          self.queue_thread.start()
 
     def ansible_process_done(self):
       self.counter.decrement()
@@ -104,23 +107,37 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
     def queue_status(self):
       return self.request_queue.queue_status()
 
-    def ansible_process_worker(self, request_queue, send_pipe):
+    def ansible_process_worker(self, request_queue_service, send_pipe, name):
       logger.info('ansible_queue_worker init')
-      # make sure Ansible processes are acknowledged to avoid zombie processes
-      signal(SIGCHLD, SIG_IGN)
-      while(True):
-        try:
-          request = request_queue.next()
-          if request is not None:
-            send_pipe.send(self.ansible_client.run_lifecycle_playbook(request))
 
-            logger.info('Ansible worker finished for request {0}'.format(request))
-        except Exception as e:
-          logger.error('Unexpected exception {0}'.format(e))
-          traceback.print_exc(file=sys.stderr)
-          # don't want the worker to die without knowing the cause, so catch all exceptions
-          if request is not None:
-            send_pipe.send(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {}))
+      request_queue = request_queue_service.get_lifecycle_request_queue(name)
+
+      try:
+        def process_lifecycle_request(request):
+          try:
+            if request is not None:
+              # run the playbook and send the response to the pipe
+              send_pipe.send(self.ansible_client.run_lifecycle_playbook(request))
+
+              logger.info('Ansible worker finished for request {0}'.format(request['request_id']))
+            else:
+              logger.warn('Null lifecycle request from queue')
+          except Exception as e:
+            logger.error('Unexpected exception {0}'.format(e))
+            traceback.print_exc(file=sys.stderr)
+            # don't want the worker to die without knowing the cause, so catch all exceptions
+            if request is not None:
+              send_pipe.send(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {}))
+
+        # make sure Ansible processes are acknowledged to avoid zombie processes
+        signal(SIGCHLD, SIG_IGN)
+
+        # continually read from the request queue and process Ansible lifecycle requests
+        while(True):
+          request_queue.process_lifecycle_request(process_lifecycle_request)
+
+      finally:
+        request_queue.close()
 
     def sigint_handler(self, sig, frame):
       logger.debug('sigint_handler')
@@ -132,7 +149,9 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
 
       self.active = False
 
-      self.request_queue.shutdown()
+      if self.request_queue_service is not None:
+        self.request_queue_service.close()
+
       self.send_pipe.close()
 
     def to_lifecycle_execution(self, json):
