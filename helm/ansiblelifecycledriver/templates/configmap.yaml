@@ -17,3 +17,4 @@ data:
 {{ toYaml .Values.app.config.env | indent 2 }}
 {{- end }}
   "LOG_LEVEL": {{ .Values.app.config.log.level }}
+  "SSL_ENABLED": {{ quote .Values.app.config.security.ssl.enabled }}

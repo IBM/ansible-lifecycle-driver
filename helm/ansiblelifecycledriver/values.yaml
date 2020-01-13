@@ -2,7 +2,7 @@
 docker:
   ## Make this the full path, including registry host and port if using one
   image: accanto/ansible-lifecycle-driver
-  version: 0.5.1
+  version: 0.5.2.dev0
   imagePullPolicy: IfNotPresent
 
 ## Configuration for the application deployment
@@ -121,7 +121,20 @@ app:
         scripts_workspace: /var/ald/lifecycle_scripts
         async_messaging_enabled: False
 
+    security:
+      ssl:
+        enabled: True
+        secret:
+          ## Name of the secret containing the SSL certificate for the non-host based access (the CN of the certificate should match commonName)
+          name: ald-tls
+          generate: True
+          ## The Common Name used for the SSL certificate
+          ## The default value here is acceptable but will not produce a completely valid certificate
+          ## You should update this value to the IP address used to access the API on this rule
+          commonName: ansible-lifecycle-driver
+
 service:
   # Using NodePort allows access to the IPs through http://k8s-host:nodePort/
   type: NodePort
   nodePort: 31680
+  sslNodePort: 31780

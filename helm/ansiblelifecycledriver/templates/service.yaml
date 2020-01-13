@@ -14,5 +14,14 @@ spec:
 {{- end }}
     protocol: TCP
     name: http
+{{- if .Values.app.config.security.ssl.enabled }}
+  - port: 8294
+    targetPort: 8294
+{{- if eq .Values.service.type "NodePort" }}
+    nodePort: {{ .Values.service.sslNodePort }}
+{{- end }}
+    protocol: TCP
+    name: https
+{{- end }}
   selector:
     app: ansible-lifecycle-driver
