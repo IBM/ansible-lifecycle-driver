@@ -127,6 +127,7 @@ app:
         secret:
           ## Name of the secret containing the SSL certificate for the non-host based access (the CN of the certificate should match commonName)
           name: ald-tls
+          ## If True, the Helm chart installation will generate a new SSL key with a self-signed certificate
           generate: True
           ## The Common Name used for the SSL certificate
           ## The default value here is acceptable but will not produce a completely valid certificate
