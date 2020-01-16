@@ -138,4 +138,3 @@ service:
   # Using NodePort allows access to the IPs through http://k8s-host:nodePort/
   type: NodePort
   nodePort: 31680
-  sslNodePort: 31780

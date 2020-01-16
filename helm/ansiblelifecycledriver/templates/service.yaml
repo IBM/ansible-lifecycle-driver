@@ -7,6 +7,15 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
+{{- if .Values.app.config.security.ssl.enabled }}
+  - port: 8393
+    targetPort: 8393
+{{- if eq .Values.service.type "NodePort" }}
+    nodePort: {{ .Values.service.nodePort }}
+{{- end }}
+    protocol: TCP
+    name: https
+{{- else }}
   - port: 8293
     targetPort: 8293
 {{- if eq .Values.service.type "NodePort" }}
@@ -14,14 +23,6 @@ spec:
 {{- end }}
     protocol: TCP
     name: http
-{{- if .Values.app.config.security.ssl.enabled }}
-  - port: 8294
-    targetPort: 8294
-{{- if eq .Values.service.type "NodePort" }}
-    nodePort: {{ .Values.service.sslNodePort }}
-{{- end }}
-    protocol: TCP
-    name: https
 {{- end }}
   selector:
     app: ansible-lifecycle-driver

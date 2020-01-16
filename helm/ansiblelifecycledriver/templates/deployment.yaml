@@ -32,13 +32,14 @@ spec:
             # run as ald
             runAsUser: 100
           ports:
+          {{- if .Values.app.config.security.ssl.enabled }}
+          - containerPort: 8393
+            protocol: TCP
+            name: https
+          {{- else }}
           - containerPort: 8293
             protocol: TCP
             name: http
-          {{- if .Values.app.config.security.ssl.enabled }}
-          - containerPort: 8294
-            protocol: TCP
-            name: https
           {{- end }}
           envFrom:
           - configMapRef:
