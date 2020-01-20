@@ -16,6 +16,8 @@ The above installation will expect Kafka to be running in the same Kubernetes na
 helm install ansiblelifecycledriver-<version>.tgz --name ansible-lifecycle-driver --set app.config.override.messaging.connection_address=myhost:myport
 ```
 
+The driver runs with SSL enabled by default. The installation will generate a self-signed certificate and key by default, adding them to the Kubernetes secret "ald-tls". To use a custom certificate and key in your own secret, override the properties under "apps.config.security.ssl.secret".
+
 # Access Swagger UI
 
-The Swagger UI can be found at `http://your_host:31680/api/lifecycle/ui` e.g. `http://localhost:31680/api/lifecycle/ui`
+The Swagger UI can be found at `https://your_host:31680/api/lifecycle/ui` e.g. `http://localhost:31680/api/lifecycle/ui`
