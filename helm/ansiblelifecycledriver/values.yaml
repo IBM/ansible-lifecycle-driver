@@ -53,6 +53,16 @@ app:
     # requests:
     #  cpu: 250m
     #  memory: 384Mi
+  
+  ## Autoscaler
+  ## Enabling this deploys a Horizontal Pod Autoscaler that will monitor the CPU usage and scale this deployment 
+  ## ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+  ## NOTE: requires Kubernetes Metrics Server
+  autoscaler:
+    enabled: false
+    maxReplicas: 10
+    minReplicas: 1
+    targetCPUUtilizationPercentage: 80
     
   ## ansible-lifecycle-driver specific configuration
   config:

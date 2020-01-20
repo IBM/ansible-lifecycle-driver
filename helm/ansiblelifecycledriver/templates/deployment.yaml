@@ -63,3 +63,18 @@ spec:
         secret:
           secretName: {{ .Values.app.config.security.ssl.secret.name }}
       {{- end }}
+{{- if .Values.app.autoscaler.enabled }}
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ansible-lifecycle-driver
+spec:
+  maxReplicas: {{ .Values.app.autoscaler.maxReplicas }}
+  minReplicas: {{ .Values.app.autoscaler.minReplicas }}
+  scaleTargetRef:
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: ansible-lifecycle-driver
+  targetCPUUtilizationPercentage: {{ .Values.app.autoscaler.targetCPUUtilizationPercentage }}
+{{- end }}
