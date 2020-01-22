@@ -1,6 +1,9 @@
 ---
 application:
   port: 8293
+  ssl:
+    enabled: True
+    cert_dir: /var/ald/certs
 
 ansible:
   unreachable_sleep_seconds: 5

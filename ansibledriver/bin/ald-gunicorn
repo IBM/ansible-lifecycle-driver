@@ -1,3 +1,7 @@
 #!/usr/bin/env bash
 
-gunicorn -w $NUM_PROCESSES -b :$DRIVER_PORT "ansibledriver:create_wsgi_app()"
+if [[ $SSL_ENABLED == "True" ]]; then
+    SSL="--certfile /var/ald/certs/tls.crt --keyfile /var/ald/certs/tls.key"
+fi
+
+gunicorn -w $NUM_PROCESSES -b :$DRIVER_PORT $SSL "ansibledriver:create_wsgi_app()"

@@ -34,6 +34,7 @@ spec:
           ports:
           - containerPort: 8293
             protocol: TCP
+            name: http
           envFrom:
           - configMapRef:
               name: ansible-lifecycle-driver-env
@@ -43,10 +44,19 @@ spec:
           - name: config
             mountPath: /var/ald/ald_config.yml
             subPath: ald_config.yml
+          {{- if and .Values.app.config.security.ssl.enabled .Values.app.config.security.ssl.secret.name }}
+          - name: {{ .Values.app.config.security.ssl.secret.name }}
+            mountPath: /var/ald/certs
+          {{- end }}
       volumes:
       - name: config
         configMap:
           name: ansible-lifecycle-driver
+      {{- if and .Values.app.config.security.ssl.enabled .Values.app.config.security.ssl.secret.name }}
+      - name: {{ .Values.app.config.security.ssl.secret.name }}
+        secret:
+          secretName: {{ .Values.app.config.security.ssl.secret.name }}
+      {{- end }}
 {{- if .Values.app.autoscaler.enabled }}
 ---
 apiVersion: autoscaling/v1
