@@ -139,9 +139,7 @@ app:
           name: ald-tls
           ## If True, the Helm chart installation will generate a new SSL key with a self-signed certificate
           generate: True
-          ## The Common Name used for the SSL certificate
-          ## The default value here is acceptable but will not produce a completely valid certificate
-          ## You should update this value to the IP address used to access the API on this rule
+          ## The Common Name used for the SSL certificate (do not change this)
           commonName: ansible-lifecycle-driver
 
 service:

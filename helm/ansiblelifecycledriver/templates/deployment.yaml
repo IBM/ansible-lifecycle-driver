@@ -32,15 +32,9 @@ spec:
             # run as ald
             runAsUser: 100
           ports:
-          {{- if .Values.app.config.security.ssl.enabled }}
-          - containerPort: 8393
-            protocol: TCP
-            name: https
-          {{- else }}
           - containerPort: 8293
             protocol: TCP
             name: http
-          {{- end }}
           envFrom:
           - configMapRef:
               name: ansible-lifecycle-driver-env
