@@ -59,6 +59,8 @@ Run the application by running the ald-uwsgi script:
 ald-uwsgi
 ```
 
+Note: at this time, you will not be able to use Ansible tasks delegated to the `localhost` when running the driver in uwsgi.
+
 # Access Swagger UI
 
 The Swagger UI can be found at `http://your_host:8293/api/lifecycle/ui` e.g. `http://localhost:8293/api/lifecycle/ui`

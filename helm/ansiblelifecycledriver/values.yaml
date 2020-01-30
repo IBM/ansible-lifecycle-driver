@@ -101,11 +101,12 @@ app:
 
       ## configuration for WSGI container
       ## WSGI_CONTAINER can be uwsgi or gunicorn
-      WSGI_CONTAINER: uwsgi
+      WSGI_CONTAINER: gunicorn
       ## the number of processes and threads to spawn to handle requests
       ## number of processes is 1 because the driver handles process management
       NUM_PROCESSES: "1"
-      NUM_THREADS: "2"
+      # Required only when WSGI_CONTAINER is uwsgi
+      #NUM_THREADS: "2"
 
     ingress:
       ## The host used to access the service externally i.e. http://<server.ingress.hostname>/
