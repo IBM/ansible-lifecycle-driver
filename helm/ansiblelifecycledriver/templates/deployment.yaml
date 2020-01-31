@@ -34,7 +34,7 @@ spec:
           ports:
           - containerPort: 8293
             protocol: TCP
-            name: http
+            name: https
           {{- if .Values.app.livenessProbe.enabled }}
           livenessProbe:
             failureThreshold: {{ .Values.app.livenessProbe.failureThreshold }}
