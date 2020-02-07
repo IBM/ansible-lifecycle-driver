@@ -132,6 +132,11 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
 
       self.active = False
 
+      if self.process_properties.use_pool:
+        for p in self.pool:
+          if p is not None:
+            p.terminate()
+
       self.request_queue.shutdown()
       self.send_pipe.close()
 
