@@ -93,77 +93,83 @@ class AnsibleClient():
     return callback
 
   def run_lifecycle_playbook(self, request):
-    request_id = request['request_id']
     lifecycle_path = request['lifecycle_path']
-    lifecycle = request['lifecycle_name']
-    properties = request['properties']
-    system_properties = request['system_properties']
-    deployment_location = request['deployment_location']
-    if not isinstance(deployment_location, dict):
-      return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Deployment Location must be an object"), {})
-    dl_properties = PropValueMap(deployment_location.get('properties', {}))
-
-    key_property_processor = KeyPropertyProcessor(properties, system_properties, dl_properties)
-
     try:
-      config_path = lifecycle_path.get_directory_tree('config')
-      scripts_path = lifecycle_path.get_directory_tree('scripts')
+      request_id = request['request_id']
+      lifecycle = request['lifecycle_name']
+      properties = request['properties']
+      system_properties = request['system_properties']
+      deployment_location = request['deployment_location']
+      if not isinstance(deployment_location, dict):
+        return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Deployment Location must be an object"), {})
+      dl_properties = PropValueMap(deployment_location.get('properties', {}))
 
-      playbook_path = get_lifecycle_playbook_path(scripts_path, lifecycle)
-      if playbook_path is not None:
-        if deployment_location['type'] == 'Kubernetes':
-          dl_properties['kubeconfig_path'] = self.create_kube_config(deployment_location)
-          connection_type = "k8s"
-          inventory_path = config_path.get_file_path(INVENTORY_K8S)
+      key_property_processor = KeyPropertyProcessor(properties, system_properties, dl_properties)
+
+      try:
+        config_path = lifecycle_path.get_directory_tree('config')
+        scripts_path = lifecycle_path.get_directory_tree('scripts')
+
+        playbook_path = get_lifecycle_playbook_path(scripts_path, lifecycle)
+        if playbook_path is not None:
+          if deployment_location['type'] == 'Kubernetes':
+            dl_properties['kubeconfig_path'] = self.create_kube_config(deployment_location)
+            connection_type = "k8s"
+            inventory_path = config_path.get_file_path(INVENTORY_K8S)
+          else:
+            connection_type = "ssh"
+            inventory_path = config_path.get_file_path(INVENTORY)
+
+          # process key properties by writing them out to a temporary file and adding an
+          # entry to the property dictionary that maps the "[key_name].path" to the key file path
+          key_property_processor.process_key_properties()
+
+          logger.debug('config_path = ' + config_path.get_path())
+          logger.debug('lifecycle_path = ' + scripts_path.get_path())
+          logger.debug("playbook_path=" + playbook_path)
+          logger.debug("inventory_path=" + inventory_path)
+
+          all_properties = {
+            'properties': properties,
+            'system_properties': system_properties,
+            'dl_properties': dl_properties
+          }
+          logger.info('properties={0}'.format(properties))
+          logger.info('dl_properties={0}'.format(dl_properties))
+          process_templates(config_path, all_properties)
+
+          if(os.path.exists(playbook_path)):
+            # always retry on unreachable
+            num_retries = self.ansible_properties.max_unreachable_retries
+
+            for i in range(0, num_retries):
+              ret = self.run_playbook(request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties)
+              if not ret.host_unreachable:
+                break
+
+              time.sleep(self.ansible_properties.unreachable_sleep_seconds)
+
+            return ret.get_result()
+          else:
+            msg = "No playbook to run at {0} for lifecycle {1} for request {2}".format(playbook_path, lifecycle, request_id)
+            logger.info(msg)
+            return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, msg), {})
         else:
-          connection_type = "ssh"
-          inventory_path = config_path.get_file_path(INVENTORY)
-
-        # process key properties by writing them out to a temporary file and adding an
-        # entry to the property dictionary that maps the "[key_name].path" to the key file path
-        key_property_processor.process_key_properties()
-
-        logger.debug('config_path = ' + config_path.get_path())
-        logger.debug('lifecycle_path = ' + scripts_path.get_path())
-        logger.debug("playbook_path=" + playbook_path)
-        logger.debug("inventory_path=" + inventory_path)
-
-        all_properties = {
-          'properties': properties,
-          'system_properties': system_properties,
-          'dl_properties': dl_properties
-        }
-        logger.info('properties={0}'.format(properties))
-        logger.info('dl_properties={0}'.format(dl_properties))
-        process_templates(config_path, all_properties)
-
-        if(os.path.exists(playbook_path)):
-          # always retry on unreachable
-          num_retries = self.ansible_properties.max_unreachable_retries
-
-          for i in range(0, num_retries):
-            ret = self.run_playbook(request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties)
-            if not ret.host_unreachable:
-              break
-
-            time.sleep(self.ansible_properties.unreachable_sleep_seconds)
-
-          return ret.get_result()
-        else:
-          msg = "No playbook to run at {0} for lifecycle {1} for request {2}".format(playbook_path, lifecycle, request_id)
-          logger.info(msg)
+          msg = "No playbook to run for lifecycle {0} for request {1} {2}".format(lifecycle, request_id, scripts_path.get_path())
+          logger.error(msg)
           return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, msg), {})
-      else:
-        msg = "No playbook to run for lifecycle {0} for request {1} {2}".format(lifecycle, request_id, scripts_path.get_path())
-        logger.error(msg)
-        return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, msg), {})
-    except InvalidRequestException as ire:
-      return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, ire.msg), {})
-    except Exception as e:
-      logger.exception("Unexpected exception running playbook")
-      return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {})
+      except InvalidRequestException as ire:
+        return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, ire.msg), {})
+      except Exception as e:
+        logger.exception("Unexpected exception running playbook")
+        return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {})
+      finally:
+        key_property_processor.clear_key_files()
     finally:
-      key_property_processor.clear_key_files()
+      try:
+        lifecycle_path.remove_all()
+      except Exception as e:
+        logger.exception('Encountered an error whilst trying to clear out lifecycle scripts directory {0}: {1}'.format(lifecycle_path.root_path, str(e)))
 
 class ResultCallback(CallbackBase):
     """A sample callback plugin used for performing an action as results come in

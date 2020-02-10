@@ -3,6 +3,7 @@ import uuid
 import json
 import logging
 import sys
+import tempfile
 import time
 from unittest.mock import call, patch, MagicMock, ANY, DEFAULT
 from ignition.boot.config import BootstrapApplicationConfiguration, PropertyGroups
@@ -58,6 +59,7 @@ class LifecycleExecutionMatcher:
 class TestProcess(unittest.TestCase):
 
     def setUp(self):
+        self.tmp_workspace = tempfile.mkdtemp()
         self.request_queue = RequestQueue()
         self.mock_ansible_client = MagicMock()
         self.mock_messaging_service = MagicMock()
@@ -110,7 +112,7 @@ class TestProcess(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
           self.ansible_processor.run_lifecycle({
             'lifecycle_name': 'install',
-            'lifecycle_path': DirectoryTree('./'),
+            'lifecycle_path': DirectoryTree(self.tmp_workspace),
             'system_properties': PropValueMap({
             }),
             'properties': PropValueMap({
@@ -123,7 +125,7 @@ class TestProcess(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
           self.ansible_processor.run_lifecycle({
             'request_id': uuid.uuid4().hex,
-            'lifecycle_path': DirectoryTree('./'),
+            'lifecycle_path': DirectoryTree(self.tmp_workspace),
             'system_properties': PropValueMap({
             }),
             'properties': PropValueMap({
@@ -159,7 +161,7 @@ class TestProcess(unittest.TestCase):
 
         self.ansible_processor.run_lifecycle({
           'lifecycle_name': 'install',
-          'lifecycle_path': DirectoryTree('./'),
+          'lifecycle_path': DirectoryTree(self.tmp_workspace),
           'system_properties': PropValueMap({
           }),
           'properties': PropValueMap({
@@ -181,7 +183,7 @@ class TestProcess(unittest.TestCase):
 
         self.ansible_processor.run_lifecycle({
           'lifecycle_name': 'install',
-          'lifecycle_path': DirectoryTree('./'),
+          'lifecycle_path': DirectoryTree(self.tmp_workspace),
           'system_properties': PropValueMap({
           }),
           'properties': PropValueMap({
@@ -224,7 +226,7 @@ class TestProcess(unittest.TestCase):
 
         self.ansible_processor.run_lifecycle({
           'lifecycle_name': 'install',
-          'lifecycle_path': DirectoryTree('./'),
+          'lifecycle_path': DirectoryTree(self.tmp_workspace),
           'system_properties': PropValueMap({
           }),
           'properties': PropValueMap({
@@ -236,7 +238,7 @@ class TestProcess(unittest.TestCase):
 
         self.ansible_processor.run_lifecycle({
           'lifecycle_name': 'install',
-          'lifecycle_path': DirectoryTree('./'),
+          'lifecycle_path': DirectoryTree(self.tmp_workspace),
           'system_properties': PropValueMap({
           }),
           'properties': PropValueMap({

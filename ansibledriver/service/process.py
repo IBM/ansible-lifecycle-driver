@@ -80,26 +80,35 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
       self.counter.decrement()
 
     def run_lifecycle(self, request):
-      if 'request_id' not in request:
-        raise ValueError('Request must have a request_id')
-      if 'lifecycle_name' not in request:
-        raise ValueError('Request must have a lifecycle_name')
-      if 'lifecycle_path' not in request:
-        raise ValueError('Request must have a lifecycle_path')
+      accepted = False
+      try:
+        if 'request_id' not in request:
+          raise ValueError('Request must have a request_id')
+        if 'lifecycle_name' not in request:
+          raise ValueError('Request must have a lifecycle_name')
+        if 'lifecycle_path' not in request:
+          raise ValueError('Request must have a lifecycle_path')
 
-      # add logging context to request
-      request['logging_context'] = logging_context.get_all()
+        # add logging context to request
+        request['logging_context'] = logging_context.get_all()
 
-      logger.info('request_queue.size {0} max_queue_size {1}'.format(self.request_queue.size(), self.process_properties.max_queue_size))
-      if self.active == True:
-        if self.request_queue.size() >= self.process_properties.max_queue_size:
-          self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Request cannot be handled, driver is overloaded"), {}))
+        logger.info('request_queue.size {0} max_queue_size {1}'.format(self.request_queue.size(), self.process_properties.max_queue_size))
+        if self.active == True:
+          if self.request_queue.size() >= self.process_properties.max_queue_size:
+            self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Request cannot be handled, driver is overloaded"), {}))
+          else:
+            logger.debug('Adding request {0} to queue'.format(request))
+            self.request_queue.put(request)
+            accepted = True
         else:
-          logger.debug('Adding request {0} to queue'.format(request))
-          self.request_queue.put(request)
-      else:
-        # inactive, just return a standard response
-        self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Driver is inactive"), {}))
+          # inactive, just return a standard response
+          self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Driver is inactive"), {}))
+      finally:
+        if not accepted and 'lifecycle_path' in request:
+          try:
+            request['lifecycle_path'].remove_all()
+          except Exception as e:
+            logger.exception('Encountered an error whilst trying to clear out lifecycle scripts directory {0}: {1}'.format(request['lifecycle_path'].root_path, str(e)))
 
     def queue_status(self):
       return self.request_queue.queue_status()

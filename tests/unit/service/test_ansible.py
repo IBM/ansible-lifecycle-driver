@@ -86,5 +86,6 @@ class TestAnsible(unittest.TestCase):
             })
 
             self.assertLifecycleExecutionEqual(resp, LifecycleExecution(request_id, STATUS_COMPLETE, None, {'msg': "hello there!"}))
+            self.assertFalse(os.path.exists(dst))
         finally:
             logger.removeHandler(stream_handler)
