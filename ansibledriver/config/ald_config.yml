@@ -14,7 +14,7 @@ process:
   process_pool_size: 10
   max_concurrenty_ansible_processes: 10
   max_queue_size: 100
-  use_pool: False
+  use_pool: True
   is_threaded: False
 
 messaging:

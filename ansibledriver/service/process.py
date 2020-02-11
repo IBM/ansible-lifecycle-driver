@@ -32,7 +32,7 @@ class ProcessProperties(ConfigurationPropertiesGroup):
         self.process_pool_size = 10
         self.max_concurrent_ansible_processes = 10
         self.max_queue_size = 100
-        self.use_pool = False
+        self.use_pool = True
         self.is_threaded = False
 
 class AnsibleProcessorService(Service, AnsibleProcessorCapability):
@@ -40,7 +40,7 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
         if 'messaging_service' not in kwargs:
             raise ValueError('messaging_service argument not provided')
         self.messaging_service = kwargs.get('messaging_service')
-
+        self.queue_thread = None
         self.process_properties = configuration.property_groups.get_property_group(ProcessProperties)
 
         # lifecycle requests are placed on this queue
@@ -62,7 +62,7 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
           # create sub-processes (and Ansible requires this)
           self.pool = [None] * self.process_properties.process_pool_size
           for i in range(self.process_properties.process_pool_size):
-            self.pool[i] = Process(target=self.ansible_process_worker, args=(self.request_queue, self.send_pipe, ))
+            self.pool[i] = Process(target=self.ansible_process_worker, args=('PoolProcess{0}'.format(i), self.request_queue, self.send_pipe, ))
             self.pool[i].start()
         else:
           self.queue_thread = QueueThread(self, self.ansible_client, self.send_pipe, self.process_properties, self.request_queue, self.counter)
@@ -104,8 +104,8 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
     def queue_status(self):
       return self.request_queue.queue_status()
 
-    def ansible_process_worker(self, request_queue, send_pipe):
-      logger.info('ansible_queue_worker init')
+    def ansible_process_worker(self, process_name, request_queue, send_pipe):
+      logger.info('{0} initialised'.format(process_name))
       # make sure Ansible processes are acknowledged to avoid zombie processes
       signal(SIGCHLD, SIG_IGN)
       while(True):
@@ -131,6 +131,11 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
       logger.info('shutdown')
 
       self.active = False
+
+      if self.process_properties.use_pool:
+        for p in self.pool:
+          if p is not None:
+            p.terminate()
 
       self.request_queue.shutdown()
       self.send_pipe.close()

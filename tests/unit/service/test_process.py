@@ -63,7 +63,9 @@ class TestProcess(unittest.TestCase):
         self.mock_messaging_service = MagicMock()
         property_groups = PropertyGroups()
         property_groups.add_property_group(AnsibleProperties())
-        property_groups.add_property_group(ProcessProperties())
+        process_props = ProcessProperties()
+        process_props.use_pool = False
+        property_groups.add_property_group(process_props)
         self.configuration = BootstrapApplicationConfiguration(app_name='test', property_sources=[], property_groups=property_groups, service_configurators=[], api_configurators=[], api_error_converter=None)
         self.ansible_processor = AnsibleProcessorService(self.configuration, self.request_queue, self.mock_ansible_client, messaging_service=self.mock_messaging_service)
 
