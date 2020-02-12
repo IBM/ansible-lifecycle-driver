@@ -79,7 +79,7 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
     def ansible_process_done(self):
       self.counter.decrement()
 
-    def run_lifecycle(self, request):
+    def run_lifecycle(self, request, keep_scripts=False):
       accepted = False
       try:
         if 'request_id' not in request:
@@ -88,6 +88,7 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
           raise ValueError('Request must have a lifecycle_name')
         if 'lifecycle_path' not in request:
           raise ValueError('Request must have a lifecycle_path')
+        request['keep_scripts'] = keep_scripts
 
         # add logging context to request
         request['logging_context'] = logging_context.get_all()
@@ -104,8 +105,9 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
           # inactive, just return a standard response
           self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Driver is inactive"), {}))
       finally:
-        if not accepted and 'lifecycle_path' in request:
+        if not accepted and not keep_scripts and 'lifecycle_path' in request:
           try:
+            logger.debug('Attempting to remove lifecycle scripts at {0}'.format(request['lifecycle_path'].root_path))
             request['lifecycle_path'].remove_all()
           except Exception as e:
             logger.exception('Encountered an error whilst trying to clear out lifecycle scripts directory {0}: {1}'.format(request['lifecycle_path'].root_path, str(e)))

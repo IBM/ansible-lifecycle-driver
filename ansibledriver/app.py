@@ -5,6 +5,7 @@ import pathlib
 import os
 from ansibledriver.service.ansible import AnsibleProperties
 from ansibledriver.service.process import ProcessProperties
+from ansibledriver.service.lifecycle import AdditionalLifecycleProperties
 from ansibledriver.service.cache import CacheProperties
 from ansibledriver.service.config import AnsibleApiConfigurator, AnsibleServiceConfigurator, AnsibleDriverConfigurator
 
@@ -21,6 +22,7 @@ def create_app():
     app_builder.add_property_group(AnsibleProperties())
     app_builder.add_property_group(ProcessProperties())
     app_builder.add_property_group(CacheProperties())
+    app_builder.add_property_group(AdditionalLifecycleProperties())
     app_builder.add_api_configurator(AnsibleApiConfigurator())
     app_builder.add_service_configurator(AnsibleServiceConfigurator())
     app_builder.add_service_configurator(AnsibleDriverConfigurator())

@@ -166,10 +166,13 @@ class AnsibleClient():
       finally:
         key_property_processor.clear_key_files()
     finally:
-      try:
-        lifecycle_path.remove_all()
-      except Exception as e:
-        logger.exception('Encountered an error whilst trying to clear out lifecycle scripts directory {0}: {1}'.format(lifecycle_path.root_path, str(e)))
+      keep_scripts = request.get('keep_scripts', False)
+      if not keep_scripts:
+        try:
+          logger.debug('Attempting to remove lifecycle scripts at {0}'.format(lifecycle_path.root_path))
+          lifecycle_path.remove_all()
+        except Exception as e:
+          logger.exception('Encountered an error whilst trying to clear out lifecycle scripts directory {0}: {1}'.format(lifecycle_path.root_path, str(e)))
 
 class ResultCallback(CallbackBase):
     """A sample callback plugin used for performing an action as results come in
