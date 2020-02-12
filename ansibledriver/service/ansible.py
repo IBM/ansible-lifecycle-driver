@@ -163,9 +163,8 @@ class AnsibleClient():
       except Exception as e:
         logger.exception("Unexpected exception running playbook")
         return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {})
-      finally:
-        key_property_processor.clear_key_files()
     finally:
+      key_property_processor.clear_key_files()
       keep_scripts = request.get('keep_scripts', False)
       if not keep_scripts:
         try:
