@@ -22,4 +22,5 @@ messaging:
 
 lifecycle:
   scripts_workspace: ./lifecycle_scripts
+  keep_scripts: False
   async_messaging_enabled: False
