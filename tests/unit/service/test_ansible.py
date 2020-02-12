@@ -89,3 +89,57 @@ class TestAnsible(unittest.TestCase):
             self.assertFalse(os.path.exists(dst))
         finally:
             logger.removeHandler(stream_handler)
+
+    def test_run_lifecycle_keep_scripts(self):
+        # configure so that we can see logging from the code under test
+        stream_handler = logging.StreamHandler(sys.stdout)
+        logger.addHandler(stream_handler)
+        try:
+            request_id = uuid.uuid4().hex
+
+            properties = PropValueMap({
+                'hello_world_private_ip': {
+                    'value': '10.220.217.113',
+                    'type': 'string'
+                },
+                'ansible_ssh_user': {
+                    'value': 'accanto',
+                    'type': 'string'
+                },
+                'ansible_ssh_pass': {
+                    'value': 'accanto',
+                    'type': 'string'
+                },
+                'ansible_become_pass': {
+                    'value': 'accanto',
+                    'type': 'string'
+                }
+            })
+            system_properties = PropValueMap({
+            })
+
+            cwd = os.getcwd()
+            src = cwd + '/tests/resources/ansible'
+            dst = cwd + '/tests/resources/ansible-copy'
+            shutil.rmtree(dst, ignore_errors=True)
+            shutil.copytree(src, dst)
+
+            resp = self.ansible_client.run_lifecycle_playbook({
+            'lifecycle_name': 'install',
+            'lifecycle_path': DirectoryTree(dst),
+            'system_properties': system_properties,
+            'properties': properties,
+            'deployment_location': {
+                'name': 'winterfell',
+                'type': "type",
+                'properties': PropValueMap({
+                })
+            },
+            'keep_scripts': True,
+            'request_id': request_id
+            })
+
+            self.assertLifecycleExecutionEqual(resp, LifecycleExecution(request_id, STATUS_COMPLETE, None, {'msg': "hello there!"}))
+            self.assertTrue(os.path.exists(dst))
+        finally:
+            logger.removeHandler(stream_handler)

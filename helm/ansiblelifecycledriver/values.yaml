@@ -142,6 +142,10 @@ app:
       lifecycle:
         ## workspace for holding lifecycle scripts
         scripts_workspace: /var/ald/lifecycle_scripts
+        ## enable to prevent scripts from being removed after use
+        ## care should be taken when enabling this option, as the pod will quickly run out of disk space
+        ## enable only for debugging purposes
+        keep_scripts: False
         async_messaging_enabled: False
 
     security:
