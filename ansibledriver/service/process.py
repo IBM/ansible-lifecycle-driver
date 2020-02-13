@@ -55,6 +55,8 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
         # gracefully deal with SIGINT
         signal(SIGINT, self.sigint_handler)
 
+        self.active = True
+
         if self.process_properties.use_process_pool:
           # a pool of (Ansible) processes reads from the request_queue
           # we don't using a multiprocessing.Pool here because it uses daemon processes which cannot
@@ -69,8 +71,6 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
 
         # Ansible process reponse thread listens for messages on the recv_pipe sends the response to Kafka
         self.responses_thread = ResponsesThread(self, self.response_queue)
-
-        self.active = True
 
         self.responses_thread.start()
         if self.queue_thread is not None:
@@ -185,7 +185,7 @@ class AnsibleProcess(Process):
                 logging_context.set_from_dict(request['logging_context'])
 
               try:
-                logger.info('Ansible worker running request {1}'.format(request))
+                logger.info('Ansible worker running request {0}'.format(request))
                 resp = self.ansible_client.run_lifecycle_playbook(request)
                 if resp is not None:
                   logger.info('Ansible worker finished for request {0} response {1}'.format(request, resp))
@@ -195,7 +195,7 @@ class AnsibleProcess(Process):
               finally:
                 logging_context.clear()
           except Exception as e:
-            logger.error('Unexpected exception {0}'.format(e))
+            logger.exception('Unexpected exception {0}'.format(e))
             traceback.print_exc(file=sys.stderr)
             # don't want the worker to die without knowing the cause, so catch all exceptions
             if request is not None:
@@ -205,7 +205,7 @@ class AnsibleProcess(Process):
 
         logger.info('Worker process {0} finished'.format(self.name))
       except Exception as e:
-        logger.error('Unexpected exception {0}'.format(e))
+        logger.exception('Unexpected exception {0}'.format(e))
         traceback.print_exc(file=sys.stderr)
 
 
