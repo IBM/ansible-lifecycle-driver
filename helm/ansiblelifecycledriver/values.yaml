@@ -129,12 +129,18 @@ app:
         output_prop_prefix: 'output__'
 
       process:
-        ## the maximum number of processes to spawn to handle requests
-        max_concurrent_ansible_processes: 10
-        ## the maximum size of the request queue before requests are rejected
+        ## the maximum size of the request queue before transition requests are rejected
         max_queue_size: 100
-        ## whether to use threads or processes to read and process requests on the request queue
+        ## whether to use threads or processes to read and process transition requests on the request queue
+        use_process_pool: True
+        ## settings for use_process_pool == True (a pool of processes handles lifecycle requests)
+        ### size of the Ansible process pool
+        process_pool_size: 50
+        ## settings for use_process_pool == False (a thread is used to read from the transition request queue and either
+        ## handle the transition request in another thread, or by spawning a process to handle the transition request)
         is_threaded: False
+        ### the maximum number of processes to spawn to handle transition requests
+        max_concurrent_ansible_processes: 20
 
       messaging:
         connection_address: foundation-kafka:9092

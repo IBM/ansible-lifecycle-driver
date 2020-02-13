@@ -5,7 +5,7 @@ from ignition.service.framework import ServiceRegistration
 from ignition.service.lifecycle import LifecycleMessagingCapability
 import ansibledriver.api_specs as api_specs
 from ansibledriver.service.process import AnsibleProcessorCapability, AnsibleProcessorService
-from ansibledriver.service.queue import RequestQueue
+from ansibledriver.service.queue import RequestQueue, ResponseQueue
 from ansibledriver.service.ansible import AnsibleClient
 from ansibledriver.service.lifecycle import AnsibleLifecycleDriver, AdditionalLifecycleProperties
 
@@ -18,7 +18,7 @@ class AnsibleServiceConfigurator():
         pass
 
     def configure(self, configuration, service_register):
-        service_register.add_service(ServiceRegistration(AnsibleProcessorService, configuration, RequestQueue(), AnsibleClient(configuration), messaging_service=LifecycleMessagingCapability))
+        service_register.add_service(ServiceRegistration(AnsibleProcessorService, configuration, RequestQueue(), ResponseQueue(), AnsibleClient(configuration), messaging_service=LifecycleMessagingCapability))
 
 class AnsibleDriverConfigurator():
 

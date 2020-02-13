@@ -41,3 +41,36 @@ class RequestQueue(Service):
 
   def task_done(self):
     self.request_queue.task_done()
+
+class ResponseQueue(Service):
+  def __init__(self):
+    self.response_queue = JoinableQueue()
+
+  def next(self):
+    try:
+      return self.response_queue.get(True)
+    except EOFError as e:
+      return None
+    except OSError as e:
+      return None
+
+  def queue_status(self):
+    return {
+      'status': 'ok',
+      'size': self.response_queue.qsize()
+    }
+
+  def size(self):
+    return self.response_queue.qsize()
+
+  def put(self, request):
+    self.response_queue.put(request)
+
+  def shutdown(self):
+    self.put(SHUTDOWN_MESSAGE)
+    # allow the queue to drain
+    #self.request_queue.join()
+    # self.request_queue.close()
+
+  def task_done(self):
+    self.response_queue.task_done()
