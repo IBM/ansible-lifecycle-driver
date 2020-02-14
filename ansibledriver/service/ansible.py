@@ -3,6 +3,7 @@ import logging
 import time
 import os
 import tempfile
+from datetime import datetime
 from tempfile import NamedTemporaryFile
 from collections import namedtuple
 from ansible.parsing.dataloader import DataLoader
@@ -143,11 +144,20 @@ class AnsibleClient():
             num_retries = self.ansible_properties.max_unreachable_retries
 
             for i in range(0, num_retries):
+              if i>0:
+                logger.info('Playbook {0}, unreachable retry attempt {1}/{2}'.format(playbook_path, i+1, num_retries))
+              start_time = datetime.now()
               ret = self.run_playbook(request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties)
               if not ret.host_unreachable:
                 break
-
-              time.sleep(self.ansible_properties.unreachable_sleep_seconds)
+              end_time = datetime.now()
+              if self.ansible_properties.unreachable_sleep_seconds > 0:
+                # Factor in that the playbook may have taken some time to determine is was unreachable
+                # by using the unreachable_sleep_seconds value as a minimum amount of time for the delay 
+                delta = end_time - start_time
+                retry_seconds = max(0, self.ansible_properties.unreachable_sleep_seconds-int(delta.total_seconds()))
+                time.sleep(retry_seconds)
+              
 
             return ret.get_result()
           else:
@@ -255,14 +265,8 @@ class ResultCallback(CallbackBase):
         ansible task failed as host was unreachable
         """
         logger.info('v2_runner_on_unreachable {0}'.format(result))
-
-        # TODO do not overwrite if already set
-        self.failed_task = result._task.get_name()
-        self.host_unreachable_log.append(dict(task=self.failed_task, result=result._result))
+        self.__handle_unreachable(result)
         logger.error('task: \'' + self.failed_task + '\' UNREACHABLE: ' + ' ansible playbook task ' + self.failed_task + ' host unreachable: ' + str(self.host_unreachable_log))
-        self.host_unreachable = True
-        self.failure_details = FailureDetails(FAILURE_CODE_RESOURCE_NOT_FOUND, 'resource unreachable')
-        self.playbook_failed = True
 
     def v2_playbook_on_vars_prompt(self, varname, private=True, prompt=None, encrypt=None, confirm=False, salt_size=None, salt=None, default=None, unsafe=None):
         logger.info('v2_playbook_on_vars_prompt {0}'.format(varname))
@@ -288,18 +292,33 @@ class ResultCallback(CallbackBase):
     def runner_on_failed(self, host, res, ignore_errors=False):
         logger.info('runner_on_failed {0} {1}'.format(host, res))
 
+    def __handle_unreachable(self, result):
+        # TODO do not overwrite if already set
+        self.failed_task = result._task.get_name()
+        self.host_unreachable_log.append(dict(task=self.failed_task, result=result._result))
+        self.host_unreachable = True
+        self.failure_reason = 'Resource unreachable (task ' + str(self.failed_task) + ' failed: ' + str(result._result) + ')'
+        self.failure_details = FailureDetails(FAILURE_CODE_RESOURCE_NOT_FOUND, self.failure_reason)
+        self.playbook_failed = True
+
     def v2_runner_on_failed(self, result, *args, **kwargs):
         """
         ansible task failed
         """
         logger.info("v2_runner_on_failed {0}".format(result))
-
-        self.host_failed = True
         self.failed_task = result._task.get_name()
-        self.failure_reason = 'task ' + str(self.failed_task) + ' failed: ' + str(result._result)
-        self.host_failed_log.append(dict(task=self.failed_task, result=result._result))
-        self.failure_details = FailureDetails(FAILURE_CODE_INFRASTRUCTURE_ERROR, self.failure_reason)
-        self.playbook_failed = True
+        if 'msg' in result._result and 'Timeout' in result._result['msg'] and 'waiting for privilege escalation prompt' in result._result['msg']:
+            logger.info('Failure to be treated as unreachable:  task ' + str(self.failed_task) + ' failed: ' + str(result._result))
+            self.__handle_unreachable(result)
+        elif 'module_stderr' in result._result and result._result['module_stderr'].startswith('ssh:') and 'Host is unreachable' in result._result['module_stderr']:
+            logger.info('Failure to be treated as unreachable: task ' + str(self.failed_task) + ' failed: ' + str(result._result))
+            self.__handle_unreachable(result)
+        else:
+          self.host_failed = True
+          self.failure_reason = 'task ' + str(self.failed_task) + ' failed: ' + str(result._result)
+          self.host_failed_log.append(dict(task=self.failed_task, result=result._result))
+          self.failure_details = FailureDetails(FAILURE_CODE_INFRASTRUCTURE_ERROR, self.failure_reason)
+          self.playbook_failed = True
 
     def v2_runner_on_skipped(self, result):
         logger.info('v2_runner_on_skipped {0}'.format(result))
