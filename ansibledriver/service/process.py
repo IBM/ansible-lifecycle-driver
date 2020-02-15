@@ -6,7 +6,7 @@ import sys
 import traceback
 import threading
 from signal import signal, SIGINT, SIGTERM, SIGQUIT, SIGCHLD, SIG_IGN, SIG_DFL
-from multiprocessing import Process, RawValue, Lock, Pipe
+from multiprocessing import Process, RawValue, Lock, Pipe, active_children
 from multiprocessing.pool import Pool
 from collections import namedtuple
 from ignition.model.lifecycle import LifecycleExecution, STATUS_COMPLETE, STATUS_FAILED, STATUS_IN_PROGRESS
@@ -172,11 +172,12 @@ class AnsibleProcess(Process):
       self.ansible_client = ansible_client
       self.response_queue = response_queue
       self.kwargs = kwargs
+
       logger.debug('Created worker process: {0}'.format(name))
 
     def run(self):
       try:
-        logger.info('{0} initialised {1}'.format(self.name, self.ansible_processor.active))
+        logger.info('Initialised worker process {0}'.format(self.name))
         while self.ansible_processor.active:
           request = self.request_queue.next()
           try:
@@ -185,10 +186,12 @@ class AnsibleProcess(Process):
                 logging_context.set_from_dict(request['logging_context'])
 
               try:
-                logger.info('Ansible worker running request {0}'.format(request))
+                logger.debug('Ansible worker running request {0}'.format(request))
                 resp = self.ansible_client.run_lifecycle_playbook(request)
+                for p in active_children():
+                  logger.debug("removed zombie process {0}".format(p.name))
                 if resp is not None:
-                  logger.info('Ansible worker finished for request {0} response {1}'.format(request, resp))
+                  logger.debug('Ansible worker finished for request {0} response {1}'.format(request, resp))
                   self.response_queue.put(resp)
                 else:
                   logger.warn("Empty response from Ansible worker for request {0}".format(request))
