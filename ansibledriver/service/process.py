@@ -188,8 +188,6 @@ class AnsibleProcess(Process):
               try:
                 logger.debug('Ansible worker running request {0}'.format(request))
                 resp = self.ansible_client.run_lifecycle_playbook(request)
-                for p in active_children():
-                  logger.debug("removed zombie process {0}".format(p.name))
                 if resp is not None:
                   logger.debug('Ansible worker finished for request {0} response {1}'.format(request, resp))
                   self.response_queue.put(resp)
@@ -205,6 +203,10 @@ class AnsibleProcess(Process):
               self.response_queue.put(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {}))
           finally:
             self.request_queue.task_done()
+
+            # clean up zombie processes (Ansible can leave these behind)
+            for p in active_children():
+              logger.debug("removed zombie process {0}".format(p.name))
 
         logger.info('Worker process {0} finished'.format(self.name))
       except Exception as e:
