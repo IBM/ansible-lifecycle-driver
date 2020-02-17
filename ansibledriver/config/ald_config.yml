@@ -7,7 +7,7 @@ application:
 
 ansible:
   unreachable_sleep_seconds: 5
-  max_unreachable_retries: 1000
+  max_unreachable_retries: 60
   output_prop_prefix: 'output__'
 
 process:
