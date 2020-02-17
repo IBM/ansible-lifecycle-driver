@@ -147,10 +147,11 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
         logger.debug("Joining Ansible processes")
         for p in self.pool:
           if p is not None:
-            logger.debug("Joining Ansible process {0}".format(p.name))
-            p.join()
+            logger.debug("Terminating Ansible Driver process {0}".format(p.name))
+            p.terminate()
 
       self.request_queue.shutdown()
+      self.response_queue.shutdown()
 
     def to_lifecycle_execution(self, json):
       if json.get('failure_details', None) is not None:
@@ -181,24 +182,28 @@ class AnsibleProcess(Process):
         while self.ansible_processor.active:
           request = self.request_queue.next()
           try:
-            # clean up zombie processes (Ansible can leave these behind)
-            for p in active_children():
-              logger.debug("removed zombie process {0}".format(p.name))
+            if request == SHUTDOWN_MESSAGE:
+              break
+            else:
+              # clean up zombie processes (Ansible can leave these behind)
+              for p in active_children():
+                logger.debug("removed zombie process {0}".format(p.name))
 
-            if request is not None:
-              if request.get('logging_context', None) is not None:
-                logging_context.set_from_dict(request['logging_context'])
+              if request is not None:
+                if request.get('logging_context', None) is not None:
+                  logging_context.set_from_dict(request['logging_context'])
 
-              try:
-                logger.debug('Ansible worker running request {0}'.format(request))
-                resp = self.ansible_client.run_lifecycle_playbook(request)
-                if resp is not None:
-                  logger.debug('Ansible worker finished for request {0} response {1}'.format(request, resp))
-                  self.response_queue.put(resp)
-                else:
-                  logger.warn("Empty response from Ansible worker for request {0}".format(request))
-              finally:
-                logging_context.clear()
+                try:
+                  print('Ansible worker running request {0}'.format(request))
+                  logger.debug('Ansible worker running request {0}'.format(request))
+                  resp = self.ansible_client.run_lifecycle_playbook(request)
+                  if resp is not None:
+                    print('Ansible worker finished for request {0} response {1}'.format(request, resp))
+                    self.response_queue.put(resp)
+                  else:
+                    logger.warn("Empty response from Ansible worker for request {0}".format(request))
+                finally:
+                  logging_context.clear()
           except Exception as e:
             logger.exception('Unexpected exception {0}'.format(e))
             traceback.print_exc(file=sys.stderr)
@@ -352,7 +357,7 @@ class ResponsesThread(threading.Thread):
           self.ansible_processor_service.ansible_process_done()
 
           if result is not None:
-            logger.info('Responses thread received {0}'.format(result))
+            logger.debug('Responses thread received {0}'.format(result))
             self.ansible_processor_service.messaging_service.send_lifecycle_execution(result)
           else:
             # nothing to do

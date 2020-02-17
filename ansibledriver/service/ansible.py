@@ -43,6 +43,7 @@ class AnsibleClient():
     return KubeConfig(deployment_location).write()
 
   def run_playbook(self, request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties):
+    print('run_playbook')
     Options = namedtuple('Options', ['connection',
                                      'forks',
                                      'become',

@@ -35,6 +35,7 @@ class RequestQueue(Service):
 
   def shutdown(self):
     self.put(SHUTDOWN_MESSAGE)
+    self.request_queue.close()
     # allow the queue to drain
     #self.request_queue.join()
     # self.request_queue.close()
@@ -67,10 +68,7 @@ class ResponseQueue(Service):
     self.response_queue.put(request)
 
   def shutdown(self):
-    self.put(SHUTDOWN_MESSAGE)
-    # allow the queue to drain
-    #self.request_queue.join()
-    # self.request_queue.close()
+    self.response_queue.close()
 
   def task_done(self):
     self.response_queue.task_done()

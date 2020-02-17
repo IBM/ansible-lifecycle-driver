@@ -10,14 +10,14 @@ from ignition.boot.config import BootstrapApplicationConfiguration, PropertyGrou
 from ignition.model.lifecycle import LifecycleExecuteResponse, LifecycleExecution, STATUS_COMPLETE, STATUS_FAILED, STATUS_IN_PROGRESS
 from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_ERROR, FAILURE_CODE_INTERNAL_ERROR, FAILURE_CODE_RESOURCE_NOT_FOUND, FAILURE_CODE_INSUFFICIENT_CAPACITY
 from ansibledriver.service.cache import CacheProperties
-from ansibledriver.service.queue import RequestQueue
+from ansibledriver.service.queue import RequestQueue, ResponseQueue
 from ansibledriver.service.process import AnsibleProcessorService, ProcessProperties
 from ansibledriver.service.ansible import AnsibleProperties
 from ignition.utils.file import DirectoryTree
 from ignition.utils.propvaluemap import PropValueMap
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 stream_handler = logging.StreamHandler(sys.stdout)
 logger.addHandler(stream_handler)
 
@@ -61,6 +61,7 @@ class TestProcess(unittest.TestCase):
     def setUp(self):
         self.tmp_workspace = tempfile.mkdtemp()
         self.request_queue = RequestQueue()
+        self.response_queue = ResponseQueue()
         self.mock_ansible_client = MagicMock()
         self.mock_messaging_service = MagicMock()
         property_groups = PropertyGroups()
@@ -69,7 +70,7 @@ class TestProcess(unittest.TestCase):
         process_props.use_pool = False
         property_groups.add_property_group(process_props)
         self.configuration = BootstrapApplicationConfiguration(app_name='test', property_sources=[], property_groups=property_groups, service_configurators=[], api_configurators=[], api_error_converter=None)
-        self.ansible_processor = AnsibleProcessorService(self.configuration, self.request_queue, self.mock_ansible_client, messaging_service=self.mock_messaging_service)
+        self.ansible_processor = AnsibleProcessorService(self.configuration, self.request_queue, self.response_queue, self.mock_ansible_client, messaging_service=self.mock_messaging_service)
 
     def tearDown(self):
         self.ansible_processor.shutdown()
@@ -91,6 +92,7 @@ class TestProcess(unittest.TestCase):
           self.mock_messaging_service.send_lifecycle_execution.assert_called_with(LifecycleExecutionMatcher(lifecycle_execution))
           break
         else:
+          logger.info('check_responses, iteration {0}...'.format(i))
           time.sleep(1)
       else:
         self.fail('Timeout waiting for response')
@@ -103,6 +105,7 @@ class TestProcess(unittest.TestCase):
           assert self.mock_messaging_service.send_lifecycle_execution.call_args_list == list(map(lambda lifecycle_execution: call(LifecycleExecutionMatcher(lifecycle_execution)), lifecycle_executions))
           break
         else:
+          logger.info('check_responses, iteration {0}...'.format(i))
           time.sleep(1)
       else:
         self.fail('Timeout waiting for response')
@@ -224,7 +227,7 @@ class TestProcess(unittest.TestCase):
         property_groups.add_property_group(process_properties)
         property_groups.add_property_group(CacheProperties())
         configuration = BootstrapApplicationConfiguration(app_name='test', property_sources=[], property_groups=property_groups, service_configurators=[], api_configurators=[], api_error_converter=None)
-        self.ansible_processor = AnsibleProcessorService(configuration, self.request_queue, self.mock_ansible_client, messaging_service=self.mock_messaging_service)
+        self.ansible_processor = AnsibleProcessorService(configuration, self.request_queue, self.response_queue,self.mock_ansible_client, messaging_service=self.mock_messaging_service)
 
         self.ansible_processor.run_lifecycle({
           'lifecycle_name': 'install',
