@@ -121,7 +121,7 @@ class AnsibleClient():
             inventory_path = config_path.get_file_path(INVENTORY)
 
           # process key properties by writing them out to a temporary file and adding an
-          # entry to the property dictionary that maps the "[key_name].path" to the key file path
+          # entry to the property dictionary that maps the "[key_name]_path" to the key file path
           key_property_processor.process_key_properties()
 
           logger.debug('config_path = ' + config_path.get_path())

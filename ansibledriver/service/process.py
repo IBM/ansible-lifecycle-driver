@@ -181,6 +181,10 @@ class AnsibleProcess(Process):
         while self.ansible_processor.active:
           request = self.request_queue.next()
           try:
+            # clean up zombie processes (Ansible can leave these behind)
+            for p in active_children():
+              logger.debug("removed zombie process {0}".format(p.name))
+
             if request is not None:
               if request.get('logging_context', None) is not None:
                 logging_context.set_from_dict(request['logging_context'])
