@@ -254,7 +254,7 @@ class QueueThread(threading.Thread):
                     logger.info('Request processing started for request {0} with thread {1}'.format(request, worker.ident))
                   else:
                     logger.debug('Creating worker process')
-                    worker = AnsibleWorkerProcess(self.ansible_processor.sigchld_handler, self.ansible_client, request, self.send_pipe)
+                    worker = AnsibleWorkerProcess(self.ansible_client, request, self.send_pipe)
                     logger.debug('Created worker process')
                     worker.start()
                     logger.info('Request processing started for request {0} with pid {1}'.format(request, worker.pid))
@@ -306,17 +306,13 @@ class AnsibleWorkerThread(threading.Thread):
 
 class AnsibleWorkerProcess(Process):
 
-    def __init__(self, sigchld_handler, ansible_client, request, send_pipe):
+    def __init__(self, ansible_client, request, send_pipe):
       self.ansible_client = ansible_client
       self.request = request
       self.send_pipe = send_pipe
-      self.sigchld_handler = sigchld_handler
       super().__init__(daemon = False)
 
     def run(self):
-      # need to reset SIGCHLD handler (setting is inherited from parent process) so that Ansible can override it
-      signal(SIGCHLD, self.sigchld_handler)
-
       try:
         if self.request is not None:
           if self.request.get('logging_context', None) is not None:
@@ -330,7 +326,6 @@ class AnsibleWorkerProcess(Process):
             logger.warn("Empty response from Ansible worker for request {0}".format(self.request))
         else:
           pass
-          # TODO
       except Exception as e:
         logger.error('Unexpected exception {0}'.format(e))
         traceback.print_exc(file=sys.stderr)
