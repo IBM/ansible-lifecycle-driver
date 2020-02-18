@@ -63,28 +63,28 @@ class PickableMock(MagicMock):
     def __reduce__(self):
         return (MagicMock, ())
 
-def ansibleClient():
-    pass
-
 class TestProcess(unittest.TestCase):
 
     def setUp(self):
         self.tmp_workspace = tempfile.mkdtemp()
         self.request_queue = RequestQueue()
         self.response_queue = ResponseQueue()
-        # the use of PickableMock is needed to be able to make MagicMocks with multiprocessing queues pickling
-        # see https://github.com/testing-cabal/mock/issues/139#issuecomment-122128815
-        self.mock_ansible_client = PickableMock()
-        self.mock_messaging_service = MagicMock()
+        self.mock_messaging_service = PickableMock()
         property_groups = PropertyGroups()
         property_groups.add_property_group(AnsibleProperties())
         process_props = ProcessProperties()
         process_props.use_pool = False
         property_groups.add_property_group(process_props)
         self.configuration = BootstrapApplicationConfiguration(app_name='test', property_sources=[], property_groups=property_groups, service_configurators=[], api_configurators=[], api_error_converter=None)
-        self.ansible_processor = AnsibleProcessorService(self.configuration, self.request_queue, self.response_queue, self.mock_ansible_client, messaging_service=self.mock_messaging_service)
+        self.ansible_processor = None
+
+    def build_processor(self, ansible_client, configuration=None):
+      if configuration is None:
+        configuration = self.configuration
+      self.ansible_processor = AnsibleProcessorService(configuration, self.request_queue, self.response_queue, ansible_client, messaging_service=self.mock_messaging_service)
 
     def tearDown(self):
+      if self.ansible_processor is not None:
         self.ansible_processor.shutdown()
 
     def assertLifecycleExecutionEqual(self, resp, expected_resp):
@@ -97,10 +97,10 @@ class TestProcess(unittest.TestCase):
             self.assertEqual(resp.failure_details.failure_code, expected_resp.failure_details.failure_code)
             self.assertEqual(resp.failure_details.description, expected_resp.failure_details.description)
 
-    def check_response(self, lifecycle_execution):
+    def check_response(self, mock_ansible_client, lifecycle_execution):
       for i in range(50):
-        if self.mock_ansible_client.run_lifecycle_playbook.call_count > 0:
-          self.mock_ansible_client.run_lifecycle_playbook.assert_called_once()
+        if mock_ansible_client.run_lifecycle_playbook.call_count > 0:
+          mock_ansible_client.run_lifecycle_playbook.assert_called_once()
 
         if self.mock_messaging_service.send_lifecycle_execution.call_count > 0:
           name, args, kwargs = self.mock_messaging_service.send_lifecycle_execution.mock_calls[0]
@@ -128,9 +128,9 @@ class TestProcess(unittest.TestCase):
     def check_responses(self, lifecycle_executions):
       # loop until there are at least two calls to the Kafka messaging, and then check that the messages are what we expect
       for i in range(50):
-        call_count = self.response_queue.put.call_count
+        call_count = self.mock_messaging_service.send_lifecycle_execution.call_count
         if call_count >= len(lifecycle_executions):
-          assert self.response_queue.put.call_args_list == list(map(lambda lifecycle_execution: call(LifecycleExecutionMatcher(lifecycle_execution)), lifecycle_executions))
+          assert self.mock_messaging_service.send_lifecycle_execution.call_args_list == list(map(lambda lifecycle_execution: call(LifecycleExecutionMatcher(lifecycle_execution)), lifecycle_executions))
           break
         else:
           logger.info('check_responses, iteration {0}...'.format(i))
@@ -141,6 +141,8 @@ class TestProcess(unittest.TestCase):
     def test_run_lifecycle_invalid_request(self):
         # this is needed to ensure logging output appears in test context - see https://stackoverflow.com/questions/7472863/pydev-unittesting-how-to-capture-text-logged-to-a-logging-logger-in-captured-o
         stream_handler.stream = sys.stdout
+
+        self.build_processor(PickableMock())
 
         with self.assertRaises(ValueError) as context:
           self.ansible_processor.run_lifecycle({
@@ -186,16 +188,17 @@ class TestProcess(unittest.TestCase):
     def test_run_lifecycle(self):
         # this is needed to ensure logging output appears in test context - see https://stackoverflow.com/questions/7472863/pydev-unittesting-how-to-capture-text-logged-to-a-logging-logger-in-captured-o
         stream_handler.stream = sys.stdout
-
         request_id = uuid.uuid4().hex
 
         lifecycle_execution = LifecycleExecution(request_id, STATUS_COMPLETE, None, {
           'prop1': 'output__value1'
         })
-        self.mock_ansible_client.return_value.run_lifecycle_playbook.return_value = lifecycle_execution
-        # self.response_queue.next.return_value = lifecycle_execution
 
-        ansible_processor.run_lifecycle({
+        mock_ansible_client = PickableMock()
+        mock_ansible_client.run_lifecycle_playbook.return_value = lifecycle_execution
+        self.build_processor(mock_ansible_client)
+
+        self.ansible_processor.run_lifecycle({
           'lifecycle_name': 'install',
           'lifecycle_path': DirectoryTree(self.tmp_workspace),
           'system_properties': PropValueMap({
@@ -218,12 +221,14 @@ class TestProcess(unittest.TestCase):
 
 
 
-        self.check_response(lifecycle_execution)
+        self.check_response(mock_ansible_client, lifecycle_execution)
 
     def test_shutdown(self):
         # this is needed to ensure logging output appears in test context - see https://stackoverflow.com/questions/7472863/pydev-unittesting-how-to-capture-text-logged-to-a-logging-logger-in-captured-o
-        stream_handler.stream = sys.stdout
-
+        stream_handler.stream = sys.stdout  
+        
+        mock_ansible_client = PickableMock()
+        self.build_processor(mock_ansible_client)
         self.ansible_processor.shutdown()
 
         request_id = uuid.uuid4().hex
@@ -242,7 +247,7 @@ class TestProcess(unittest.TestCase):
 
         # self.response_queue.next.assert_called_with(LifecycleExecutionMatcher(lifecycle_execution))
 
-        self.check_response(LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Driver is inactive"), {}))
+        self.check_response(mock_ansible_client, LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Driver is inactive"), {}))
 
     def test_max_queue_size(self):
         # this is needed to ensure logging output appears in test context - see https://stackoverflow.com/questions/7472863/pydev-unittesting-how-to-capture-text-logged-to-a-logging-logger-in-captured-o
@@ -257,11 +262,10 @@ class TestProcess(unittest.TestCase):
         lifecycle_execution_2 = LifecycleExecution(request_id2, STATUS_COMPLETE, None, {
               'prop2': 'output__value2'
             })
-
-        self.mock_ansible_client.run_lifecycle_playbook.side_effect = [
-            # simulate a long-running task
-            sleep(request_id1, lifecycle_execution_1)
-          ]
+        mock_ansible_client = PickableMock()
+        def side_effect(*args, **kwargs):
+          return sleep(request_id1, lifecycle_execution_1)
+        mock_ansible_client.run_lifecycle_playbook.side_effect = side_effect
 
         # with a queue size of 1
         property_groups = PropertyGroups()
@@ -271,7 +275,7 @@ class TestProcess(unittest.TestCase):
         property_groups.add_property_group(process_properties)
         property_groups.add_property_group(CacheProperties())
         configuration = BootstrapApplicationConfiguration(app_name='test', property_sources=[], property_groups=property_groups, service_configurators=[], api_configurators=[], api_error_converter=None)
-        self.ansible_processor = AnsibleProcessorService(configuration, self.request_queue, self.response_queue,self.mock_ansible_client, messaging_service=self.mock_messaging_service)
+        self.build_processor(mock_ansible_client, configuration)
 
         self.ansible_processor.run_lifecycle({
           'lifecycle_name': 'install',

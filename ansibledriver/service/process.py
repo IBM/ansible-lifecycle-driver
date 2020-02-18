@@ -49,7 +49,6 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
         self.request_queue = request_queue
 
         self.response_queue = response_queue
-
         self.ansible_client = ansible_client
         self.counter = Counter()
 
@@ -191,7 +190,7 @@ class AnsibleProcess(Process):
     def run(self):
       try:
         signal(SIGINT, self.sigint_handler)
-
+        
         logger.info('Initialised worker process {0}'.format(self.name))
         while self.ansible_processor.active:
           request = self.request_queue.next()
@@ -202,7 +201,6 @@ class AnsibleProcess(Process):
               # clean up zombie processes (Ansible can leave these behind)
               for p in active_children():
                 logger.debug("removed zombie process {0}".format(p.name))
-
               if request is not None:
                 if request.get('logging_context', None) is not None:
                   logging_context.set_from_dict(request['logging_context'])
@@ -212,8 +210,6 @@ class AnsibleProcess(Process):
                   logger.debug('Ansible worker running request {0}'.format(request))
                   resp = self.ansible_client.run_lifecycle_playbook(request)
                   if resp is not None:
-                    print('Ansible worker finished for request {0} response {1}'.format(request, resp))
-                    print('response_queue queue {0}'.format(self.response_queue))
                     self.response_queue.put(resp)
                   else:
                     logger.warn("Empty response from Ansible worker for request {0}".format(request))
@@ -373,7 +369,6 @@ class ResponsesThread(threading.Thread):
 
           if result is not None:
             logger.debug('Responses thread received {0}'.format(result))
-            print('Responses thread received {0}'.format(result))
             self.ansible_processor_service.messaging_service.send_lifecycle_execution(result)
           else:
             # nothing to do
