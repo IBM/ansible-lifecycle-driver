@@ -11,10 +11,10 @@ ansible:
   output_prop_prefix: 'output__'
 
 process:
-  process_pool_size: 10
-  max_concurrenty_ansible_processes: 10
-  max_queue_size: 100
-  use_pool: True
+  process_pool_size: 50
+  max_concurrent_ansible_processes: 20
+  max_queue_size: 500
+  use_process_pool: True
   is_threaded: False
 
 messaging:

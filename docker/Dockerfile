@@ -37,9 +37,9 @@ USER root
 # clean up packages used to install Python packages
 RUN apk del .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git
 
+EXPOSE 8293
+
 USER ald
 WORKDIR /home/ald
-
-EXPOSE 8293
 
 CMD ["ald"]

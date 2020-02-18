@@ -122,19 +122,25 @@ app:
         ## sleep between retries (in seconds)
         unreachable_sleep_seconds: 5
         ## maximum number of retries before a failure
-        max_unreachable_retries: 1000
+        max_unreachable_retries: 60
 
         ## output properties are set using set_fact in the Ansible script and prefixed with this string
         ## so that the driver knows they are intended to be exported to Brent.
         output_prop_prefix: 'output__'
 
       process:
-        ## the maximum number of processes to spawn to handle requests
-        max_concurrent_ansible_processes: 10
-        ## the maximum size of the request queue before requests are rejected
-        max_queue_size: 100
-        ## whether to use threads or processes to read and process requests on the request queue
+        ## whether to a process pool to read and process transition requests
+        use_process_pool: True
+        ## the maximum size of the request queue before transition requests are rejected
+        max_queue_size: 500
+        ## settings for use_process_pool == True (a pool of processes handles lifecycle requests)
+        ### size of the Ansible process pool
+        process_pool_size: 50
+        ## settings for use_process_pool == False (a thread is used to read from the transition request queue and either
+        ### handle the transition request in another thread, or by spawning a process to handle the transition request)
         is_threaded: False
+        ### the maximum number of processes to spawn to handle transition requests
+        max_concurrent_ansible_processes: 20
 
       messaging:
         connection_address: foundation-kafka:9092
