@@ -22,7 +22,8 @@ setup(
         'ansible==2.7.16',
         'Jinja2>=2.10.1,<3.0',
         'uwsgi>=2.0.18,<3.0',
-        'gunicorn>=19.9.0,<20.0'
+        'gunicorn>=19.9.0,<20.0',
+        'testfixtures>=6.12.1,<7.0'
     ],
     entry_points='''
         [console_scripts]

@@ -15,6 +15,7 @@ from ansibledriver.service.process import AnsibleProcessorService, ProcessProper
 from ansibledriver.service.ansible import AnsibleProperties
 from ignition.utils.file import DirectoryTree
 from ignition.utils.propvaluemap import PropValueMap
+from testfixtures import compare
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -56,13 +57,24 @@ class LifecycleExecutionMatcher:
   def __eq__(self, other):
     return self.compare(other)
 
+# PickableMock is needed to be able to make MagicMocks with multiprocessing queues pickling
+# see https://github.com/testing-cabal/mock/issues/139#issuecomment-122128815
+class PickableMock(MagicMock):
+    def __reduce__(self):
+        return (MagicMock, ())
+
+def ansibleClient():
+    pass
+
 class TestProcess(unittest.TestCase):
 
     def setUp(self):
         self.tmp_workspace = tempfile.mkdtemp()
         self.request_queue = RequestQueue()
         self.response_queue = ResponseQueue()
-        self.mock_ansible_client = MagicMock()
+        # the use of PickableMock is needed to be able to make MagicMocks with multiprocessing queues pickling
+        # see https://github.com/testing-cabal/mock/issues/139#issuecomment-122128815
+        self.mock_ansible_client = PickableMock()
         self.mock_messaging_service = MagicMock()
         property_groups = PropertyGroups()
         property_groups.add_property_group(AnsibleProperties())
@@ -87,22 +99,38 @@ class TestProcess(unittest.TestCase):
 
     def check_response(self, lifecycle_execution):
       for i in range(50):
-        call_count = self.mock_messaging_service.send_lifecycle_execution.call_count
-        if call_count > 0:
-          self.mock_messaging_service.send_lifecycle_execution.assert_called_with(LifecycleExecutionMatcher(lifecycle_execution))
+        if self.mock_ansible_client.run_lifecycle_playbook.call_count > 0:
+          self.mock_ansible_client.run_lifecycle_playbook.assert_called_once()
+
+        if self.mock_messaging_service.send_lifecycle_execution.call_count > 0:
+          name, args, kwargs = self.mock_messaging_service.send_lifecycle_execution.mock_calls[0]
+          print('args=' + str(len(args)))
+          compare(args[0], lifecycle_execution)
           break
         else:
-          logger.info('check_responses, iteration {0}...'.format(i))
+          logger.info('check_response, iteration {0}...'.format(i))
           time.sleep(1)
       else:
         self.fail('Timeout waiting for response')
 
+    # def check_response(self, lifecycle_execution):
+    #   for i in range(50):
+    #     call_count = self.mock_messaging_service.send_lifecycle_execution.call_count
+    #     if call_count > 0:
+    #       self.mock_messaging_service.send_lifecycle_execution.assert_called_with(LifecycleExecutionMatcher(lifecycle_execution))
+    #       break
+    #     else:
+    #       logger.info('check_responses, iteration {0}...'.format(i))
+    #       time.sleep(1)
+    #   else:
+    #     self.fail('Timeout waiting for response')
+
     def check_responses(self, lifecycle_executions):
       # loop until there are at least two calls to the Kafka messaging, and then check that the messages are what we expect
       for i in range(50):
-        call_count = self.mock_messaging_service.send_lifecycle_execution.call_count
+        call_count = self.response_queue.put.call_count
         if call_count >= len(lifecycle_executions):
-          assert self.mock_messaging_service.send_lifecycle_execution.call_args_list == list(map(lambda lifecycle_execution: call(LifecycleExecutionMatcher(lifecycle_execution)), lifecycle_executions))
+          assert self.response_queue.put.call_args_list == list(map(lambda lifecycle_execution: call(LifecycleExecutionMatcher(lifecycle_execution)), lifecycle_executions))
           break
         else:
           logger.info('check_responses, iteration {0}...'.format(i))
@@ -153,6 +181,8 @@ class TestProcess(unittest.TestCase):
           })
         self.assertEqual(str(context.exception), 'Request must have a lifecycle_path')
 
+    # @patch("ansibledriver.service.ansible.AnsibleClient")
+    # def test_run_lifecycle(self, mock_ansible_client):
     def test_run_lifecycle(self):
         # this is needed to ensure logging output appears in test context - see https://stackoverflow.com/questions/7472863/pydev-unittesting-how-to-capture-text-logged-to-a-logging-logger-in-captured-o
         stream_handler.stream = sys.stdout
@@ -162,9 +192,10 @@ class TestProcess(unittest.TestCase):
         lifecycle_execution = LifecycleExecution(request_id, STATUS_COMPLETE, None, {
           'prop1': 'output__value1'
         })
-        self.mock_ansible_client.run_lifecycle_playbook.return_value = lifecycle_execution
+        self.mock_ansible_client.return_value.run_lifecycle_playbook.return_value = lifecycle_execution
+        # self.response_queue.next.return_value = lifecycle_execution
 
-        self.ansible_processor.run_lifecycle({
+        ansible_processor.run_lifecycle({
           'lifecycle_name': 'install',
           'lifecycle_path': DirectoryTree(self.tmp_workspace),
           'system_properties': PropValueMap({
@@ -175,6 +206,17 @@ class TestProcess(unittest.TestCase):
           },
           'request_id': request_id
         })
+
+        # self.response_queue.next.call_args == LifecycleExecutionMatcher(lifecycle_execution)
+
+        # self.response_queue.next.assert_called_with(LifecycleExecutionMatcher(lifecycle_execution))
+
+        # args, kwargs = self.response_queue.next.call_args
+        # self.assertEqual(kwargs, {})
+        # self.assertEqual(len(args), 1)
+        # self.assertEqual(args[0], LifecycleExecutionMatcher(lifecycle_execution))
+
+
 
         self.check_response(lifecycle_execution)
 
@@ -197,6 +239,8 @@ class TestProcess(unittest.TestCase):
           },
           'request_id': request_id
         })
+
+        # self.response_queue.next.assert_called_with(LifecycleExecutionMatcher(lifecycle_execution))
 
         self.check_response(LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Driver is inactive"), {}))
 

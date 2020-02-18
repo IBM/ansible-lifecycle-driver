@@ -64,11 +64,12 @@ class ResponseQueue(Service):
   def size(self):
     return self.response_queue.qsize()
 
-  def put(self, request):
-    self.response_queue.put(request)
+  def put(self, response):
+    self.response_queue.put(response)
 
   def shutdown(self):
-    self.response_queue.close()
+    pass
+    # self.response_queue.close()
 
   def task_done(self):
     self.response_queue.task_done()

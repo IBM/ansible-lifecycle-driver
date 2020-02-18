@@ -3,6 +3,7 @@ import logging
 import time
 import os
 import sys
+import multiprocessing
 import traceback
 import threading
 from signal import signal, SIGINT, SIGTERM, SIGQUIT, SIGCHLD, SIG_IGN, SIG_DFL
@@ -29,7 +30,7 @@ class ProcessProperties(ConfigurationPropertiesGroup):
     def __init__(self):
         super().__init__('process')
         # apply defaults (correct settings will be picked up from config file or environment variables)
-        self.process_pool_size = 10
+        self.process_pool_size = 2
         self.max_concurrent_ansible_processes = 10
         self.max_queue_size = 100
         self.use_process_pool = True
@@ -139,19 +140,26 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
       exit(0)
 
     def shutdown(self):
-      logger.info('shutdown')
+      if self.active:
+        logger.info('shutdown')
 
-      self.active = False
+        self.active = False
 
-      if self.process_properties.use_process_pool:
-        logger.debug("Joining Ansible processes")
-        for p in self.pool:
-          if p is not None:
-            logger.debug("Terminating Ansible Driver process {0}".format(p.name))
-            p.terminate()
+        logger.info('Shutting down request queue')
+        print('Shutting down request queue')
+        self.request_queue.shutdown()
+        logger.info('Shutting down response queue')
+        print('Shutting down response queue')
+        self.response_queue.shutdown()
 
-      self.request_queue.shutdown()
-      self.response_queue.shutdown()
+        print('Shutting down process pool')
+        if self.process_properties.use_process_pool:
+          logger.debug("Terminating Ansible processes")
+          print("Terminating Ansible processes")
+          for p in self.pool:
+            if p is not None and p.is_alive():
+              logger.debug("Terminating Ansible Driver process {0}".format(p.name))
+              p.terminate()
 
     def to_lifecycle_execution(self, json):
       if json.get('failure_details', None) is not None:
@@ -176,8 +184,14 @@ class AnsibleProcess(Process):
 
       logger.debug('Created worker process: {0}'.format(name))
 
+    def sigint_handler(self, sig, frame):
+      logger.debug('caught sigint in Ansible Process Worker {0}'.format(self.name))
+      exit(0)
+
     def run(self):
       try:
+        signal(SIGINT, self.sigint_handler)
+
         logger.info('Initialised worker process {0}'.format(self.name))
         while self.ansible_processor.active:
           request = self.request_queue.next()
@@ -199,6 +213,7 @@ class AnsibleProcess(Process):
                   resp = self.ansible_client.run_lifecycle_playbook(request)
                   if resp is not None:
                     print('Ansible worker finished for request {0} response {1}'.format(request, resp))
+                    print('response_queue queue {0}'.format(self.response_queue))
                     self.response_queue.put(resp)
                   else:
                     logger.warn("Empty response from Ansible worker for request {0}".format(request))
@@ -358,6 +373,7 @@ class ResponsesThread(threading.Thread):
 
           if result is not None:
             logger.debug('Responses thread received {0}'.format(result))
+            print('Responses thread received {0}'.format(result))
             self.ansible_processor_service.messaging_service.send_lifecycle_execution(result)
           else:
             # nothing to do
