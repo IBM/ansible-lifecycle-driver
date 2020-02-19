@@ -4,9 +4,9 @@
 
 The "config" subdirectory in the Brent resource package driver root directory contains Ansible inventory and ancillary configuration files. The Ansible Lifecycle Driver expects an inventory file named "inventory" in this directory (for SSH connections using the [Ansible SSH connection plugin](https://docs.ansible.com/ansible/latest/plugins/connection.html#ssh-plugins)) and/or a file named "inventory.k8s" (for K8s connections using the [Ansible kubectl connection plugin](https://docs.ansible.com/ansible/latest/plugins/connection/kubectl.html)).
 
-The driver determines which inventory file to use based on the deployment location type (i.e. "deploymentLocation.type") in the lifecycle request. If the type is "Kubernetes" the driver will expect an "inventory.k8s" file. If the type is anything other than "Kubernetes", an SSh connection and "inventory" file are expected.
+The driver determines which inventory file to use based on the deployment location type (i.e. "deploymentLocation.type") in the lifecycle request. If the type is "Kubernetes" the driver will expect an "inventory.k8s" file. If the type is anything other than "Kubernetes", an SSH connection and "inventory" file are expected.
 
-Note: if you wish to split your inventory out in to separate host variable files then you may do so. For example:
+Note: if you wish to split your inventory out into separate host variable files then you may do so. For example:
 
 ```
 config

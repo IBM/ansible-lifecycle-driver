@@ -1,5 +1,7 @@
 # Ansible Lifecycle Driver
 
+This driver implements the [Stratoss&trade; Lifecycle Manager](http://servicelifecyclemanager.com/2.1.0/) Brent Lifecycle APIs.
+
 Please read the following guides to get started with the Ansible Lifecycle Driver
 
 ## Install

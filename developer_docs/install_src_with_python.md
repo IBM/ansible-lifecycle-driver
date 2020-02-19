@@ -13,7 +13,7 @@ Clone this repository, navigate to the root directory and install with pip:
 pip3 install --editable .
 ```
 
-Note: `--editable` is added so live code changes in the osvimdriver package are reflected in the next startup without the need for a re-install through pip.
+Note: `--editable` is added so live code changes in the ansibledriver package are reflected in the next startup without the need for a re-install through pip.
 
 ## Configuration
 
