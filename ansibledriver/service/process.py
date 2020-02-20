@@ -79,6 +79,12 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
     def ansible_process_done(self):
       self.counter.decrement()
 
+    # remove deployment location properties from the request (to prevent logging sensitive information)
+    def request_without_dl_properties(self, request):
+      if request.get('deployment_location', None) is not None:
+        if request['deployment_location'].get('properties', None) is not None:
+          request['deployment_location']['properties'] = None
+
     def run_lifecycle(self, request, keep_scripts=False):
       accepted = False
       try:
@@ -93,12 +99,12 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
         # add logging context to request
         request['logging_context'] = logging_context.get_all()
 
-        logger.info('request_queue.size {0} max_queue_size {1}'.format(self.request_queue.size(), self.process_properties.max_queue_size))
+        logger.debug('request_queue.size {0} max_queue_size {1}'.format(self.request_queue.size(), self.process_properties.max_queue_size))
         if self.active == True:
           if self.request_queue.size() >= self.process_properties.max_queue_size:
             self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Request cannot be handled, driver is overloaded"), {}))
           else:
-            logger.debug('Adding request {0} to queue'.format(request))
+            logger.debug('Adding request {0} to queue'.format(self.request_without_dl_properties(request)))
             self.request_queue.put(request)
             accepted = True
         else:
@@ -125,7 +131,7 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
           if request is not None:
             send_pipe.send(self.ansible_client.run_lifecycle_playbook(request))
 
-            logger.info('Ansible worker finished for request {0}'.format(request))
+            logger.debug('Ansible worker finished for request {0}'.format(request))
         except Exception as e:
           logger.error('Unexpected exception {0}'.format(e))
           traceback.print_exc(file=sys.stderr)
@@ -140,7 +146,7 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
 
     def shutdown(self):
       if self.active:
-        logger.info('shutdown')
+        logger.debug('shutdown')
 
         self.active = False
 
@@ -228,7 +234,7 @@ class AnsibleProcess(Process):
             for p in active_children():
               logger.debug("removed zombie process {0}".format(p.name))
 
-        logger.info('Worker process {0} finished'.format(self.name))
+        logger.debug('Worker process {0} finished'.format(self.name))
       except Exception as e:
         logger.exception('Unexpected exception {0}'.format(e))
         traceback.print_exc(file=sys.stderr)
@@ -257,7 +263,7 @@ class QueueThread(threading.Thread):
               break
             elif self.counter.value() < self.process_properties.max_concurrent_ansible_processes:
               try:
-                logger.info('Got request from queue: {0}'.format(request))
+                logger.debug('Got request from queue: {0}'.format(request))
                 if(request == SHUTDOWN_MESSAGE):
                   self.request_queue.task_done()
                   break
@@ -267,13 +273,13 @@ class QueueThread(threading.Thread):
                   if self.process_properties.is_threaded:
                     worker = AnsibleWorkerThread(self.ansible_client, request, self.send_pipe)
                     worker.start()
-                    logger.info('Request processing started for request {0} with thread {1}'.format(request, worker.ident))
+                    logger.debug('Request processing started for request {0} with thread {1}'.format(request, worker.ident))
                   else:
                     logger.debug('Creating worker process')
                     worker = AnsibleWorkerProcess(self.ansible_client, request, self.send_pipe)
                     logger.debug('Created worker process')
                     worker.start()
-                    logger.info('Request processing started for request {0} with pid {1}'.format(request, worker.pid))
+                    logger.debug('Request processing started for request {0} with pid {1}'.format(request, worker.pid))
               finally:
                 self.request_queue.task_done()
             else:
@@ -303,7 +309,7 @@ class AnsibleWorkerThread(threading.Thread):
 
           resp = self.ansible_client.run_lifecycle_playbook(self.request)
           if resp is not None:
-            logger.info('Ansible worker finished for request {0} response {1}'.format(self.request, resp))
+            logger.debug('Ansible worker finished for request {0} response {1}'.format(self.request, resp))
             self.send_pipe.send(resp)
           else:
             logger.warn("Empty response from Ansible worker for request {0}".format(self.request))
@@ -336,7 +342,7 @@ class AnsibleWorkerProcess(Process):
 
           resp = self.ansible_client.run_lifecycle_playbook(self.request)
           if resp is not None:
-            logger.info('Ansible worker finished for request {0} response {1}'.format(self.request, resp))
+            logger.debug('Ansible worker finished for request {0} response {1}'.format(self.request, resp))
             self.send_pipe.send(resp)
           else:
             logger.warn("Empty response from Ansible worker for request {0}".format(self.request))
