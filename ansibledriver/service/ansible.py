@@ -137,7 +137,6 @@ class AnsibleClient():
             'dl_properties': dl_properties
           }
           logger.debug('properties={0}'.format(properties))
-          logger.debug('dl_properties={0}'.format(dl_properties))
           process_templates(config_path, all_properties)
 
           if(os.path.exists(playbook_path)):
