@@ -88,9 +88,9 @@ class AnsibleClient():
 
     callback = ResultCallback(self.ansible_properties, request_id, lifecycle)
     pbex._tqm._stdout_callback = callback
-    logger.info("Running playbook {0} with properties {1}".format(playbook_path, all_properties))
+    logger.debug("Running playbook {0} with properties {1}".format(playbook_path, all_properties))
     pbex.run()
-    logger.info("Playbook finished {0}".format(playbook_path))
+    logger.debug("Playbook finished {0}".format(playbook_path))
 
     return callback
 
@@ -136,8 +136,7 @@ class AnsibleClient():
             'system_properties': system_properties,
             'dl_properties': dl_properties
           }
-          logger.info('properties={0}'.format(properties))
-          logger.info('dl_properties={0}'.format(dl_properties))
+          logger.debug('properties={0}'.format(properties))
           process_templates(config_path, all_properties)
 
           if(os.path.exists(playbook_path)):
@@ -146,7 +145,7 @@ class AnsibleClient():
 
             for i in range(0, num_retries):
               if i>0:
-                logger.info('Playbook {0}, unreachable retry attempt {1}/{2}'.format(playbook_path, i+1, num_retries))
+                logger.debug('Playbook {0}, unreachable retry attempt {1}/{2}'.format(playbook_path, i+1, num_retries))
               start_time = datetime.now()
               ret = self.run_playbook(request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties)
               if not ret.host_unreachable:
@@ -163,7 +162,7 @@ class AnsibleClient():
             return ret.get_result()
           else:
             msg = "No playbook to run at {0} for lifecycle {1} for request {2}".format(playbook_path, lifecycle, request_id)
-            logger.info(msg)
+            logger.debug(msg)
             return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, msg), {})
         else:
           msg = "No playbook to run for lifecycle {0} for request {1} {2}".format(lifecycle, request_id, scripts_path.get_path())
@@ -232,14 +231,14 @@ class ResultCallback(CallbackBase):
         }
 
     def v2_playbook_on_play_start(self, play):
-        logger.info('v2_playbook_on_play_start ok {0}'.format(play))
+        logger.debug('v2_playbook_on_play_start ok {0}'.format(play))
         self.results.append(self._new_play(play))
 
     def v2_playbook_on_task_start(self, task, is_conditional):
-        logger.info('v2_playbook_on_task_start ok {0} {1}'.format(task, is_conditional))
+        logger.debug('v2_playbook_on_task_start ok {0} {1}'.format(task, is_conditional))
 
     def v2_playbook_on_handler_task_start(self, task):
-        logger.info('v2_playbook_on_handler_task_start ok {0}'.format(task))
+        logger.debug('v2_playbook_on_handler_task_start ok {0}'.format(task))
 
     def v2_playbook_on_stats(self, stats):
         """Display info about playbook statistics"""
@@ -256,42 +255,42 @@ class ResultCallback(CallbackBase):
             'stats': summary
         }
 
-        logger.info('v2_playbook_on_stats {0}'.format(json.dumps(output, indent=4, sort_keys=True)))
+        logger.debug('v2_playbook_on_stats {0}'.format(json.dumps(output, indent=4, sort_keys=True)))
 
     def v2_playbook_on_no_hosts_matched(self):
-        logger.info('v2_playbook_on_no_hosts_matched')
+        logger.debug('v2_playbook_on_no_hosts_matched')
 
     def v2_runner_on_unreachable(self, result, ignore_errors=False):
         """
         ansible task failed as host was unreachable
         """
-        logger.info('v2_runner_on_unreachable {0}'.format(result))
+        logger.debug('v2_runner_on_unreachable {0}'.format(result))
         self.__handle_unreachable(result)
         logger.error('task: \'' + self.failed_task + '\' UNREACHABLE: ' + ' ansible playbook task ' + self.failed_task + ' host unreachable: ' + str(self.host_unreachable_log))
 
     def v2_playbook_on_vars_prompt(self, varname, private=True, prompt=None, encrypt=None, confirm=False, salt_size=None, salt=None, default=None, unsafe=None):
-        logger.info('v2_playbook_on_vars_prompt {0}'.format(varname))
+        logger.debug('v2_playbook_on_vars_prompt {0}'.format(varname))
 
     def v2_runner_item_on_ok(self, result):
-        logger.info('v2_runner_item_on_ok {0}'.format(result))
+        logger.debug('v2_runner_item_on_ok {0}'.format(result))
 
     def v2_runner_item_on_failed(self, result):
-        logger.info('v2_runner_item_on_failed {0}'.format(result))
+        logger.debug('v2_runner_item_on_failed {0}'.format(result))
 
     def v2_runner_item_on_skipped(self, result):
-        logger.info('v2_runner_item_on_skipped {0}'.format(result))
+        logger.debug('v2_runner_item_on_skipped {0}'.format(result))
 
     def runner_on_no_hosts(self):
-        logger.info('runner_on_no_hosts')
+        logger.debug('runner_on_no_hosts')
 
     def v2_runner_retry(self, result):
-        logger.info('v2_runner_retry {0}'.format(result))
+        logger.debug('v2_runner_retry {0}'.format(result))
 
     def v2_runner_on_start(self, host, task):
-        logger.info('v2_runner_on_start {0} {1}'.format(host, task))
+        logger.debug('v2_runner_on_start {0} {1}'.format(host, task))
 
     def runner_on_failed(self, host, res, ignore_errors=False):
-        logger.info('runner_on_failed {0} {1}'.format(host, res))
+        logger.debug('runner_on_failed {0} {1}'.format(host, res))
 
     def __handle_unreachable(self, result):
         # TODO do not overwrite if already set
@@ -306,13 +305,13 @@ class ResultCallback(CallbackBase):
         """
         ansible task failed
         """
-        logger.info("v2_runner_on_failed {0}".format(result))
+        logger.debug("v2_runner_on_failed {0}".format(result))
         self.failed_task = result._task.get_name()
         if 'msg' in result._result and 'Timeout' in result._result['msg'] and 'waiting for privilege escalation prompt' in result._result['msg']:
-            logger.info('Failure to be treated as unreachable:  task ' + str(self.failed_task) + ' failed: ' + str(result._result))
+            logger.debug('Failure to be treated as unreachable:  task ' + str(self.failed_task) + ' failed: ' + str(result._result))
             self.__handle_unreachable(result)
         elif 'module_stderr' in result._result and result._result['module_stderr'].startswith('ssh:') and 'Host is unreachable' in result._result['module_stderr']:
-            logger.info('Failure to be treated as unreachable: task ' + str(self.failed_task) + ' failed: ' + str(result._result))
+            logger.debug('Failure to be treated as unreachable: task ' + str(self.failed_task) + ' failed: ' + str(result._result))
             self.__handle_unreachable(result)
         else:
           self.host_failed = True
@@ -322,18 +321,18 @@ class ResultCallback(CallbackBase):
           self.playbook_failed = True
 
     def v2_runner_on_skipped(self, result):
-        logger.info('v2_runner_on_skipped {0}'.format(result))
+        logger.debug('v2_runner_on_skipped {0}'.format(result))
 
     def runner_on_ok(self, host, res):
         self._display.display('runner_on_ok {0} {1}'.format(host, res))
-        logger.info('runner_on_ok {0} {1}'.format(host, res))
+        logger.debug('runner_on_ok {0} {1}'.format(host, res))
 
     def v2_runner_on_ok(self, result, *args, **kwargs):
         """Print a json representation of the result
 
         This method could store the result in an instance attribute for retrieval later
         """
-        logger.info('v2_runner_on_ok {0}'.format(result))
+        logger.debug('v2_runner_on_ok {0}'.format(result))
 
         if 'results' in result._result.keys():
             self.facts = result._result['results']
@@ -345,7 +344,7 @@ class ResultCallback(CallbackBase):
 
             props = { key[8:]:value for key, value in props.items() if key.startswith(self.ansible_properties.output_prop_prefix) }
 
-            logger.info('output props = {0}'.format(props))
+            logger.debug('output props = {0}'.format(props))
 
             self.properties.update(props)
 
@@ -377,16 +376,15 @@ def get_lifecycle_playbook_path(root_path, transition_name):
 
 def process_templates(parent_dir, all_properties):
   path = parent_dir.get_path()
-  logger.info('Process templates: walking {0}'.format(path))
+  logger.debug('Process templates: walking {0}'.format(path))
 
   for root, dirs, files in os.walk(path):
     logger.debug('Process templates: files = '.format(files))
     for file in files:
         j2_env = Environment(loader=FileSystemLoader(root), trim_blocks=True)
         path = root + '/' + file
-        logger.info('Process templates: writing to file {0}'.format(path))
         template = j2_env.get_template(file).render(**all_properties)
-        logger.info('Process templates: template {0}'.format(template))
+        logger.debug('Wrote process template to file {0}'.format(path))
         with open(path, "w") as text_file:
             text_file.write(template)
 
@@ -412,16 +410,16 @@ class KeyPropertyProcessor():
 
   def write_private_key(self, properties, key_prop_name, private_key):
     with NamedTemporaryFile(delete=False, mode='w') as private_key_file:
-      logger.info('Writing private key file {0}'.format(private_key_file.name))
+      logger.debug('Writing private key file {0}'.format(private_key_file.name))
       private_key_value = private_key.get('privateKey', None)
       private_key_file.write(private_key_value)
       private_key_file.flush()
       self.key_files.append(private_key_file)
 
-      logger.info('Setting property {0}_path'.format(key_prop_name))
+      logger.debug('Setting property {0}_path'.format(key_prop_name))
       properties[key_prop_name + '_path'] = private_key_file.name
 
-      logger.info('Setting property {0}_name'.format(key_prop_name))
+      logger.debug('Setting property {0}_name'.format(key_prop_name))
       key_name = private_key.get('keyName', None)
       properties[key_prop_name + '_name'] = key_name
 
@@ -430,5 +428,5 @@ class KeyPropertyProcessor():
   """
   def clear_key_files(self):
     for key_file in self.key_files:
-      logger.info('Removing private key file {0}'.format(key_file.name))
+      logger.debug('Removing private key file {0}'.format(key_file.name))
       os.unlink(key_file.name)
