@@ -96,6 +96,7 @@ class AnsibleClient():
 
   def run_lifecycle_playbook(self, request):
     lifecycle_path = request['lifecycle_path']
+    key_property_processor = None
     try:
       request_id = request['request_id']
       lifecycle = request['lifecycle_name']
