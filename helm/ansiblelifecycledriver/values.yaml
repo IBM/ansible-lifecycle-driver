@@ -2,7 +2,7 @@
 docker:
   ## Make this the full path, including registry host and port if using one
   image: accanto/ansible-lifecycle-driver
-  version: 1.0.1
+  version: 1.1.0.dev0
   imagePullPolicy: IfNotPresent
 
 ## Configuration for the application deployment
