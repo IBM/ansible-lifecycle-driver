@@ -199,13 +199,16 @@ class TestProcess(unittest.TestCase):
         self.build_processor(mock_ansible_client)
 
         self.ansible_processor.run_lifecycle({
-          'lifecycle_name': 'install',
+          'lifecycle_name': 'Install',
           'lifecycle_path': DirectoryTree(self.tmp_workspace),
           'system_properties': PropValueMap({
           }),
           'properties': PropValueMap({
           }),
           'deployment_location': {
+            'properties': {
+              'testPropA': 'A'
+            }
           },
           'request_id': request_id
         })

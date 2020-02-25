@@ -4,6 +4,7 @@ import time
 import os
 import sys
 import multiprocessing
+import copy
 import traceback
 import threading
 from signal import signal, SIGINT, SIGTERM, SIGQUIT, SIGCHLD, SIG_IGN, SIG_DFL
@@ -81,9 +82,11 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
 
     # remove deployment location properties from the request (to prevent logging sensitive information)
     def request_without_dl_properties(self, request):
-      if request.get('deployment_location', None) is not None:
-        if request['deployment_location'].get('properties', None) is not None:
-          request['deployment_location']['properties'] = None
+      request_copy = copy.deepcopy(request)
+      if request_copy.get('deployment_location', None) is not None:
+        if request_copy['deployment_location'].get('properties', None) is not None:
+          request_copy['deployment_location']['properties'] = '***obfuscated properties***'
+      return request_copy
 
     def run_lifecycle(self, request, keep_scripts=False):
       accepted = False
