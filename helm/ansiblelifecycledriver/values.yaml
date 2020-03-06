@@ -90,7 +90,7 @@ app:
 
     ## Configure logging 
     log:
-      level: DEBUG
+      level: INFO
 
     ## Pass additional environment variables to the application containers
     env:
