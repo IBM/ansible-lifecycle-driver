@@ -2,7 +2,7 @@
 docker:
   ## Make this the full path, including registry host and port if using one
   image: accanto/ansible-lifecycle-driver
-  version: 0.5.1
+  version: 1.1.0.dev0
   imagePullPolicy: IfNotPresent
 
 ## Configuration for the application deployment
@@ -10,6 +10,18 @@ app:
   ## Number of pods to deploy 
   replicas: 1
   
+  ## Probe configuration for checking Application availability
+  livenessProbe:
+    enabled: true
+    failureThreshold: 3
+    initialDelaySeconds: 10
+    periodSeconds: 30
+  readinessProbe:
+    enabled: true
+    failureThreshold: 3
+    initialDelaySeconds: 20
+    periodSeconds: 10
+    
   ## Affinity for pod assignment
   ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
   affinity:
@@ -53,6 +65,16 @@ app:
     # requests:
     #  cpu: 250m
     #  memory: 384Mi
+  
+  ## Autoscaler
+  ## Enabling this deploys a Horizontal Pod Autoscaler that will monitor the CPU usage and scale this deployment 
+  ## ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+  ## NOTE: requires Kubernetes Metrics Server
+  autoscaler:
+    enabled: false
+    maxReplicas: 10
+    minReplicas: 1
+    targetCPUUtilizationPercentage: 80
     
   ## ansible-lifecycle-driver specific configuration
   config:
@@ -68,7 +90,7 @@ app:
 
     ## Configure logging 
     log:
-      level: DEBUG
+      level: INFO
 
     ## Pass additional environment variables to the application containers
     env:
@@ -79,11 +101,12 @@ app:
 
       ## configuration for WSGI container
       ## WSGI_CONTAINER can be uwsgi or gunicorn
-      WSGI_CONTAINER: uwsgi
+      WSGI_CONTAINER: gunicorn
       ## the number of processes and threads to spawn to handle requests
       ## number of processes is 1 because the driver handles process management
       NUM_PROCESSES: "1"
-      NUM_THREADS: "2"
+      # Required only when WSGI_CONTAINER is uwsgi
+      #NUM_THREADS: "2"
 
     ingress:
       ## The host used to access the service externally i.e. http://<server.ingress.hostname>/
@@ -99,19 +122,25 @@ app:
         ## sleep between retries (in seconds)
         unreachable_sleep_seconds: 5
         ## maximum number of retries before a failure
-        max_unreachable_retries: 1000
+        max_unreachable_retries: 60
 
         ## output properties are set using set_fact in the Ansible script and prefixed with this string
         ## so that the driver knows they are intended to be exported to Brent.
         output_prop_prefix: 'output__'
 
       process:
-        ## the maximum number of processes to spawn to handle requests
-        max_concurrent_ansible_processes: 10
-        ## the maximum size of the request queue before requests are rejected
-        max_queue_size: 100
-        ## whether to use threads or processes to read and process requests on the request queue
+        ## whether to a process pool to read and process transition requests
+        use_process_pool: True
+        ## the maximum size of the request queue before transition requests are rejected
+        max_queue_size: 500
+        ## settings for use_process_pool == True (a pool of processes handles lifecycle requests)
+        ### size of the Ansible process pool
+        process_pool_size: 50
+        ## settings for use_process_pool == False (a thread is used to read from the transition request queue and either
+        ### handle the transition request in another thread, or by spawning a process to handle the transition request)
         is_threaded: False
+        ### the maximum number of processes to spawn to handle transition requests
+        max_concurrent_ansible_processes: 20
 
       messaging:
         connection_address: foundation-kafka:9092
@@ -119,7 +148,22 @@ app:
       lifecycle:
         ## workspace for holding lifecycle scripts
         scripts_workspace: /var/ald/lifecycle_scripts
+        ## enable to prevent scripts from being removed after use
+        ## care should be taken when enabling this option, as the pod will quickly run out of disk space
+        ## enable only for debugging purposes
+        keep_scripts: False
         async_messaging_enabled: False
+
+    security:
+      ssl:
+        enabled: True
+        secret:
+          ## Name of the secret containing the SSL certificate for the non-host based access (the CN of the certificate should match commonName)
+          name: ald-tls
+          ## If True, the Helm chart installation will generate a new SSL key with a self-signed certificate
+          generate: True
+          ## The Common Name used for the SSL certificate (do not change this)
+          commonName: ansible-lifecycle-driver
 
 service:
   # Using NodePort allows access to the IPs through http://k8s-host:nodePort/

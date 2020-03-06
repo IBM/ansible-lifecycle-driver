@@ -34,6 +34,27 @@ spec:
           ports:
           - containerPort: 8293
             protocol: TCP
+            name: https
+          {{- if .Values.app.livenessProbe.enabled }}
+          livenessProbe:
+            failureThreshold: {{ .Values.app.livenessProbe.failureThreshold }}
+            httpGet:
+              path: /management/health
+              port: 8293
+              scheme: {{- if .Values.app.config.security.ssl.enabled }} HTTPS {{- else }} HTTP {{- end }}
+            initialDelaySeconds: {{ .Values.app.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.app.livenessProbe.periodSeconds }}
+          {{- end }}
+          {{- if .Values.app.readinessProbe.enabled }}
+          readinessProbe:
+            failureThreshold: {{ .Values.app.readinessProbe.failureThreshold }}
+            httpGet:
+              path: /management/health
+              port: 8293
+              scheme: {{- if .Values.app.config.security.ssl.enabled }} HTTPS {{- else }} HTTP {{- end }}
+            initialDelaySeconds: {{ .Values.app.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.app.readinessProbe.periodSeconds }}         
+          {{- end }}
           envFrom:
           - configMapRef:
               name: ansible-lifecycle-driver-env
@@ -43,7 +64,31 @@ spec:
           - name: config
             mountPath: /var/ald/ald_config.yml
             subPath: ald_config.yml
+          {{- if and .Values.app.config.security.ssl.enabled .Values.app.config.security.ssl.secret.name }}
+          - name: {{ .Values.app.config.security.ssl.secret.name }}
+            mountPath: /var/ald/certs
+          {{- end }}
       volumes:
       - name: config
         configMap:
           name: ansible-lifecycle-driver
+      {{- if and .Values.app.config.security.ssl.enabled .Values.app.config.security.ssl.secret.name }}
+      - name: {{ .Values.app.config.security.ssl.secret.name }}
+        secret:
+          secretName: {{ .Values.app.config.security.ssl.secret.name }}
+      {{- end }}
+{{- if .Values.app.autoscaler.enabled }}
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ansible-lifecycle-driver
+spec:
+  maxReplicas: {{ .Values.app.autoscaler.maxReplicas }}
+  minReplicas: {{ .Values.app.autoscaler.minReplicas }}
+  scaleTargetRef:
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: ansible-lifecycle-driver
+  targetCPUUtilizationPercentage: {{ .Values.app.autoscaler.targetCPUUtilizationPercentage }}
+{{- end }}

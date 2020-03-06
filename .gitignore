@@ -107,6 +107,11 @@ venv.bak/
 AnsibleVNFCDriver_boot
 AnsibleLifecycleDriver_boot
 lifecycle_scripts/**
+test_workspace/
+tests/resources/ansible-copy
 
 # Docker whls
 docker/whls/
+
+# IDEs
+.vscode

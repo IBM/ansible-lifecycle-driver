@@ -37,7 +37,7 @@ The system properties comprise the following:
 
 In addition, any LM orchestration request context properties are added in here.
 
-Variable subsitution is achieved by referencing the property in a Jinja2 template, as follows (dot and square bracket notation are both supported):
+Variable substitution is achieved by referencing the property in a Jinja2 template, as follows (dot and square bracket notation are both supported):
 
 ```
 - name: Configure Lifecycle Transition

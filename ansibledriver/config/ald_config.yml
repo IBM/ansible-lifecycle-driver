@@ -1,18 +1,21 @@
 ---
 application:
   port: 8293
+  ssl:
+    enabled: True
+    cert_dir: /var/ald/certs
 
 ansible:
   unreachable_sleep_seconds: 5
-  max_unreachable_retries: 5
+  max_unreachable_retries: 60
   output_prop_prefix: 'output__'
   tmp_dir: /var/ald
 
 process:
-  process_pool_size: 10
-  max_concurrenty_ansible_processes: 10
-  max_queue_size: 100
-  use_pool: True
+  process_pool_size: 50
+  max_concurrent_ansible_processes: 20
+  max_queue_size: 500
+  use_process_pool: True
   is_threaded: False
 
 messaging:
@@ -34,3 +37,6 @@ lifecycle:
         retention.ms: 86400000
         message.timestamp.difference.max.ms: 86400000
         file.delete.delay.ms: 86400000
+  keep_scripts: False
+  async_messaging_enabled: False
+

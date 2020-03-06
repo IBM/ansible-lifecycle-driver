@@ -7,7 +7,7 @@ from ignition.service.requestqueue import RequestQueueCapability
 import ansibledriver.api_specs as api_specs
 from ansibledriver.service.process import AnsibleProcessorCapability, AnsibleProcessorService
 from ansibledriver.service.ansible import AnsibleClient
-from ansibledriver.service.lifecycle import AnsibleLifecycleDriver
+from ansibledriver.service.lifecycle import AnsibleLifecycleDriver, AdditionalLifecycleProperties
 
 # Grabs the __init__.py from the api_specs package then takes it's parent, the api directory itself
 api_spec_path = str(pathlib.Path(api_specs.__file__).parent.resolve())
@@ -26,7 +26,7 @@ class AnsibleDriverConfigurator():
         pass
 
     def configure(self, configuration, service_register):
-        service_register.add_service(ServiceRegistration(AnsibleLifecycleDriver, ansible_processor_service=AnsibleProcessorCapability, request_queue_service=RequestQueueCapability))
+        service_register.add_service(ServiceRegistration(AnsibleLifecycleDriver, ansible_processor_service=AnsibleProcessorCapability, request_queue_service=RequestQueueCapability, additional_lifecycle_properties=AdditionalLifecycleProperties))
 
 class AnsibleApiConfigurator():
 
