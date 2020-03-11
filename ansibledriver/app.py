@@ -12,6 +12,9 @@ from ansibledriver.service.config import AnsibleApiConfigurator, AnsibleServiceC
 default_config_dir_path = str(pathlib.Path(ansibledriverconfig.__file__).parent.resolve())
 default_config_path = os.path.join(default_config_dir_path, 'ald_config.yml')
 
+logger = logging.getLogger('kafka')
+logger.setLevel('WARN')
+
 def create_app():
     app_builder = ignition.build_vnfc_driver('AnsibleLifecycleDriver')
     app_builder.include_file_config_properties(default_config_path, required=False)

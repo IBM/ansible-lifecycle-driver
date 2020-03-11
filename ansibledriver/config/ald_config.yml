@@ -26,7 +26,7 @@ lifecycle:
   async_messaging_enabled: False
   request_queue:
     enabled: True
-    group_id: request_queue_consumer
+    group_id: ald_request_queue
     topic:
       # name: inf_requests
       auto_create: True

@@ -116,7 +116,7 @@ class AnsibleClient():
 
       playbook_path = get_lifecycle_playbook_path(scripts_path, lifecycle)
       if playbook_path is not None:
-        if !os.path.exists(playbook_path):
+        if not os.path.exists(playbook_path):
           return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Playbook path does not exist"), {})
 
         if deployment_location['type'] == 'Kubernetes':
@@ -167,7 +167,6 @@ class AnsibleClient():
         msg = "No playbook to run at {0} for lifecycle {1} for request {2}".format(playbook_path, lifecycle, request_id)
         logger.debug(msg)
         return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, msg), {})
-
     except InvalidRequestException as ire:
       return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, ire.msg), {})
     except Exception as e:
@@ -176,8 +175,9 @@ class AnsibleClient():
     finally:
       if key_property_processor is not None:
         key_property_processor.clear_key_files()
+
       keep_scripts = request.get('keep_scripts', False)
-      if not keep_scripts:
+      if not keep_scripts and lifecycle_path is not None:
         try:
           logger.debug('Attempting to remove lifecycle scripts at {0}'.format(lifecycle_path.root_path))
           lifecycle_path.remove_all()
