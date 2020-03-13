@@ -5,6 +5,10 @@ application:
     enabled: True
     cert_dir: /var/ald/certs
 
+bootstrap:
+  request_queue:
+    enabled: True
+
 ansible:
   unreachable_sleep_seconds: 5
   max_unreachable_retries: 60
@@ -24,6 +28,7 @@ messaging:
 lifecycle:
   scripts_workspace: ./lifecycle_scripts
   async_messaging_enabled: False
+  keep_scripts: False
   request_queue:
     enabled: True
     group_id: ald_request_queue
@@ -33,10 +38,8 @@ lifecycle:
       num_partitions: 20
       replication_factor: 1
       config:
-        # 1 day
-        retention.ms: 86400000
-        message.timestamp.difference.max.ms: 86400000
-        file.delete.delay.ms: 86400000
-  keep_scripts: False
-  async_messaging_enabled: False
+        # 30 minutes
+        retention.ms: 1800000
+        message.timestamp.difference.max.ms: 1800000
+        file.delete.delay.ms: 1800000
 

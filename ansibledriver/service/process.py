@@ -18,14 +18,13 @@ from ignition.service.framework import Service, Capability, interface
 from ignition.service.config import ConfigurationPropertiesGroup
 from ignition.service.logging import logging_context
 from ignition.service.requestqueue import RequestHandler
-from ansibledriver.service.queue import SHUTDOWN_MESSAGE
 
 logger = logging.getLogger(__name__)
 
 class AnsibleProcessorCapability(Capability):
 
     @interface
-    def queue_status(self):
+    def shutdown(self):
         pass
 
 class ProcessProperties(ConfigurationPropertiesGroup):
@@ -70,47 +69,6 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
           self.pool[i].daemon = False
           self.pool[i].start()
 
-    # remove deployment location properties from the request (to prevent logging sensitive information)
-    def request_without_dl_properties(self, request):
-      request_copy = copy.deepcopy(request)
-      if request_copy.get('deployment_location', None) is not None:
-        if request_copy['deployment_location'].get('properties', None) is not None:
-          request_copy['deployment_location']['properties'] = '***obfuscated properties***'
-      return request_copy
-
-    def run_lifecycle(self, request, keep_scripts=False):
-      accepted = False
-      try:
-        if 'request_id' not in request:
-          raise ValueError('Request must have a request_id')
-        if 'lifecycle_name' not in request:
-          raise ValueError('Request must have a lifecycle_name')
-        if 'lifecycle_path' not in request:
-          raise ValueError('Request must have a lifecycle_path')
-        request['keep_scripts'] = keep_scripts
-
-        # add logging context to request
-        request['logging_context'] = logging_context.get_all()
-
-        logger.debug('request_queue.size {0} max_queue_size {1}'.format(self.request_queue.size(), self.process_properties.max_queue_size))
-        if self.active == True:
-          # self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Request cannot be handled, driver is overloaded"), {}))
-          accepted = True
-          self.run_lifecycle_playbook()
-        else:
-          # inactive, just return a standard response
-          self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Driver is inactive"), {}))
-      finally:
-        if not accepted and not keep_scripts and 'lifecycle_path' in request:
-          try:
-            logger.debug('Attempting to remove lifecycle scripts at {0}'.format(request['lifecycle_path'].root_path))
-            request['lifecycle_path'].remove_all()
-          except Exception as e:
-            logger.exception('Encountered an error whilst trying to clear out lifecycle scripts directory {0}: {1}'.format(request['lifecycle_path'].root_path, str(e)))
-
-    def queue_status(self):
-      return self.request_queue.queue_status()
-
     def sigint_handler(self, sig, frame):
       logger.debug('sigint_handler')
       self.shutdown()
@@ -133,13 +91,6 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
               logger.debug("Terminating Ansible Driver process {0}".format(p.name))
               p.terminate()
 
-    def to_lifecycle_execution(self, json):
-      if json.get('failure_details', None) is not None:
-        failure_details = FailureDetails(json['failure_details']['failure_code'], json['failure_details']['description'])
-      else:
-        failure_details = None
-      return LifecycleExecution(json['request_id'], json['status'], failure_details, json['outputs'])
-
 
 ## Ansible Process Pools
 
@@ -155,9 +106,6 @@ class AnsibleProcess(Process):
       self.sigchld_handler = sigchld_handler
       self.kwargs = kwargs
       self.request_queue = request_queue_service.get_lifecycle_request_queue(name, AnsibleRequestHandler(messaging_service, ansible_client))
-      self.kafka_polling_thread = KafkaPollingThread(self.request_queue)
-      self.kafka_polling_thread.start()
-
       logger.debug('Created worker process: {0}'.format(name))
 
     def sigint_handler(self, sig, frame):
@@ -166,9 +114,10 @@ class AnsibleProcess(Process):
 
     def run(self):
       try:
-        signal(SIGINT, self.sigint_handler)
-        # make sure Ansible processes are acknowledged to avoid zombie processes
-        signal(SIGCHLD, self.sigchld_handler)
+        if threading.main_thread():
+          signal(SIGINT, self.sigint_handler)
+          # make sure Ansible processes are acknowledged to avoid zombie processes
+          signal(SIGCHLD, self.sigchld_handler)
 
         logger.info('Initialised ansible worker process {0}'.format(self.name))
 
@@ -187,12 +136,23 @@ class AnsibleRequestHandler(RequestHandler):
       self.ansible_client = ansible_client
 
     def handle(self, request):
-      logger.info("lifecycle_request_handler")
+      logger.info("lifecycle_request_handler {}".format(request))
       try:
         if request is not None:
-          logger.info("lifecycle_request_handler2 {}".format(request))
           if request.get('logging_context', None) is not None:
               logging_context.set_from_dict(request['logging_context'])
+
+          if 'request_id' not in request:
+            self.messaging_service.send_lifecycle_execution(LifecycleExecution(None, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a request_id"), {}))
+            return True
+          if 'lifecycle_name' not in request:
+            x = LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a lifecycle_name"), {})
+            print("x = {}".format(x))
+            self.messaging_service.send_lifecycle_execution(x)
+            return True
+          if 'lifecycle_path' not in request:
+            self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a lifecycle_path"), {}))
+            return True
 
           # run the playbook and send the response to the response queue
           logger.info('Ansible worker running request {0}'.format(request))
@@ -219,24 +179,4 @@ class AnsibleRequestHandler(RequestHandler):
         for p in active_children():
           logger.debug("removed zombie process {0}".format(p.name))
 
-
-class KafkaPollingThread(threading.Thread):
-
-    def __init__(self, request_queue):
-      self.request_queue = request_queue
-      super().__init__(daemon = True)
-
-    def run(self):
-      def process_lifecycle_request(request):
-        pass
-
-      try:
-        # continually read from the request queue and process Ansible lifecycle requests,
-        # but don't commit offsets - this is to prevent re-balances from occurring when
-        # ansible tasks take longer that the Kafka polling period.
-        while True:
-          self.request_queue.process_lifecycle_request(process_lifecycle_request)
-      except Exception as e:
-        logger.debug('Unexpected exception {0}, re-starting polling thread'.format(e))
-        traceback.print_exc(file=sys.stderr)
 

@@ -3,6 +3,8 @@ import uuid
 import json
 import logging
 import sys
+import signal
+import threading
 import tempfile
 import time
 from unittest.mock import call, patch, MagicMock, ANY, DEFAULT
@@ -10,8 +12,7 @@ from ignition.boot.config import BootstrapApplicationConfiguration, PropertyGrou
 from ignition.model.lifecycle import LifecycleExecuteResponse, LifecycleExecution, STATUS_COMPLETE, STATUS_FAILED, STATUS_IN_PROGRESS
 from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_ERROR, FAILURE_CODE_INTERNAL_ERROR, FAILURE_CODE_RESOURCE_NOT_FOUND, FAILURE_CODE_INSUFFICIENT_CAPACITY
 from ansibledriver.service.cache import CacheProperties
-from ansibledriver.service.queue import RequestQueue, ResponseQueue
-from ansibledriver.service.process import AnsibleProcessorService, ProcessProperties
+from ansibledriver.service.process import AnsibleProcessorService, ProcessProperties, AnsibleProcess, AnsibleRequestHandler
 from ansibledriver.service.ansible import AnsibleProperties
 from ignition.utils.file import DirectoryTree
 from ignition.utils.propvaluemap import PropValueMap
@@ -67,9 +68,8 @@ class TestProcess(unittest.TestCase):
 
     def setUp(self):
         self.tmp_workspace = tempfile.mkdtemp()
-        self.request_queue = RequestQueue()
-        self.response_queue = ResponseQueue()
-        self.mock_messaging_service = PickableMock()
+        self.mock_messaging_service = MagicMock()
+        self.mock_ansible_client = MagicMock()
         property_groups = PropertyGroups()
         property_groups.add_property_group(AnsibleProperties())
         process_props = ProcessProperties()
@@ -113,6 +113,20 @@ class TestProcess(unittest.TestCase):
       else:
         self.fail('Timeout waiting for response')
 
+    def check_response_only(self, lifecycle_execution):
+      print("check_response_only {}".format(lifecycle_execution))
+      for i in range(50):
+        if self.mock_messaging_service.send_lifecycle_execution.call_count > 0:
+          name, args, kwargs = self.mock_messaging_service.send_lifecycle_execution.mock_calls[0]
+          print('args={}'.format(args[0]))
+          compare(args[0], lifecycle_execution)
+          break
+        else:
+          logger.info('check_response, iteration {0}...'.format(i))
+          time.sleep(1)
+      else:
+        self.fail('Timeout waiting for response')
+
     # def check_response(self, lifecycle_execution):
     #   for i in range(50):
     #     call_count = self.mock_messaging_service.send_lifecycle_execution.call_count
@@ -138,67 +152,85 @@ class TestProcess(unittest.TestCase):
       else:
         self.fail('Timeout waiting for response')
 
-    def test_run_lifecycle_invalid_request(self):
+    def test_handles_empty_request(self):
         # this is needed to ensure logging output appears in test context - see https://stackoverflow.com/questions/7472863/pydev-unittesting-how-to-capture-text-logged-to-a-logging-logger-in-captured-o
         stream_handler.stream = sys.stdout
 
-        self.build_processor(PickableMock())
+        messaging_service = MagicMock()
+        ansible_client = MagicMock()
+        handler = AnsibleRequestHandler(messaging_service, ansible_client)
 
-        with self.assertRaises(ValueError) as context:
-          self.ansible_processor.run_lifecycle({
-            'lifecycle_name': 'install',
-            'lifecycle_path': DirectoryTree(self.tmp_workspace),
-            'system_properties': PropValueMap({
-            }),
-            'properties': PropValueMap({
-            }),
-            'deployment_location': PropValueMap({
-            })
+        self.assertTrue(handler.handle(None))
+
+    def test_run_lifecycle_missing_request_id(self):
+        # this is needed to ensure logging output appears in test context - see https://stackoverflow.com/questions/7472863/pydev-unittesting-how-to-capture-text-logged-to-a-logging-logger-in-captured-o
+        stream_handler.stream = sys.stdout
+
+        request_id = uuid.uuid4().hex
+
+        handler = AnsibleRequestHandler(self.mock_messaging_service, self.mock_ansible_client)
+        self.assertTrue(handler.handle({
+          'lifecycle_name': 'install',
+          'lifecycle_path': DirectoryTree(self.tmp_workspace),
+          'system_properties': PropValueMap({
+          }),
+          'properties': PropValueMap({
+          }),
+          'deployment_location': PropValueMap({
           })
-        self.assertEqual(str(context.exception), 'Request must have a request_id')
+        }))
+        self.check_response_only(LifecycleExecution(None, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a request_id"), {}))
 
-        with self.assertRaises(ValueError) as context:
-          self.ansible_processor.run_lifecycle({
-            'request_id': uuid.uuid4().hex,
-            'lifecycle_path': DirectoryTree(self.tmp_workspace),
-            'system_properties': PropValueMap({
-            }),
-            'properties': PropValueMap({
-            }),
-            'deployment_location': PropValueMap({
-            })
+    def test_run_lifecycle_missing_lifecycle_name(self):
+        # this is needed to ensure logging output appears in test context - see https://stackoverflow.com/questions/7472863/pydev-unittesting-how-to-capture-text-logged-to-a-logging-logger-in-captured-o
+        stream_handler.stream = sys.stdout
+
+        request_id = uuid.uuid4().hex
+
+        handler = AnsibleRequestHandler(self.mock_messaging_service, self.mock_ansible_client)
+        self.assertTrue(handler.handle({
+          'request_id': request_id,
+          'lifecycle_path': DirectoryTree(self.tmp_workspace),
+          'system_properties': PropValueMap({
+          }),
+          'properties': PropValueMap({
+          }),
+          'deployment_location': PropValueMap({
           })
-        self.assertEqual(str(context.exception), 'Request must have a lifecycle_name')
+        }))
+        self.check_response_only(LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a lifecycle_name"), {}))
 
-        with self.assertRaises(ValueError) as context:
-          self.ansible_processor.run_lifecycle({
-            'request_id': uuid.uuid4().hex,
-            'lifecycle_name': 'install',
-            'system_properties': PropValueMap({
-            }),
-            'properties': PropValueMap({
-            }),
-            'deployment_location': {
-            }
-          })
-        self.assertEqual(str(context.exception), 'Request must have a lifecycle_path')
+    def test_run_lifecycle_missing_lifecycle_path(self):
+        # this is needed to ensure logging output appears in test context - see https://stackoverflow.com/questions/7472863/pydev-unittesting-how-to-capture-text-logged-to-a-logging-logger-in-captured-o
+        stream_handler.stream = sys.stdout
 
-    # @patch("ansibledriver.service.ansible.AnsibleClient")
-    # def test_run_lifecycle(self, mock_ansible_client):
+        request_id = uuid.uuid4().hex
+
+        handler = AnsibleRequestHandler(self.mock_messaging_service, self.mock_ansible_client)
+        self.assertTrue(handler.handle({
+          'request_id': request_id,
+          'lifecycle_name': 'install',
+          'system_properties': PropValueMap({
+          }),
+          'properties': PropValueMap({
+          }),
+          'deployment_location': {
+          }
+        }))
+        self.check_response_only(LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a lifecycle_path"), {}))
+
     def test_run_lifecycle(self):
         # this is needed to ensure logging output appears in test context - see https://stackoverflow.com/questions/7472863/pydev-unittesting-how-to-capture-text-logged-to-a-logging-logger-in-captured-o
         stream_handler.stream = sys.stdout
-        request_id = uuid.uuid4().hex
 
-        lifecycle_execution = LifecycleExecution(request_id, STATUS_COMPLETE, None, {
+        request_id = uuid.uuid4().hex
+        handler = AnsibleRequestHandler(self.mock_messaging_service, self.mock_ansible_client)
+
+        self.mock_ansible_client.run_lifecycle_playbook.return_value = LifecycleExecution(request_id, STATUS_COMPLETE, None, {
           'prop1': 'output__value1'
         })
 
-        mock_ansible_client = PickableMock()
-        mock_ansible_client.run_lifecycle_playbook.return_value = lifecycle_execution
-        self.build_processor(mock_ansible_client)
-
-        self.ansible_processor.run_lifecycle({
+        self.assertTrue(handler.handle({
           'lifecycle_name': 'Install',
           'lifecycle_path': DirectoryTree(self.tmp_workspace),
           'system_properties': PropValueMap({
@@ -211,98 +243,39 @@ class TestProcess(unittest.TestCase):
             }
           },
           'request_id': request_id
-        })
+        }))
 
-        # self.response_queue.next.call_args == LifecycleExecutionMatcher(lifecycle_execution)
+        self.check_response_only(LifecycleExecution(request_id, STATUS_COMPLETE, None, {
+          'prop1': 'output__value1'
+        }))
 
-        # self.response_queue.next.assert_called_with(LifecycleExecutionMatcher(lifecycle_execution))
-
-        # args, kwargs = self.response_queue.next.call_args
-        # self.assertEqual(kwargs, {})
-        # self.assertEqual(len(args), 1)
-        # self.assertEqual(args[0], LifecycleExecutionMatcher(lifecycle_execution))
-
-
-
-        self.check_response(mock_ansible_client, lifecycle_execution)
-
-    def test_shutdown(self):
-        # this is needed to ensure logging output appears in test context - see https://stackoverflow.com/questions/7472863/pydev-unittesting-how-to-capture-text-logged-to-a-logging-logger-in-captured-o
-        stream_handler.stream = sys.stdout  
-        
-        mock_ansible_client = PickableMock()
-        self.build_processor(mock_ansible_client)
-        self.ansible_processor.shutdown()
-
-        request_id = uuid.uuid4().hex
-
-        self.ansible_processor.run_lifecycle({
-          'lifecycle_name': 'install',
-          'lifecycle_path': DirectoryTree(self.tmp_workspace),
-          'system_properties': PropValueMap({
-          }),
-          'properties': PropValueMap({
-          }),
-          'deployment_location': {
-          },
-          'request_id': request_id
-        })
-
-        # self.response_queue.next.assert_called_with(LifecycleExecutionMatcher(lifecycle_execution))
-
-        self.check_response(mock_ansible_client, LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Driver is inactive"), {}))
-
-    def test_max_queue_size(self):
+    # @patch("ansibledriver.service.ansible.AnsibleClient")
+    # def test_run_lifecycle(self, mock_ansible_client):
+    def test_ansible_process(self):
         # this is needed to ensure logging output appears in test context - see https://stackoverflow.com/questions/7472863/pydev-unittesting-how-to-capture-text-logged-to-a-logging-logger-in-captured-o
         stream_handler.stream = sys.stdout
 
-        request_id1 = uuid.uuid4().hex
-        request_id2 = uuid.uuid4().hex
+        name = "Test"
+        request_id = uuid.uuid4().hex
+        mock_ansible_processor = MagicMock()
+        mock_ansible_processor.active = True
+        mock_request_queue = MagicMock()
+        mock_request_queue_service = MagicMock()
+        mock_request_queue_service.get_lifecycle_request_queue.return_value = mock_request_queue
+        mock_ansible_client = MagicMock()
+        mock_messaging_service = MagicMock()
+        sigchld_handler = signal.SIG_IGN
+        ansible_process = AnsibleProcess(mock_ansible_processor, name, mock_request_queue_service, mock_ansible_client, mock_messaging_service, sigchld_handler)
 
-        lifecycle_execution_1 = LifecycleExecution(request_id1, STATUS_COMPLETE, None, {
-              'prop1': 'output__value1'
-            })
-        lifecycle_execution_2 = LifecycleExecution(request_id2, STATUS_COMPLETE, None, {
-              'prop2': 'output__value2'
-            })
-        mock_ansible_client = PickableMock()
-        def side_effect(*args, **kwargs):
-          return sleep(request_id1, lifecycle_execution_1)
-        mock_ansible_client.run_lifecycle_playbook.side_effect = side_effect
+        ansible_process.start()
 
-        # with a queue size of 1
-        property_groups = PropertyGroups()
-        property_groups.add_property_group(AnsibleProperties())
-        process_properties = ProcessProperties()
-        setattr(process_properties, 'max_queue_size', 1)
-        property_groups.add_property_group(process_properties)
-        property_groups.add_property_group(CacheProperties())
-        configuration = BootstrapApplicationConfiguration(app_name='test', property_sources=[], property_groups=property_groups, service_configurators=[], api_configurators=[], api_error_converter=None)
-        self.build_processor(mock_ansible_client, configuration)
-
-        self.ansible_processor.run_lifecycle({
-          'lifecycle_name': 'install',
-          'lifecycle_path': DirectoryTree(self.tmp_workspace),
-          'system_properties': PropValueMap({
-          }),
-          'properties': PropValueMap({
-          }),
-          'deployment_location': {
-          },
-          'request_id': request_id1
-        })
-
-        self.ansible_processor.run_lifecycle({
-          'lifecycle_name': 'install',
-          'lifecycle_path': DirectoryTree(self.tmp_workspace),
-          'system_properties': PropValueMap({
-          }),
-          'properties': PropValueMap({
-          }),
-          'deployment_location': {
-          },
-          'request_id': request_id2
-        })
-
-        self.check_responses([LifecycleExecution(request_id2, STATUS_FAILED, FailureDetails(FAILURE_CODE_INSUFFICIENT_CAPACITY, "Request cannot be handled, driver is overloaded"), {}),
-          lifecycle_execution_1])
+        logger.info("mock_request_queue = {}".format(mock_request_queue))
+        for i in range(50):
+          logger.info("mock_request_queue.process_request.call_count = {}".format(mock_request_queue.process_request.call_count))
+          if mock_request_queue.process_request.call_count > 0:
+            mock_request_queue.process_request.assert_called_once()
+          else:
+            logger.info('check_response, iteration {0}...'.format(i))
+            time.sleep(1)
+        else:
+          self.fail('Timeout waiting for response')
