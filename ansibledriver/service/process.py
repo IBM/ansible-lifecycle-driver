@@ -32,10 +32,7 @@ class ProcessProperties(ConfigurationPropertiesGroup):
         super().__init__('process')
         # apply defaults (correct settings will be picked up from config file or environment variables)
         self.process_pool_size = 2
-        self.max_concurrent_ansible_processes = 10
-        self.max_queue_size = 100
         self.use_process_pool = True
-        self.is_threaded = False
 
 class AnsibleProcessorService(Service, AnsibleProcessorCapability):
     def __init__(self, configuration, ansible_client, **kwargs):
@@ -106,7 +103,7 @@ class AnsibleProcess(Process):
       self.sigchld_handler = sigchld_handler
       self.kwargs = kwargs
       self.request_queue = request_queue_service.get_lifecycle_request_queue(name, AnsibleRequestHandler(messaging_service, ansible_client))
-      logger.debug('Created worker process: {0}'.format(name))
+      logger.debug('Created worker process: {0} {1}'.format(name, self.request_queue))
 
     def sigint_handler(self, sig, frame):
       logger.debug('caught sigint in Ansible Process Worker {0}'.format(self.name))
@@ -119,7 +116,7 @@ class AnsibleProcess(Process):
           # make sure Ansible processes are acknowledged to avoid zombie processes
           signal(SIGCHLD, self.sigchld_handler)
 
-        logger.info('Initialised ansible worker process {0}'.format(self.name))
+        logger.debug('Initialised ansible worker process {0}'.format(self.name))
 
         # continually read from the request queue and process Ansible lifecycle requests
         while self.ansible_processor.active == True:
@@ -129,6 +126,9 @@ class AnsibleProcess(Process):
         self.request_queue.close()
 
 
+"""
+Handler for Ansible driver request queue messages/requests.
+"""
 class AnsibleRequestHandler(RequestHandler):
     def __init__(self, messaging_service, ansible_client):
       super(AnsibleRequestHandler, self).__init__()
@@ -136,7 +136,6 @@ class AnsibleRequestHandler(RequestHandler):
       self.ansible_client = ansible_client
 
     def handle(self, request):
-      logger.info("lifecycle_request_handler {}".format(request))
       try:
         if request is not None:
           if request.get('logging_context', None) is not None:
@@ -146,19 +145,17 @@ class AnsibleRequestHandler(RequestHandler):
             self.messaging_service.send_lifecycle_execution(LifecycleExecution(None, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a request_id"), {}))
             return True
           if 'lifecycle_name' not in request:
-            x = LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a lifecycle_name"), {})
-            print("x = {}".format(x))
-            self.messaging_service.send_lifecycle_execution(x)
+            self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a lifecycle_name"), {}))
             return True
           if 'lifecycle_path' not in request:
             self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a lifecycle_path"), {}))
             return True
 
           # run the playbook and send the response to the response queue
-          logger.info('Ansible worker running request {0}'.format(request))
+          logger.debug('Ansible worker running request {0}'.format(request))
           result = self.ansible_client.run_lifecycle_playbook(request)
           if result is not None:
-            logger.info('Ansible worker finished for request {0}: {1}'.format(request, result))
+            logger.debug('Ansible worker finished for request {0}: {1}'.format(request, result))
             self.messaging_service.send_lifecycle_execution(result)
           else:
             logger.warn("Empty response from Ansible worker for request {0}".format(request))

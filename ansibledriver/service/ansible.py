@@ -89,7 +89,7 @@ class AnsibleClient():
     callback = ResultCallback(self.ansible_properties, request_id, lifecycle)
     pbex._tqm._stdout_callback = callback
 
-    logger.debug("Running playbook {0} with properties {1}, system_properties {2}".format(playbook_path, all_properties['properties'].get_safelog_props(), all_properties['system_properties'].get_safelog_props()))
+    logger.debug("Running playbook {0} with properties {1}, system_properties {2}".format(playbook_path, all_properties['properties'].get_props(), all_properties['system_properties'].get_props()))
     pbex.run()
     logger.debug("Playbook finished {0}".format(playbook_path))
 
