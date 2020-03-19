@@ -60,9 +60,11 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
         # a pool of (Ansible) processes reads from the request_queue
         # we don't using a multiprocessing.Pool here because it uses daemon processes which cannot
         # create sub-processes (and Ansible requires this)
+        self.shutdown_event = multiprocessing.Event()
         self.pool = [None] * self.process_properties.process_pool_size
         for i in range(self.process_properties.process_pool_size):
-          self.pool[i] = AnsibleProcess(self, 'AnsiblePoolProcess{0}'.format(i), self.request_queue_service, self.ansible_client, self.messaging_service, self.sigchld_handler)
+          request_queue = request_queue_service.get_lifecycle_request_queue(name, AnsibleRequestHandler(self.messaging_service, self.ansible_client))
+          self.pool[i] = AnsibleProcess(self, 'AnsiblePoolProcess{0}'.format(i), request_queue, self.sigchld_handler, self.shutdown_event)
           self.pool[i].daemon = False
           self.pool[i].start()
 
@@ -81,32 +83,30 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
           self.request_queue_service.close()
 
         logger.debug('Shutting down process pool')
+        self.shutdown_event.set()
         if self.process_properties.use_process_pool:
           logger.debug("Terminating Ansible processes")
           for p in self.pool:
             if p is not None and p.is_alive():
               logger.debug("Terminating Ansible Driver process {0}".format(p.name))
-              p.terminate()
+              p.join()
 
 
 ## Ansible Process Pools
 
 class AnsibleProcess(Process):
 
-    def __init__(self, ansible_processor, name, request_queue_service, ansible_client, messaging_service, sigchld_handler, **kwargs):
+    def __init__(self, name, request_queue, sigchld_handler, shutdown_event):
       super(AnsibleProcess, self).__init__(daemon=False)
       self.name = name
-      self.ansible_processor = ansible_processor
-      self.request_queue_service = request_queue_service
-      self.messaging_service = messaging_service
-      self.ansible_client = ansible_client
+      self.request_queue = request_queue
       self.sigchld_handler = sigchld_handler
-      self.kwargs = kwargs
-      self.request_queue = request_queue_service.get_lifecycle_request_queue(name, AnsibleRequestHandler(messaging_service, ansible_client))
-      logger.debug('Created worker process: {0} {1}'.format(name, self.request_queue))
+      self.shutdown_event = shutdown_event
+
+      logger.info('Created worker process: {0} {1}'.format(name, self.request_queue))
 
     def sigint_handler(self, sig, frame):
-      logger.debug('caught sigint in Ansible Process Worker {0}'.format(self.name))
+      logger.debug('Caught sigint in Ansible Process Worker {0}'.format(self.name))
       exit(0)
 
     def run(self):
@@ -116,12 +116,11 @@ class AnsibleProcess(Process):
           # make sure Ansible processes are acknowledged to avoid zombie processes
           signal(SIGCHLD, self.sigchld_handler)
 
-        logger.debug('Initialised ansible worker process {0}'.format(self.name))
+        logger.info('Initialised ansible worker process {0} {1}'.format(self.name, self.request_queue))
         # continually read from the request queue and process Ansible lifecycle requests
-        while self.ansible_processor.active == True:
-          # note: request_queue handles all exceptions
+        while not self.shutdown_event.is_set(): 
+          # note: process_request handles all exceptions
           self.request_queue.process_request()
-
       finally:
         self.request_queue.close()
 

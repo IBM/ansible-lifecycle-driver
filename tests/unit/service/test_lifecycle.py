@@ -10,8 +10,7 @@ from ignition.utils.file import DirectoryTree
 class TestLifecycle(unittest.TestCase):
 
     def setUp(self):
-        self.mock_ansible_processor_service = MagicMock()
-        self.lifecycle_driver = AnsibleLifecycleDriver(self.mock_ansible_processor_service, AdditionalLifecycleProperties())
+        self.lifecycle_driver = AnsibleLifecycleDriver()
 
     def assertLifecycleExecutionEqual(self, resp, expected_resp):
         self.assertEqual(resp.status, expected_resp.status)
@@ -25,5 +24,4 @@ class TestLifecycle(unittest.TestCase):
 
     def test_run_lifecycle(self):
         resp = self.lifecycle_driver.execute_lifecycle('install', DirectoryTree('./'), {}, {}, {})
-        self.assertIsNotNone(resp)
-        self.assertIsNotNone(resp.request_id)
+        self.assertIsNone(resp)
