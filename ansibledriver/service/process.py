@@ -117,9 +117,9 @@ class AnsibleProcess(Process):
           signal(SIGCHLD, self.sigchld_handler)
 
         logger.debug('Initialised ansible worker process {0}'.format(self.name))
-
         # continually read from the request queue and process Ansible lifecycle requests
         while self.ansible_processor.active == True:
+          # note: request_queue handles all exceptions
           self.request_queue.process_request()
 
       finally:
@@ -135,7 +135,7 @@ class AnsibleRequestHandler(RequestHandler):
       self.messaging_service = messaging_service
       self.ansible_client = ansible_client
 
-    def handle(self, request):
+    def handle_request(self, request):
       try:
         if request is not None:
           if request.get('logging_context', None) is not None:
@@ -143,14 +143,11 @@ class AnsibleRequestHandler(RequestHandler):
 
           if 'request_id' not in request:
             self.messaging_service.send_lifecycle_execution(LifecycleExecution(None, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a request_id"), {}))
-            return True
           if 'lifecycle_name' not in request:
             self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a lifecycle_name"), {}))
-            return True
           if 'lifecycle_path' not in request:
             self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a lifecycle_path"), {}))
-            return True
-
+ 
           # run the playbook and send the response to the response queue
           logger.debug('Ansible worker running request {0}'.format(request))
           result = self.ansible_client.run_lifecycle_playbook(request)
@@ -159,18 +156,14 @@ class AnsibleRequestHandler(RequestHandler):
             self.messaging_service.send_lifecycle_execution(result)
           else:
             logger.warn("Empty response from Ansible worker for request {0}".format(request))
-
-          return True
         else:
           logger.warn('Null lifecycle request from request queue')
-          return True
       except Exception as e:
         logger.error('Unexpected exception {0}'.format(e))
         traceback.print_exc(file=sys.stderr)
         # don't want the worker to die without knowing the cause, so catch all exceptions
         if request is not None:
           self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {}))
-        return True
       finally:
         # clean up zombie processes (Ansible can leave these behind)
         for p in active_children():

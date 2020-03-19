@@ -16,10 +16,8 @@ class AdditionalLifecycleProperties(ConfigurationPropertiesGroup, Service, Capab
         self.keep_scripts = False
 
 class AnsibleLifecycleDriver(Service, LifecycleDriverCapability):
-    def __init__(self, ansible_processor_service, request_queue_service, additional_lifecycle_properties):
-        self.ansible_processor_service = ansible_processor_service
-        self.request_queue_service = request_queue_service
-        self.additional_lifecycle_properties = additional_lifecycle_properties
+    def __init__(self):
+        pass
 
     def execute_lifecycle(self, lifecycle_name, lifecycle_scripts_tree, system_properties, properties, deployment_location):
         # requests are handled in sub-processes by reading off a Kafka request queue
