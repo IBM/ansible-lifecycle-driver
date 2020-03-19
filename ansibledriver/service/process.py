@@ -63,8 +63,8 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
         self.shutdown_event = multiprocessing.Event()
         self.pool = [None] * self.process_properties.process_pool_size
         for i in range(self.process_properties.process_pool_size):
-          request_queue = request_queue_service.get_lifecycle_request_queue(name, AnsibleRequestHandler(self.messaging_service, self.ansible_client))
-          self.pool[i] = AnsibleProcess(self, 'AnsiblePoolProcess{0}'.format(i), request_queue, self.sigchld_handler, self.shutdown_event)
+          request_queue = self.request_queue_service.get_lifecycle_request_queue('AnsiblePoolProcess{0}'.format(i), AnsibleRequestHandler(self.messaging_service, self.ansible_client))
+          self.pool[i] = AnsibleProcess('AnsiblePoolProcess{0}'.format(i), request_queue, self.sigchld_handler, self.shutdown_event)
           self.pool[i].daemon = False
           self.pool[i].start()
 

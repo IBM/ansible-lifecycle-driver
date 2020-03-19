@@ -100,24 +100,7 @@ class TestProcess(unittest.TestCase):
             self.assertEqual(resp.failure_details.failure_code, expected_resp.failure_details.failure_code)
             self.assertEqual(resp.failure_details.description, expected_resp.failure_details.description)
 
-    def check_response(self, mock_ansible_client, lifecycle_execution):
-      for i in range(50):
-        if mock_ansible_client.run_lifecycle_playbook.call_count > 0:
-          mock_ansible_client.run_lifecycle_playbook.assert_called_once()
-
-        if self.mock_messaging_service.send_lifecycle_execution.call_count > 0:
-          name, args, kwargs = self.mock_messaging_service.send_lifecycle_execution.mock_calls[0]
-          print('args=' + str(len(args)))
-          compare(args[0], lifecycle_execution)
-          break
-        else:
-          logger.info('check_response, iteration {0}...'.format(i))
-          time.sleep(1)
-      else:
-        self.fail('Timeout waiting for response')
-
     def check_response_only(self, lifecycle_execution):
-      print("check_response_only {}".format(lifecycle_execution))
       for i in range(50):
         if self.mock_messaging_service.send_lifecycle_execution.call_count > 0:
           name, args, kwargs = self.mock_messaging_service.send_lifecycle_execution.mock_calls[0]
@@ -130,30 +113,8 @@ class TestProcess(unittest.TestCase):
       else:
         self.fail('Timeout waiting for response')
 
-    # def check_response(self, lifecycle_execution):
-    #   for i in range(50):
-    #     call_count = self.mock_messaging_service.send_lifecycle_execution.call_count
-    #     if call_count > 0:
-    #       self.mock_messaging_service.send_lifecycle_execution.assert_called_with(LifecycleExecutionMatcher(lifecycle_execution))
-    #       break
-    #     else:
-    #       logger.info('check_responses, iteration {0}...'.format(i))
-    #       time.sleep(1)
-    #   else:
-    #     self.fail('Timeout waiting for response')
-
-    def check_responses(self, lifecycle_executions):
-      # loop until there are at least two calls to the Kafka messaging, and then check that the messages are what we expect
-      for i in range(50):
-        call_count = self.mock_messaging_service.send_lifecycle_execution.call_count
-        if call_count >= len(lifecycle_executions):
-          assert self.mock_messaging_service.send_lifecycle_execution.call_args_list == list(map(lambda lifecycle_execution: call(LifecycleExecutionMatcher(lifecycle_execution)), lifecycle_executions))
-          break
-        else:
-          logger.info('check_responses, iteration {0}...'.format(i))
-          time.sleep(1)
-      else:
-        self.fail('Timeout waiting for response')
+    # def test_ansible_processor_service(self):
+    #     AnsibleProcessorService(configuration, ansible_client, **kwargs)
 
     def test_handles_empty_request(self):
         # this is needed to ensure logging output appears in test context - see https://stackoverflow.com/questions/7472863/pydev-unittesting-how-to-capture-text-logged-to-a-logging-logger-in-captured-o
