@@ -16,7 +16,6 @@ from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_E
 from ignition.utils.file import DirectoryTree
 from ignition.utils.propvaluemap import PropValueMap
 from ignition.service.requestqueue import KafkaRequestQueueHandler
-from ansibledriver.service.cache import CacheProperties
 from ansibledriver.service.process import AnsibleProcessorService, ProcessProperties, AnsibleProcess, AnsibleRequestHandler
 from ansibledriver.service.ansible import AnsibleProperties
 from testfixtures import compare
@@ -112,9 +111,6 @@ class TestProcess(unittest.TestCase):
           time.sleep(1)
       else:
         self.fail('Timeout waiting for response')
-
-    # def test_ansible_processor_service(self):
-    #     AnsibleProcessorService(configuration, ansible_client, **kwargs)
 
     def test_handles_empty_request(self):
         # this is needed to ensure logging output appears in test context - see https://stackoverflow.com/questions/7472863/pydev-unittesting-how-to-capture-text-logged-to-a-logging-logger-in-captured-o
@@ -246,8 +242,6 @@ class TestProcess(unittest.TestCase):
           self.fail('Timeout waiting for response')
 
         ansible_process.join()
-
-        # self.assertTrue(request_queue.closed)
 
 
 class TestKafkaRequestQueueHandler(KafkaRequestQueueHandler):

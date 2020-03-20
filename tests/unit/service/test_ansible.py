@@ -7,7 +7,6 @@ import os
 import sys
 from unittest.mock import patch, MagicMock, ANY
 from ansibledriver.service.ansible import AnsibleClient, AnsibleProperties
-from ansibledriver.service.cache import CacheProperties
 from ansibledriver.service.process import ProcessProperties
 from ignition.model.lifecycle import LifecycleExecution, STATUS_COMPLETE, STATUS_FAILED, STATUS_IN_PROGRESS
 from ignition.utils.file import DirectoryTree
@@ -33,7 +32,6 @@ class TestAnsible(unittest.TestCase):
         property_groups = PropertyGroups()
         property_groups.add_property_group(AnsibleProperties())
         property_groups.add_property_group(ProcessProperties())
-        property_groups.add_property_group(CacheProperties())
         self.configuration = BootstrapApplicationConfiguration(app_name='test', property_sources=[], property_groups=property_groups, service_configurators=[], api_configurators=[], api_error_converter=None)
         self.ansible_client = AnsibleClient(self.configuration)
 
