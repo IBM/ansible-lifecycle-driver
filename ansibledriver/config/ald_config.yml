@@ -30,17 +30,15 @@ lifecycle:
     enabled: True
     group_id: ald_request_queue
     topic:
-      # name: lifecycle_request_queue
       auto_create: True
-      num_partitions: 20
+      num_partitions: 1
       replication_factor: 1
       config:
-        # 30 minutes
-        retention.ms: 1800000
-        message.timestamp.difference.max.ms: 1800000
-        file.delete.delay.ms: 1800000
+        # 1 hour
+        retention.ms: 3600000
+        message.timestamp.difference.max.ms: 3600000
+        file.delete.delay.ms: 3600000
     failed_topic:
-      # name: lifecycle_request_queue_failed
       auto_create: True
       num_partitions: 1
       replication_factor: 1
