@@ -16,4 +16,4 @@ The scripts directory contains your Ansible scripts. The naming must reflect the
 
 ## Idempotency
 
-The Ansible Lifecycle Driver cannot guarantee that scripts will not be run more than once; for this reason, Ansible scripts should be [idempotent (that is, it should be possible to run them repeatedly without any intervening actions)](https://docs.ansible.com/ansible/latest/reference_appendices/glossary.html).
+The Ansible Lifecycle Driver cannot guarantee that scripts will not be run more than once; for this reason, Ansible scripts should be [idempotent (that is, it should be possible to run them repeatedly, without any intervening actions)](https://docs.ansible.com/ansible/latest/reference_appendices/glossary.html).
