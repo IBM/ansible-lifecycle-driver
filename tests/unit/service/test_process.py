@@ -25,41 +25,6 @@ logger.setLevel(logging.DEBUG)
 stream_handler = logging.StreamHandler(sys.stdout)
 logger.addHandler(stream_handler)
 
-def sleep(request_id, lifecycle_execution, *args, **kwargs):
-  logger.info('sleeping for request {0}...'.format(request_id))
-  time.sleep(4)
-  return lifecycle_execution
-
-class LifecycleExecutionMatcher:
-  def __init__(self, expected):
-    self.expected = expected
-
-  def compare(self, other):
-    if not type(self.expected) == type(other):
-      return False
-    if other.status != self.expected.status:
-      return False
-    if other.request_id != self.expected.request_id:
-      return False
-    if len(self.expected.outputs.items() - other.outputs.items()) > 0:
-      return False
-    if self.expected.failure_details is not None:
-        if other.failure_details is None:
-            return False
-        if other.failure_details.failure_code != self.expected.failure_details.failure_code:
-          return False
-        if other.failure_details.description != self.expected.failure_details.description:
-          return False
-
-    return True
-
-  def __str__(self):
-    return 'expected: {0.expected}'.format(self)
-
-  # "other" is the actual argument, to be compared against self.expected
-  def __eq__(self, other):
-    return self.compare(other)
-
 # PickableMock is needed to be able to make MagicMocks with multiprocessing queues pickling
 # see https://github.com/testing-cabal/mock/issues/139#issuecomment-122128815
 class PickableMock(MagicMock):
@@ -103,7 +68,6 @@ class TestProcess(unittest.TestCase):
       for i in range(50):
         if self.mock_messaging_service.send_lifecycle_execution.call_count > 0:
           name, args, kwargs = self.mock_messaging_service.send_lifecycle_execution.mock_calls[0]
-          print('args={}'.format(args[0]))
           compare(args[0], lifecycle_execution)
           break
         else:
