@@ -307,7 +307,7 @@ class ResultCallback(CallbackBase):
         """
         ansible task failed
         """
-        logger.debug("v2_runner_on_failed {0}".format(result))
+        logger.debug("v2_runner_on_failed {0} {1} {2}".format(result._task, result._result, result._task_fields))
         self.failed_task = result._task.get_name()
         if 'msg' in result._result and 'Timeout' in result._result['msg'] and 'waiting for privilege escalation prompt' in result._result['msg']:
             logger.debug('Failure to be treated as unreachable:  task ' + str(self.failed_task) + ' failed: ' + str(result._result))
