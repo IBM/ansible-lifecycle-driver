@@ -5,22 +5,40 @@ application:
     enabled: True
     cert_dir: /var/ald/certs
 
+bootstrap:
+  request_queue:
+    enabled: True
+
 ansible:
   unreachable_sleep_seconds: 5
   max_unreachable_retries: 60
   output_prop_prefix: 'output__'
+  tmp_dir: /var/ald
 
 process:
-  process_pool_size: 50
-  max_concurrent_ansible_processes: 20
-  max_queue_size: 500
+  process_pool_size: 10
   use_process_pool: True
-  is_threaded: False
 
 messaging:
   connection_address: kafka:9092
 
 lifecycle:
   scripts_workspace: ./lifecycle_scripts
-  keep_scripts: False
   async_messaging_enabled: False
+  keep_scripts: False
+  request_queue:
+    enabled: True
+    group_id: ald_request_queue
+    topic:
+      auto_create: True
+      num_partitions: 1
+      replication_factor: 1
+      config:
+        # 1 hour
+        retention.ms: 3600000
+        message.timestamp.difference.max.ms: 3600000
+        file.delete.delay.ms: 3600000
+    failed_topic:
+      auto_create: True
+      num_partitions: 1
+      replication_factor: 1

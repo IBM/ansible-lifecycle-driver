@@ -10,7 +10,9 @@ K8S_NAMESPACE_PROP = "k8s-namespace"
 REGISTRY_URI_PROP = 'registry_uri'
 
 class KubeConfig():
-    def __init__(self, deployment_location):
+    def __init__(self, deployment_location, ansible_properties):
+        self.ansible_properties = ansible_properties;
+
         self.name = deployment_location.get('name', None)
         if self.name is None:
             raise ValueError('Must specify a name for the deployment location')
@@ -72,7 +74,7 @@ class KubeConfig():
         }
 
     def write(self):
-        filename = '/var/ald/dl_' + self.name + '.yml'
+        filename = self.ansible_properties.tmp_dir + '/dl_' + self.name + '.yml'
         with open(filename, 'w') as outfile:
             yaml.dump(self.kubeConfig, outfile, default_flow_style=False)
         return filename

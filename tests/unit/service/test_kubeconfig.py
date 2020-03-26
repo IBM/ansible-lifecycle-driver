@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import patch, MagicMock, ANY
 from ansibledriver.model.kubeconfig import KubeConfig
 from ansibledriver.model.kubeconfig import K8S_SERVER_PROP, K8S_TOKEN_PROP, K8S_CERT_AUTH_DATA_PROP, K8S_CLIENT_CERT_DATA_PROP, K8S_CLIENT_KEY_DATA_PROP
+from ansibledriver.service.ansible import AnsibleProperties
 
 logger = logging.getLogger()
 logger.level = logging.INFO
@@ -17,7 +18,7 @@ class TestKubeConfig(unittest.TestCase):
                 K8S_TOKEN_PROP: "token"
             }
         }
-        c = KubeConfig(deployment_location)
+        c = KubeConfig(deployment_location, AnsibleProperties())
         self.assertEqual(c.kubeConfig, {
             "apiVersion": "v1",
             "clusters": [{
@@ -55,7 +56,7 @@ class TestKubeConfig(unittest.TestCase):
                 K8S_CLIENT_KEY_DATA_PROP: "client_key"
             }
         }
-        c = KubeConfig(deployment_location)
+        c = KubeConfig(deployment_location, AnsibleProperties())
         self.assertEqual(c.kubeConfig, {
             "apiVersion": "v1",
             "clusters": [{
@@ -93,5 +94,5 @@ class TestKubeConfig(unittest.TestCase):
             }
         }
         with self.assertRaises(ValueError) as exc:
-            KubeConfig(deployment_location)
+            KubeConfig(deployment_location, AnsibleProperties())
             self.assertEqual(exc.message, "Must specify either {0}, {1}, {2} or {3}".format(K8S_CERT_AUTH_DATA_PROP, K8S_CLIENT_CERT_DATA_PROP, K8S_CLIENT_KEY_DATA_PROP, K8S_TOKEN_PROP))
