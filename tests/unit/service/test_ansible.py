@@ -71,9 +71,9 @@ class TestAnsible(unittest.TestCase):
 
             resp = self.ansible_client.run_lifecycle_playbook({
             'lifecycle_name': 'install',
-            'lifecycle_path': DirectoryTree(dst),
+            'driver_files': DirectoryTree(dst),
             'system_properties': system_properties,
-            'properties': properties,
+            'resource_properties': properties,
             'deployment_location': {
                 'name': 'winterfell',
                 'type': "type",
@@ -124,9 +124,9 @@ class TestAnsible(unittest.TestCase):
 
             resp = self.ansible_client.run_lifecycle_playbook({
             'lifecycle_name': 'install',
-            'lifecycle_path': DirectoryTree(dst),
+            'driver_files': DirectoryTree(dst),
             'system_properties': system_properties,
-            'properties': properties,
+            'resource_properties': properties,
             'deployment_location': {
                 'name': 'winterfell',
                 'type': "type",

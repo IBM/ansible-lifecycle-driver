@@ -96,21 +96,21 @@ class AnsibleClient():
     return callback
 
   def run_lifecycle_playbook(self, request):
-    lifecycle_path = request['lifecycle_path']
+    driver_files = request['driver_files']
     key_property_processor = None
 
     try:
       request_id = request['request_id']
       lifecycle = request['lifecycle_name']
-      properties = request['properties']
+      properties = request['resource_properties']
       system_properties = request['system_properties']
       deployment_location = request['deployment_location']
       if not isinstance(deployment_location, dict):
         return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Deployment Location must be an object"), {})
       dl_properties = PropValueMap(deployment_location.get('properties', {}))
 
-      config_path = lifecycle_path.get_directory_tree('config')
-      scripts_path = lifecycle_path.get_directory_tree('scripts')
+      config_path = driver_files.get_directory_tree('config')
+      scripts_path = driver_files.get_directory_tree('scripts')
 
       key_property_processor = KeyPropertyProcessor(properties, system_properties, dl_properties)
 
@@ -132,7 +132,7 @@ class AnsibleClient():
         key_property_processor.process_key_properties()
 
         logger.debug('config_path = ' + config_path.get_path())
-        logger.debug('lifecycle_path = ' + scripts_path.get_path())
+        logger.debug('driver_files = ' + scripts_path.get_path())
         logger.debug("playbook_path=" + playbook_path)
         logger.debug("inventory_path=" + inventory_path)
 
@@ -177,12 +177,12 @@ class AnsibleClient():
         key_property_processor.clear_key_files()
 
       keep_scripts = request.get('keep_scripts', False)
-      if not keep_scripts and lifecycle_path is not None:
+      if not keep_scripts and driver_files is not None:
         try:
-          logger.debug('Attempting to remove lifecycle scripts at {0}'.format(lifecycle_path.root_path))
-          lifecycle_path.remove_all()
+          logger.debug('Attempting to remove lifecycle scripts at {0}'.format(driver_files.root_path))
+          driver_files.remove_all()
         except Exception as e:
-          logger.exception('Encountered an error whilst trying to clear out lifecycle scripts directory {0}: {1}'.format(lifecycle_path.root_path, str(e)))
+          logger.exception('Encountered an error whilst trying to clear out lifecycle scripts directory {0}: {1}'.format(driver_files.root_path, str(e)))
 
 
 class ResultCallback(CallbackBase):
