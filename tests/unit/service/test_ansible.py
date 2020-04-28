@@ -88,7 +88,7 @@ class TestAnsible(unittest.TestCase):
         finally:
             logger.removeHandler(stream_handler)
 
-    def test_run_lifecycle_keep_scripts(self):
+    def test_run_lifecycle_keep_files(self):
         # configure so that we can see logging from the code under test
         stream_handler = logging.StreamHandler(sys.stdout)
         logger.addHandler(stream_handler)
@@ -133,7 +133,7 @@ class TestAnsible(unittest.TestCase):
                 'properties': PropValueMap({
                 })
             },
-            'keep_scripts': True,
+            'keep_files': True,
             'request_id': request_id
             })
 

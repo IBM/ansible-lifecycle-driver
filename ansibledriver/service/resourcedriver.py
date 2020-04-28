@@ -3,6 +3,7 @@ import logging
 from ignition.service.framework import Capability, Service, interface
 from ignition.service.config import ConfigurationPropertiesGroup
 from ignition.service.resourcedriver import ResourceDriverHandlerCapability
+from ignition.model.references import FindReferenceResponse
 from ignition.utils.file import DirectoryTree
 
 logger = logging.getLogger(__name__)
@@ -12,13 +13,13 @@ class AdditionalResourceDriverProperties(ConfigurationPropertiesGroup, Service, 
 
     def __init__(self):
         super().__init__('resource_driver')
-        self.keep_scripts = False
+        self.keep_files = False
 
 class AnsibleDriverHandler(Service, ResourceDriverHandlerCapability):
     def __init__(self):
         pass
 
-    def execute_lifecycle(self, lifecycle_name, driver_files, system_properties, resource_properties, request_properties, internal_resources, deployment_location):
+    def execute_lifecycle(self, lifecycle_name, driver_files, system_properties, resource_properties, request_properties, associated_topology, deployment_location):
         # requests are handled in sub-processes by reading off a Kafka request queue
         pass
 
@@ -27,4 +28,4 @@ class AnsibleDriverHandler(Service, ResourceDriverHandlerCapability):
         return None
 
     def find_reference(self, instance_name, driver_files, deployment_location):
-        return None
+        return FindReferenceResponse()

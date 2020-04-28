@@ -25,10 +25,10 @@ messaging:
 resource_driver:
   scripts_workspace: ./lifecycle_scripts
   async_messaging_enabled: False
-  keep_scripts: False
+  keep_files: False
   lifecycle_request_queue:
     enabled: True
-    group_id: ald_request_queue
+    group_id: ald_request_queue3
     topic:
       auto_create: True
       num_partitions: 1

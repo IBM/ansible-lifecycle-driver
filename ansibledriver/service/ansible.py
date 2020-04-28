@@ -119,7 +119,7 @@ class AnsibleClient():
         if not os.path.exists(playbook_path):
           return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Playbook path does not exist"), {})
 
-        if deployment_location['type'] == 'Kubernetes':
+        if deployment_location.get('type') == 'Kubernetes':
           dl_properties['kubeconfig_path'] = self.create_kube_config(deployment_location)
           connection_type = "k8s"
           inventory_path = config_path.get_file_path(INVENTORY_K8S)
@@ -176,8 +176,8 @@ class AnsibleClient():
       if key_property_processor is not None:
         key_property_processor.clear_key_files()
 
-      keep_scripts = request.get('keep_scripts', False)
-      if not keep_scripts and driver_files is not None:
+      keep_files = request.get('keep_files', False)
+      if not keep_files and driver_files is not None:
         try:
           logger.debug('Attempting to remove lifecycle scripts at {0}'.format(driver_files.root_path))
           driver_files.remove_all()
@@ -385,6 +385,7 @@ def process_templates(parent_dir, all_properties):
     for file in files:
         j2_env = Environment(loader=FileSystemLoader(root), trim_blocks=True)
         path = root + '/' + file
+        logger.info('PROCESSING ' + str(file) + ' WITH ' + str(all_properties))
         template = j2_env.get_template(file).render(**all_properties)
         logger.debug('Wrote process template to file {0}'.format(path))
         with open(path, "w") as text_file:
