@@ -13,7 +13,6 @@ from multiprocessing.pool import Pool
 from collections import namedtuple
 from ignition.model.lifecycle import LifecycleExecution, STATUS_COMPLETE, STATUS_FAILED, STATUS_IN_PROGRESS
 from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_ERROR, FAILURE_CODE_INTERNAL_ERROR, FAILURE_CODE_RESOURCE_NOT_FOUND, FAILURE_CODE_INSUFFICIENT_CAPACITY
-from ignition.service.lifecycle import LifecycleDriverCapability
 from ignition.service.framework import Service, Capability, interface
 from ignition.service.config import ConfigurationPropertiesGroup
 from ignition.service.logging import logging_context
@@ -144,8 +143,8 @@ class AnsibleRequestHandler(RequestHandler):
             self.messaging_service.send_lifecycle_execution(LifecycleExecution(None, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a request_id"), {}))
           if 'lifecycle_name' not in request:
             self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a lifecycle_name"), {}))
-          if 'lifecycle_path' not in request:
-            self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a lifecycle_path"), {}))
+          if 'driver_files' not in request:
+            self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a driver_files"), {}))
  
           # run the playbook and send the response to the response queue
           logger.debug('Ansible worker running request {0}'.format(request))

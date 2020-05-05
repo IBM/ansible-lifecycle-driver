@@ -95,10 +95,10 @@ class TestProcess(unittest.TestCase):
         handler = AnsibleRequestHandler(self.mock_messaging_service, self.mock_ansible_client)
         handler.handle_request({
           'lifecycle_name': 'install',
-          'lifecycle_path': DirectoryTree(self.tmp_workspace),
+          'driver_files': DirectoryTree(self.tmp_workspace),
           'system_properties': PropValueMap({
           }),
-          'properties': PropValueMap({
+          'resource_properties': PropValueMap({
           }),
           'deployment_location': PropValueMap({
           })
@@ -114,17 +114,17 @@ class TestProcess(unittest.TestCase):
         handler = AnsibleRequestHandler(self.mock_messaging_service, self.mock_ansible_client)
         handler.handle_request({
           'request_id': request_id,
-          'lifecycle_path': DirectoryTree(self.tmp_workspace),
+          'driver_files': DirectoryTree(self.tmp_workspace),
           'system_properties': PropValueMap({
           }),
-          'properties': PropValueMap({
+          'resource_properties': PropValueMap({
           }),
           'deployment_location': PropValueMap({
           })
         })
         self.check_response_only(LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a lifecycle_name"), {}))
 
-    def test_run_lifecycle_missing_lifecycle_path(self):
+    def test_run_lifecycle_missing_driver_files(self):
         # this is needed to ensure logging output appears in test context - see https://stackoverflow.com/questions/7472863/pydev-unittesting-how-to-capture-text-logged-to-a-logging-logger-in-captured-o
         stream_handler.stream = sys.stdout
 
@@ -136,12 +136,12 @@ class TestProcess(unittest.TestCase):
           'lifecycle_name': 'install',
           'system_properties': PropValueMap({
           }),
-          'properties': PropValueMap({
+          'resource_properties': PropValueMap({
           }),
           'deployment_location': {
           }
         })
-        self.check_response_only(LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a lifecycle_path"), {}))
+        self.check_response_only(LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a driver_files"), {}))
 
     def test_run_lifecycle(self):
         # this is needed to ensure logging output appears in test context - see https://stackoverflow.com/questions/7472863/pydev-unittesting-how-to-capture-text-logged-to-a-logging-logger-in-captured-o
@@ -156,10 +156,10 @@ class TestProcess(unittest.TestCase):
 
         handler.handle_request({
           'lifecycle_name': 'Install',
-          'lifecycle_path': DirectoryTree(self.tmp_workspace),
+          'driver_files': DirectoryTree(self.tmp_workspace),
           'system_properties': PropValueMap({
           }),
-          'properties': PropValueMap({
+          'resource_properties': PropValueMap({
           }),
           'deployment_location': {
             'properties': {

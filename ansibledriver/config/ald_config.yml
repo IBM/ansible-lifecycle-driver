@@ -22,11 +22,11 @@ process:
 messaging:
   connection_address: kafka:9092
 
-lifecycle:
+resource_driver:
   scripts_workspace: ./lifecycle_scripts
   async_messaging_enabled: False
-  keep_scripts: False
-  request_queue:
+  keep_files: False
+  lifecycle_request_queue:
     enabled: True
     group_id: ald_request_queue
     max_poll_interval_ms: 3600000

@@ -4,7 +4,7 @@ import sys
 from unittest.mock import call, patch, MagicMock, ANY, DEFAULT
 from ignition.boot.config import BootstrapApplicationConfiguration, BootProperties
 from ignition.service.messaging import MessagingProperties
-from ignition.service.lifecycle import LifecycleProperties
+from ignition.service.resourcedriver import ResourceDriverProperties
 from ansibledriver.service.process import AnsibleProcessorService, ProcessProperties
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class TestConfig(unittest.TestCase):
         messaging_conf = MessagingProperties()
         messaging_conf.connection_address = "kafka"
         self.configuration.property_groups.add_property_group(messaging_conf)
-        self.configuration.property_groups.add_property_group(LifecycleProperties())
+        self.configuration.property_groups.add_property_group(ResourceDriverProperties())
         process_properties = ProcessProperties()
         process_properties.process_pool_size = 1
         self.configuration.property_groups.add_property_group(process_properties)
