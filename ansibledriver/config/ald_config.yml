@@ -29,6 +29,7 @@ lifecycle:
   request_queue:
     enabled: True
     group_id: ald_request_queue
+    max_poll_interval_ms: 3600000
     topic:
       auto_create: True
       num_partitions: 1
