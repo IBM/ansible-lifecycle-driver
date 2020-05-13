@@ -19,6 +19,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'ignition-framework{0}'.format(_pkg_info['ignition-version']),
+        'openstacksdk>=0.46.0'
         'ansible==2.7.16',
         'Jinja2>=2.10.1,<3.0',
         'uwsgi>=2.0.18,<3.0',
