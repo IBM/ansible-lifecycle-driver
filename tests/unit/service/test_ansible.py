@@ -71,9 +71,9 @@ class TestAnsible(unittest.TestCase):
 
             resp = self.ansible_client.run_lifecycle_playbook({
             'lifecycle_name': 'install',
-            'lifecycle_path': DirectoryTree(dst),
+            'driver_files': DirectoryTree(dst),
             'system_properties': system_properties,
-            'properties': properties,
+            'resource_properties': properties,
             'deployment_location': {
                 'name': 'winterfell',
                 'type': "type",
@@ -88,7 +88,7 @@ class TestAnsible(unittest.TestCase):
         finally:
             logger.removeHandler(stream_handler)
 
-    def test_run_lifecycle_keep_scripts(self):
+    def test_run_lifecycle_keep_files(self):
         # configure so that we can see logging from the code under test
         stream_handler = logging.StreamHandler(sys.stdout)
         logger.addHandler(stream_handler)
@@ -124,16 +124,16 @@ class TestAnsible(unittest.TestCase):
 
             resp = self.ansible_client.run_lifecycle_playbook({
             'lifecycle_name': 'install',
-            'lifecycle_path': DirectoryTree(dst),
+            'driver_files': DirectoryTree(dst),
             'system_properties': system_properties,
-            'properties': properties,
+            'resource_properties': properties,
             'deployment_location': {
                 'name': 'winterfell',
                 'type': "type",
                 'properties': PropValueMap({
                 })
             },
-            'keep_scripts': True,
+            'keep_files': True,
             'request_id': request_id
             })
 

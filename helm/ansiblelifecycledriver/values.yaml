@@ -138,17 +138,19 @@ app:
       messaging:
         connection_address: foundation-kafka:9092
 
-      lifecycle:
+      resource_driver:
         ## workspace for holding lifecycle scripts
         scripts_workspace: /var/ald/lifecycle_scripts
         ## enable to prevent scripts from being removed after use
         ## care should be taken when enabling this option, as the pod will quickly run out of disk space
         ## enable only for debugging purposes
-        keep_scripts: False
+        keep_files: False
         async_messaging_enabled: False
-        request_queue:
+        lifecycle_request_queue:
           enabled: True
           group_id: ald_request_queue
+          ## Set this to higher than the maximum time you'd expect a request to be executed (1 hour)
+          max_poll_interval_ms: 3600000
           topic:
             auto_create: True
             num_partitions: 100

@@ -4,13 +4,13 @@ import time
 from unittest.mock import patch, MagicMock, ANY
 from ignition.model.lifecycle import LifecycleExecuteResponse, LifecycleExecution, STATUS_COMPLETE, STATUS_FAILED, STATUS_IN_PROGRESS
 from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_ERROR, FAILURE_CODE_INTERNAL_ERROR, FAILURE_CODE_RESOURCE_NOT_FOUND, FAILURE_CODE_INSUFFICIENT_CAPACITY
-from ansibledriver.service.lifecycle import AnsibleLifecycleDriver, AdditionalLifecycleProperties
+from ansibledriver.service.resourcedriver import AnsibleDriverHandler, AdditionalResourceDriverProperties
 from ignition.utils.file import DirectoryTree
 
 class TestLifecycle(unittest.TestCase):
 
     def setUp(self):
-        self.lifecycle_driver = AnsibleLifecycleDriver()
+        self.lifecycle_driver = AnsibleDriverHandler()
 
     def assertLifecycleExecutionEqual(self, resp, expected_resp):
         self.assertEqual(resp.status, expected_resp.status)
@@ -23,5 +23,5 @@ class TestLifecycle(unittest.TestCase):
             self.assertEqual(resp.failure_details.description, expected_resp.failure_details.description)
 
     def test_run_lifecycle(self):
-        resp = self.lifecycle_driver.execute_lifecycle('install', DirectoryTree('./'), {}, {}, {})
+        resp = self.lifecycle_driver.execute_lifecycle('install', DirectoryTree('./'), {}, {}, {}, {}, {})
         self.assertIsNone(resp)
