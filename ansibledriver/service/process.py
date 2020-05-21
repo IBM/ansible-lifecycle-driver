@@ -34,21 +34,22 @@ class ProcessProperties(ConfigurationPropertiesGroup):
         self.use_process_pool = True
 
 class AnsibleProcessorService(Service, AnsibleProcessorCapability):
-    def __init__(self, configuration, ansible_client, **kwargs):
+    def __init__(self, configuration, **kwargs):
         self.active = False
 
         if 'messaging_service' not in kwargs:
             raise ValueError('messaging_service argument not provided')
         if 'request_queue_service' not in kwargs:
             raise ValueError('request_queue_service argument not provided')
+        if 'ansible_client' not in kwargs:
+            raise ValueError('ansible_client argument not provided')
 
         self.messaging_service = kwargs.get('messaging_service')
         self.process_properties = configuration.property_groups.get_property_group(ProcessProperties)
+        self.ansible_client = kwargs.get('ansible_client')
 
         # lifecycle requests are placed on this queue
         self.request_queue_service = kwargs.get('request_queue_service')
-
-        self.ansible_client = ansible_client
 
         # gracefully deal with SIGINT
         signal(SIGINT, self.sigint_handler)
