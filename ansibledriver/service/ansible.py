@@ -95,6 +95,77 @@ class AnsibleClient():
 
     return callback
 
+  def run_find_playbook(self, request):
+    try:
+      driver_files = request['driver_files']
+      instance_name = request['instance_name']
+      deployment_location = request['deployment_location']
+      if not isinstance(deployment_location, dict):
+        return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Deployment Location must be an object"), {})
+      dl_properties = PropValueMap(deployment_location.get('properties', {}))
+
+      config_path = driver_files.get_directory_tree('config')
+      scripts_path = driver_files.get_directory_tree('scripts')
+
+      all_properties = {
+        'instance_name': instance_name,
+        'dl_properties': dl_properties
+      }
+
+      process_templates(config_path, all_properties)
+
+      playbook_path = get_lifecycle_playbook_path(scripts_path, 'Find')
+      if playbook_path is not None:
+        if not os.path.exists(playbook_path):
+          raise ValueError('Find playbook not found')
+
+        if deployment_location.get('type') == 'Kubernetes':
+          dl_properties['kubeconfig_path'] = self.create_kube_config(deployment_location)
+          connection_type = "k8s"
+          inventory_path = config_path.get_file_path(INVENTORY_K8S)
+        else:
+          connection_type = "ssh"
+          inventory_path = config_path.get_file_path(INVENTORY)
+
+        # always retry on unreachable
+        num_retries = self.ansible_properties.max_unreachable_retries
+
+        for i in range(0, num_retries):
+          if i>0:
+            logger.debug('Playbook {0}, unreachable retry attempt {1}/{2}'.format(playbook_path, i+1, num_retries))
+          start_time = datetime.now()
+          ret = self.run_playbook(request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties)
+          if not ret.host_unreachable:
+            break
+          end_time = datetime.now()
+          if self.ansible_properties.unreachable_sleep_seconds > 0:
+            # Factor in that the playbook may have taken some time to determine is was unreachable
+            # by using the unreachable_sleep_seconds value as a minimum amount of time for the delay 
+            delta = end_time - start_time
+            retry_seconds = max(0, self.ansible_properties.unreachable_sleep_seconds-int(delta.total_seconds()))
+            time.sleep(retry_seconds)
+
+        FindReferenceResult()
+        return ret.get_find_result()
+      else:
+        raise ValueError('Find playbook not found')
+    except InvalidRequestException as ire:
+      return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, ire.msg), {})
+    except Exception as e:
+      logger.exception("Unexpected exception running playbook")
+      return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {})
+    finally:
+      if key_property_processor is not None:
+        key_property_processor.clear_key_files()
+
+      keep_files = request.get('keep_files', False)
+      if not keep_files and driver_files is not None:
+        try:
+          logger.debug('Attempting to remove lifecycle scripts at {0}'.format(driver_files.root_path))
+          driver_files.remove_all()
+        except Exception as e:
+          logger.exception('Encountered an error whilst trying to clear out lifecycle scripts directory {0}: {1}'.format(driver_files.root_path, str(e)))
+
   def run_lifecycle_playbook(self, request):
     driver_files = request['driver_files']
     key_property_processor = None
@@ -210,7 +281,8 @@ class ResultCallback(CallbackBase):
         self.resource_id = None
         self.properties = {}
         self.internal_properties = {}
-        self.internal_resource_instances = []
+        self.instance_id = None
+        self.associated_topology = {}
         self.failure_code = ''
         self.failure_reason = ''
 
@@ -344,11 +416,31 @@ class ResultCallback(CallbackBase):
         if 'ansible_facts' in self.facts:
             props = self.facts['ansible_facts']
 
-            props = { key[8:]:value for key, value in props.items() if key.startswith(self.ansible_properties.output_prop_prefix) }
+            output_props = { key[8:]:value for key, value in props.items() if key.startswith(self.ansible_properties.output_prop_prefix) }
+            logger.debug(f'output props = {output_props}')
+            self.properties.update(output_props)
 
-            logger.debug('output props = {0}'.format(props))
+            instances = { key[10:]:value for key, value in props.items() if key.startswith('instance__') }
+            instance_id = None
+            if len(instances) > 0:
+              for key, value in self.instances.items():
+                instance_id = key
+                break
+            logger.debug(f'instance_id = {instance_id}')
+            self.instance_id = instance_id
 
-            self.properties.update(props)
+            associated_topology = { key[21:]:value for key, value in props.items() if key.startswith('associated_topology__') }
+            logger.debug(f'associated_topology = {associated_topology}')
+            self.associated_topology.update(associated_topology)
+
+    def get_find_result(self):
+      if self.playbook_failed:
+        return ValueError("Find failed")
+      else:
+        if len(self.instances) > 0:
+          return FindReferenceResult(self.instance_id, self.associated_topology, self.outputs)
+        else:
+          # TODO
 
     def get_result(self):
       if self.playbook_failed:
