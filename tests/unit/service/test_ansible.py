@@ -12,6 +12,8 @@ from ignition.model.lifecycle import LifecycleExecution, STATUS_COMPLETE, STATUS
 from ignition.utils.file import DirectoryTree
 from ignition.boot.config import BootstrapApplicationConfiguration, PropertyGroups
 from ignition.utils.propvaluemap import PropValueMap
+from ignition.service.templating import ResourceTemplateContextService, Jinja2TemplatingService
+from ansibledriver.service.rendercontext import ExtendedResourceTemplateContextService
 
 logger = logging.getLogger()
 logger.level = logging.INFO
@@ -33,7 +35,9 @@ class TestAnsible(unittest.TestCase):
         property_groups.add_property_group(AnsibleProperties())
         property_groups.add_property_group(ProcessProperties())
         self.configuration = BootstrapApplicationConfiguration(app_name='test', property_sources=[], property_groups=property_groups, service_configurators=[], api_configurators=[], api_error_converter=None)
-        self.ansible_client = AnsibleClient(self.configuration)
+        render_context_service = ExtendedResourceTemplateContextService()
+        templating = Jinja2TemplatingService()
+        self.ansible_client = AnsibleClient(self.configuration, templating=templating, render_context_service=render_context_service)
 
     def test_run_lifecycle(self):
         # configure so that we can see logging from the code under test
@@ -76,7 +80,7 @@ class TestAnsible(unittest.TestCase):
             'resource_properties': properties,
             'deployment_location': {
                 'name': 'winterfell',
-                'type': "type",
+                'type': "Kubernetes",
                 'properties': PropValueMap({
                 })
             },
@@ -129,7 +133,7 @@ class TestAnsible(unittest.TestCase):
             'resource_properties': properties,
             'deployment_location': {
                 'name': 'winterfell',
-                'type': "type",
+                'type': "Kubernetes",
                 'properties': PropValueMap({
                 })
             },

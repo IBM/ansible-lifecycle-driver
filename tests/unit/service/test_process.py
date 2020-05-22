@@ -43,16 +43,9 @@ class TestProcess(unittest.TestCase):
         process_props.use_pool = False
         property_groups.add_property_group(process_props)
         self.configuration = BootstrapApplicationConfiguration(app_name='test', property_sources=[], property_groups=property_groups, service_configurators=[], api_configurators=[], api_error_converter=None)
-        self.ansible_processor = None
-
-    def build_processor(self, ansible_client, configuration=None):
-      if configuration is None:
-        configuration = self.configuration
-      self.ansible_processor = AnsibleProcessorService(configuration, self.request_queue, self.response_queue, ansible_client, messaging_service=self.mock_messaging_service)
 
     def tearDown(self):
-      if self.ansible_processor is not None:
-        self.ansible_processor.shutdown()
+        pass
 
     def assertLifecycleExecutionEqual(self, resp, expected_resp):
         self.assertEqual(resp.status, expected_resp.status)

@@ -4,7 +4,8 @@
   tasks:
   - name: debug
     debug:
-      msg: "properties {{ properties.hello_world_private_ip }} {{ properties.ansible_ssh_user }} {{ properties.ansible_ssh_pass }} {{ properties.ansible_become_pass }}"
+      # note: use both "base" property names and property names prefixed with "properties" (the latter for backwards compatibility)
+      msg: "properties {{ hello_world_private_ip }} {{ ansible_ssh_user }} {{ ansible_ssh_pass }} {{ ansible_become_pass }} {{ properties.hello_world_private_ip }} {{ properties.ansible_ssh_user }} {{ properties.ansible_ssh_pass }} {{ properties.ansible_become_pass }}"
 
   - name: set fact
     set_fact:

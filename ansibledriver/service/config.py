@@ -9,7 +9,7 @@ import ansibledriver.api_specs as api_specs
 from ansibledriver.service.process import AnsibleProcessorCapability, AnsibleProcessorService
 from ansibledriver.service.ansible import AnsibleClientCapability, AnsibleClient
 from ansibledriver.service.resourcedriver import AnsibleDriverHandler, AdditionalResourceDriverProperties
-from ansibledriver.service.rendercontext import ExtendedResourceTemplateContext
+from ansibledriver.service.rendercontext import ExtendedResourceTemplateContextService
 
 
 class AnsibleServiceConfigurator():
@@ -18,7 +18,7 @@ class AnsibleServiceConfigurator():
         pass
 
     def configure(self, configuration, service_register):
-        service_register.add_service(ServiceRegistration(ExtendedResourceTemplateContext))
+        service_register.add_service(ServiceRegistration(ExtendedResourceTemplateContextService))
         service_register.add_service(ServiceRegistration(AnsibleClient, configuration,
             render_context_service=ResourceTemplateContextCapability,
             templating=TemplatingCapability))
