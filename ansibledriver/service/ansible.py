@@ -118,6 +118,10 @@ class AnsibleClient(Service, AnsibleClientCapability):
         return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Deployment Location must be an object"), {})
       dl_properties = PropValueMap(deployment_location.get('properties', {}))
 
+      infrastructure_type = deployment_location.get('type', None)
+      if infrastructure_type is None:
+        return ValueError("Deployment Location type must be set")
+
       config_path = driver_files.get_directory_tree('config')
       scripts_path = driver_files.get_directory_tree('scripts')
 
@@ -133,13 +137,7 @@ class AnsibleClient(Service, AnsibleClientCapability):
         if not os.path.exists(playbook_path):
           raise ValueError('Find playbook not found')
 
-        if deployment_location.get('type') == 'Kubernetes':
-          dl_properties['kubeconfig_path'] = self.create_kube_config(deployment_location)
-          connection_type = "k8s"
-          inventory_path = config_path.get_file_path(INVENTORY_K8S)
-        else:
-          connection_type = "ssh"
-          inventory_path = config_path.get_file_path(INVENTORY)
+        inventory_path = self.get_inventory(self, driver_files, infrastructure_type)
 
         # always retry on unreachable
         num_retries = self.ansible_properties.max_unreachable_retries
@@ -163,10 +161,10 @@ class AnsibleClient(Service, AnsibleClientCapability):
       else:
         raise ValueError('Find playbook not found')
     except InvalidRequestException as ire:
-      return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, ire.msg), {})
+      return ValueError(f'Unexpected exception executing find playbook {ire.msg}')
     except Exception as e:
-      logger.exception("Unexpected exception running playbook")
-      return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {})
+      logger.exception(f'Unexpected exception running playbook {e.msg}')
+      return ValueError(f'Unexpected exception executing find playbook {e.msg}')
     finally:
       if key_property_processor is not None:
         key_property_processor.clear_key_files()
@@ -212,23 +210,7 @@ class AnsibleClient(Service, AnsibleClientCapability):
         if not os.path.exists(playbook_path):
           return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Playbook path does not exist"), {})
 
-        inventory_path = config_path.get_file_path(f'{INVENTORY}.{infrastructure_type}')
-        if not os.path.exists(inventory_path):
-          if infrastructure_type == 'Kubernetes':
-            # try alternative path (backwards compatibility)
-            inventory_path = config_path.get_file_path(f'{INVENTORY}.k8s')
-          if not os.path.exists(inventory_path):
-            # default to 'INVENTORY'
-            inventory_path = config_path.get_file_path(f'{INVENTORY}')
-
-        if not os.path.exists(inventory_path):
-          # create temporary inventory file
-          with open(inventory_path, "w") as inventory_file:
-            inventory_file = NamedTemporaryFile(delete=False)
-            inventory_file.write(b'[run_hosts]\n')
-            inventory_file.write(b'localhost ansible_connection=local ansible_python_interpreter="/usr/bin/env python3" host_key_checking=False')
-            inventory_file.write(private_key_value)
-            inventory_file.close()
+        inventory_path = self.get_inventory(self, driver_files, infrastructure_type)
 
         if connection_type == 'k8s':
           kube_location = KubeDeploymentLocation.from_dict(deployment_location)
@@ -293,6 +275,28 @@ class AnsibleClient(Service, AnsibleClientCapability):
           driver_files.remove_all()
         except Exception as e:
           logger.exception('Encountered an error whilst trying to clear out lifecycle scripts directory {0}: {1}'.format(driver_files.root_path, str(e)))
+
+    def get_inventory(self, driver_files, infrastructure_type):
+      config_path = driver_files.get_directory_tree('config')
+      inventory_path = config_path.get_file_path(f'{INVENTORY}.{infrastructure_type}')
+      if not os.path.exists(inventory_path):
+        if infrastructure_type == 'Kubernetes':
+          # try alternative path (backwards compatibility)
+          inventory_path = config_path.get_file_path(f'{INVENTORY}.k8s')
+        if not os.path.exists(inventory_path):
+          # default to 'INVENTORY'
+          inventory_path = config_path.get_file_path(f'{INVENTORY}')
+
+      if not os.path.exists(inventory_path):
+        # create temporary inventory file
+        with open(inventory_path, "w") as inventory_file:
+          inventory_file = NamedTemporaryFile(delete=False)
+          inventory_file.write(b'[run_hosts]\n')
+          inventory_file.write(b'localhost ansible_connection=local ansible_python_interpreter="/usr/bin/env python3" host_key_checking=False')
+          inventory_file.write(private_key_value)
+          inventory_file.close()
+
+      return inventory_path
 
 
 class ResultCallback(CallbackBase):
