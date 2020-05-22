@@ -145,7 +145,6 @@ class AnsibleClient():
             retry_seconds = max(0, self.ansible_properties.unreachable_sleep_seconds-int(delta.total_seconds()))
             time.sleep(retry_seconds)
 
-        FindReferenceResult()
         return ret.get_find_result()
       else:
         raise ValueError('Find playbook not found')
@@ -447,6 +446,7 @@ class ResultCallback(CallbackBase):
         return LifecycleExecution(self.request_id, STATUS_FAILED, self.failure_details, self.properties)
       else:
         return LifecycleExecution(self.request_id, STATUS_COMPLETE, None, self.properties)
+
 
 class InvalidRequestException(Exception):
   """Raised when a REST request is invalid
