@@ -39,11 +39,11 @@ class AnsibleProperties(ConfigurationPropertiesGroup):
 class AnsibleClientCapability(Capability):
 
     @interface
-    def shutdown(self):
-        pass
+    def run_lifecycle_playbook(self, request):
+      pass
 
 
-class AnsibleClient(AnsibleClientCapability):
+class AnsibleClient(Service, AnsibleClientCapability):
   def __init__(self, configuration, **kwargs):
     self.ansible_properties = configuration.property_groups.get_property_group(AnsibleProperties)
     if 'render_context_service' not in kwargs:
@@ -147,10 +147,18 @@ class AnsibleClient(AnsibleClientCapability):
           if infrastructure_type == 'Kubernetes':
             # try alternative path (backwards compatibility)
             inventory_path = config_path.get_file_path(f'{INVENTORY}.k8s')
-            if not os.path.exists(inventory_path):
-              return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, f"Inventory path {inventory_path} does not exist"), {})
-          else:
-            return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, f"Inventory path {inventory_path} does not exist"), {})
+          if not os.path.exists(inventory_path):
+            # default to 'INVENTORY'
+            inventory_path = config_path.get_file_path(f'{INVENTORY}')
+
+        if not os.path.exists(inventory_path):
+          # create temporary inventory file
+          with open(inventory_path, "w") as inventory_file:
+            inventory_file = NamedTemporaryFile(delete=False)
+            inventory_file.write(b'[run_hosts]\n')
+            inventory_file.write(b'localhost ansible_connection=local ansible_python_interpreter="/usr/bin/env python3" host_key_checking=False')
+            inventory_file.write(private_key_value)
+            inventory_file.close()
 
         if connection_type == 'k8s':
           kube_location = KubeDeploymentLocation.from_dict(deployment_location)
