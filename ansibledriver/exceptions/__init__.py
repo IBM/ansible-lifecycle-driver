@@ -1,0 +1,2 @@
+class ResourcePackageError(Exception):
+    pass
