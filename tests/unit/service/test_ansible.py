@@ -68,8 +68,35 @@ class TestAnsible(unittest.TestCase):
             })
 
             cwd = os.getcwd()
+
+            # Kubernetes deployment location with Kubernetes-specific inventory
+
             src = cwd + '/tests/resources/ansible'
             dst = cwd + '/tests/resources/ansible-copy'
+            shutil.rmtree(dst, ignore_errors=True)
+            shutil.copytree(src, dst)
+
+            resp = self.ansible_client.run_lifecycle_playbook({
+            'lifecycle_name': 'install',
+            'driver_files': DirectoryTree(dst),
+            'system_properties': system_properties,
+            'resource_properties': properties,
+            'deployment_location': {
+                'name': 'winterfell',
+                'type': "Kubernetes",
+                'properties': PropValueMap({
+                })
+            },
+            'request_id': request_id
+            })
+
+            self.assertLifecycleExecutionEqual(resp, LifecycleExecution(request_id, STATUS_COMPLETE, None, {'msg': "hello there!"}))
+            self.assertFalse(os.path.exists(dst))
+
+            # Kubernetes deployment location with non-Kubernetes-specific inventory
+
+            src = cwd + '/tests/resources/ansible3'
+            dst = cwd + '/tests/resources/ansible3-copy'
             shutil.rmtree(dst, ignore_errors=True)
             shutil.copytree(src, dst)
 
