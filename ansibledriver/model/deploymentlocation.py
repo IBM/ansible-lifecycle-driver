@@ -24,9 +24,7 @@ class DeploymentLocation():
         self.infrastructure_type = self.deployment_location.get('type', None)
         if self.infrastructure_type is None:
             raise InvalidDeploymentLocationError('Deployment location missing \'type\' value')
-        # TODO wrap in PropValueMap?
-        #self.dl_properties = PropValueMap(deployment_location.get('properties', {}))
-        self.properties = deployment_location.get('properties', {})
+        self.properties = PropValueMap(deployment_location.get('properties', {}))
         self.connection_type = self.properties.get('connection_type')
         if self.connection_type is None:
             self.connection_type = 'ssh'
@@ -35,7 +33,7 @@ class DeploymentLocation():
           self.kube_location = KubernetesDeploymentLocation.from_dict(deployment_location)
           if self.kube_location is not None:
             self.kubeconfig_file = self.kube_location.write_config_file()
-            logger.debug(f'Creating kubeconfig file at {self.kubeconfig_file}')
+            logger.debug(f'Created kubeconfig file at {self.kubeconfig_file}')
             self.properties['kubeconfig_path'] = self.kubeconfig_file
           else:
             raise ValueError('Unable to convert deployment location to a Kubernetes deployment location')

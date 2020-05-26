@@ -2,6 +2,7 @@ import logging
 import os
 import unittest
 from ignition.locations.exceptions import InvalidDeploymentLocationError
+from ignition.utils.propvaluemap import PropValueMap
 from ansibledriver.model.deploymentlocation import DeploymentLocation
 
 
@@ -10,7 +11,8 @@ logger.level = logging.INFO
 
 
 
-EXAMPLE_KUBECTL_CONFIG = {
+EXAMPLE_KUBECTL_CONFIG = '''
+{
     'apiVersion': 'v1',
     'clusters': [
         {'cluster': {'server': 'localhost'}, 'name': 'kubernetes'}
@@ -25,12 +27,18 @@ EXAMPLE_KUBECTL_CONFIG = {
         {'name': 'kubernetes-admin', 'user': {}}
     ]
 }
-
+'''
 
 class TestDeploymentLocation(unittest.TestCase):
 
     def setUp(self):
         pass
+
+    def __propvaluemap(self, orig_props):
+        props = {}
+        for k, v in orig_props.items():
+            props[k] = {'type': 'string', 'value': v}
+        return PropValueMap(props)
 
     def test_deployment_location_is_none(self):
         with self.assertRaises(InvalidDeploymentLocationError) as context:
@@ -60,20 +68,21 @@ class TestDeploymentLocation(unittest.TestCase):
             }
         }
         location = DeploymentLocation(deployment_location)
-        # print(f'dhusdgs1 ' + str(type(location)))
-        # print(f'dhusdgs2 ' + location.connection_type())
         self.assertEqual(location.connection_type, 'ssh')
 
     def test_k8s_deployment_location(self):
+
+
         deployment_location = {
             'name': 'dl',
             'type': 'Kubernetes',
-            'properties': {
+            'properties': self.__propvaluemap({
                 'connection_type': 'kubectl',
                 'clientConfig': EXAMPLE_KUBECTL_CONFIG
-            }
+            })
         }
         location = DeploymentLocation(deployment_location)
+        self.assertIsInstance(location.properties, PropValueMap)
         self.assertIsNotNone(location.kube_location)
         self.assertIsNotNone(location.properties.get('kubeconfig_path', None))
         kubeconfig_path = location.properties.get('kubeconfig_path', None)
