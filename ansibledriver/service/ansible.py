@@ -54,7 +54,9 @@ class AnsibleClient(Service, AnsibleClientCapability):
     self.templating = kwargs.get('templating')
 
   def run_playbook(self, request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties):
-    logger.debug(f'request {request_id} for lifecycle {lifecycle} with connection type {connection_type}, inventory_path {inventory_path}, playbook_path {playbook_path} properties {all_properties}')
+    # TODO ensure key properties not logged
+    #log_safe_properties = PropValueMap(all_properties)
+    logger.debug(f'Request {request_id} for lifecycle {lifecycle} with connection type {connection_type}, inventory_path {inventory_path}, playbook_path {playbook_path} properties {all_properties}')
 
     Options = namedtuple('Options', ['connection',
                                      'forks',
@@ -101,9 +103,6 @@ class AnsibleClient(Service, AnsibleClientCapability):
     callback = ResultCallback(self.ansible_properties, request_id, lifecycle)
     pbex._tqm._stdout_callback = callback
 
-    # TODO
-    #log_safe_properties = PropValueMap(all_properties)
-    logger.debug(f'Running playbook {playbook_path} with properties {all_properties}')
     pbex.run()
     logger.debug(f'Playbook finished {playbook_path}')
 
@@ -391,14 +390,19 @@ def process_templates(parent_dir, templating, all_properties):
     for file in files:
         j2_env = Environment(loader=FileSystemLoader(root), trim_blocks=True)
         path = root + '/' + file
+        # TODO ensure key properties not logged
         logger.info('PROCESSING ' + str(file) + ' WITH ' + str(all_properties))
 
         with open(path, "r") as template_file:
-          template_content = template_file.read()
-          content = templating.render(template_content, all_properties)
-          logger.debug('Wrote process template to file {0}'.format(path))
-          with open(path, "w") as template_file_write:
-              template_file_write.write(content)
+          try:
+            template_content = template_file.read()
+            content = templating.render(template_content, all_properties)
+            logger.debug('Wrote process template to file {0}'.format(path))
+            with open(path, "w") as template_file_write:
+                template_file_write.write(content)
+          except UnicodeDecodeError as ude:
+            # skip this file, not a text file
+            pass
 
 
 
