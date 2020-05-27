@@ -54,10 +54,6 @@ class AnsibleClient(Service, AnsibleClientCapability):
     self.templating = kwargs.get('templating')
 
   def run_playbook(self, request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties):
-    # TODO ensure key properties not logged
-    #log_safe_properties = PropValueMap(all_properties)
-    logger.debug(f'Request {request_id} for lifecycle {lifecycle} with connection type {connection_type}, inventory_path {inventory_path}, playbook_path {playbook_path} properties {all_properties}')
-
     Options = namedtuple('Options', ['connection',
                                      'forks',
                                      'become',
@@ -139,8 +135,7 @@ class AnsibleClient(Service, AnsibleClientCapability):
         # entry to the property dictionary that maps the "[key_name].path" to the key file path
         key_property_processor.process_key_properties()
 
-        logger.debug('config_path = ' + config_path.get_path())
-        logger.debug('driver_files = ' + scripts_path.get_path())
+        logger.debug(f'Handling request {request_id} with config_path: {config_path.get_path()} driver files path: {scripts_path.get_path()} resource properties: {resource_properties} system properties {system_properties} request properties {request_properties}')
 
         all_properties = self.render_context_service.build(system_properties, resource_properties, request_properties, location.deployment_location)
 
@@ -390,8 +385,7 @@ def process_templates(parent_dir, templating, all_properties):
     for file in files:
         j2_env = Environment(loader=FileSystemLoader(root), trim_blocks=True)
         path = root + '/' + file
-        # TODO ensure key properties not logged
-        logger.info('PROCESSING ' + str(file) + ' WITH ' + str(all_properties))
+        logger.debug(f'Processing template {file}')
 
         with open(path, "r") as template_file:
           try:
