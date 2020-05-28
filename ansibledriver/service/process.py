@@ -154,9 +154,9 @@ class AnsibleRequestHandler(RequestHandler):
             logger.debug('Ansible worker finished for request {0}: {1}'.format(request, result))
             self.messaging_service.send_lifecycle_execution(result)
           else:
-            logger.warn("Empty response from Ansible worker for request {0}".format(request))
+            logger.warning("Empty response from Ansible worker for request {0}".format(request))
         else:
-          logger.warn('Null lifecycle request from request queue')
+          logger.warning('Null lifecycle request from request queue')
       except Exception as e:
         logger.error('Unexpected exception {0}'.format(e))
         traceback.print_exc(file=sys.stderr)

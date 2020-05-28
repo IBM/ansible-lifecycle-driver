@@ -32,14 +32,19 @@ class TestConfig(unittest.TestCase):
 
     def test_init_processor_service_without_messaging_service_throws_error(self):
         with self.assertRaises(ValueError) as context:
-            AnsibleProcessorService(self.configuration, self.mock_ansible_client, request_queue_service=self.mock_request_queue_service)
+            AnsibleProcessorService(self.configuration, ansible_client=self.mock_ansible_client, request_queue_service=self.mock_request_queue_service)
         self.assertEqual(str(context.exception), 'messaging_service argument not provided')
 
-    def test_init_processor_service_withoutrequest_queue_service_throws_error(self):
+    def test_init_processor_service_without_request_queue_service_throws_error(self):
         with self.assertRaises(ValueError) as context:
-            AnsibleProcessorService(self.configuration, self.mock_ansible_client, messaging_service=self.mock_messaging_service)
+            AnsibleProcessorService(self.configuration, ansible_client=self.mock_ansible_client, messaging_service=self.mock_messaging_service)
         self.assertEqual(str(context.exception), 'request_queue_service argument not provided')
 
+    def test_init_processor_service_without_ansible_client_throws_error(self):
+        with self.assertRaises(ValueError) as context:
+            AnsibleProcessorService(self.configuration, request_queue_service=self.mock_request_queue_service, messaging_service=self.mock_messaging_service)
+        self.assertEqual(str(context.exception), 'ansible_client argument not provided')
+
     def test_configure_ansible_processor_service(self):
-        ansible_processor_service = AnsibleProcessorService(self.configuration, self.mock_ansible_client, request_queue_service=self.mock_request_queue_service, messaging_service=self.mock_messaging_service)
+        ansible_processor_service = AnsibleProcessorService(self.configuration, ansible_client=self.mock_ansible_client, request_queue_service=self.mock_request_queue_service, messaging_service=self.mock_messaging_service)
         ansible_processor_service.shutdown()

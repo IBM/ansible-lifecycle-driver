@@ -20,9 +20,9 @@ from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_E
 from ignition.service.config import ConfigurationPropertiesGroup
 from ignition.service.framework import Service, Capability, interface
 from ignition.utils.propvaluemap import PropValueMap
-from ansibledriver.model.kubeconfig import KubeConfig
+from ansibledriver.model.deploymentlocation import DeploymentLocation
+from ansibledriver.model.inventory import Inventory
 
-INVENTORY = "inventory"
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +52,6 @@ class AnsibleClient(Service, AnsibleClientCapability):
     if 'templating' not in kwargs:
       raise ValueError('templating argument not provided')
     self.templating = kwargs.get('templating')
-
-  # create a kubeconfig file based on the deployment location that can be consumed by the Python Kubernetes library
-  def create_kube_config(self, deployment_location):
-    return KubeConfig(deployment_location, self.ansible_properties).write()
 
   def run_playbook(self, request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties):
     Options = namedtuple('Options', ['connection',
@@ -103,9 +99,8 @@ class AnsibleClient(Service, AnsibleClientCapability):
     callback = ResultCallback(self.ansible_properties, request_id, lifecycle)
     pbex._tqm._stdout_callback = callback
 
-    logger.debug("Running playbook {0} with properties {1}, system_properties {2}".format(playbook_path, all_properties['properties'].get_props(), all_properties['system_properties'].get_props()))
     pbex.run()
-    logger.debug("Playbook finished {0}".format(playbook_path))
+    logger.debug(f'Playbook finished {playbook_path}')
 
     return callback
 
@@ -180,52 +175,37 @@ class AnsibleClient(Service, AnsibleClientCapability):
   def run_lifecycle_playbook(self, request):
     driver_files = request['driver_files']
     key_property_processor = None
-    kube_location = None
+    location = None
 
     try:
       request_id = request['request_id']
       lifecycle = request['lifecycle_name']
-      resource_properties = request['resource_properties']
-      system_properties = request['system_properties']
-      request_properties = request['request_properties']
-      deployment_location = request['deployment_location']
-      associated_topology = request['associated_topology']
-      if not isinstance(deployment_location, dict):
-        return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Deployment Location must be an object"), {})
-      infrastructure_type = deployment_location.get('type', None)
-      if infrastructure_type is None:
-        return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Deployment Location type must be set"), {})
-      dl_properties = PropValueMap(deployment_location.get('properties', {}))
-      connection_type = dl_properties.get('connection_type')
-      if connection_type is None:
-        connection_type = 'ssh'
+      resource_properties = request.get('resource_properties', {})
+      system_properties = request.get('system_properties', {})
+      request_properties = request.get('request_properties', {})
+      associated_topology = request.get('associated_topology', {})
+
+      location = DeploymentLocation.from_request(request)
 
       config_path = driver_files.get_directory_tree('config')
       scripts_path = driver_files.get_directory_tree('scripts')
 
-      key_property_processor = KeyPropertyProcessor(resource_properties, system_properties, dl_properties)
+      key_property_processor = KeyPropertyProcessor(resource_properties, system_properties, location.properties)
 
       playbook_path = get_lifecycle_playbook_path(scripts_path, lifecycle)
       if playbook_path is not None:
         if not os.path.exists(playbook_path):
           return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Playbook path does not exist"), {})
 
-        inventory_path = self.get_inventory(self, driver_files, infrastructure_type)
-
-        if connection_type == 'k8s':
-          kube_location = KubeDeploymentLocation.from_dict(deployment_location)
-          dl_properties['kubeconfig_path'] = kube_location.write_config_file()
+        inventory = Inventory(driver_files, location.infrastructure_type)
 
         # process key properties by writing them out to a temporary file and adding an
         # entry to the property dictionary that maps the "[key_name].path" to the key file path
         key_property_processor.process_key_properties()
 
-        logger.debug('config_path = ' + config_path.get_path())
-        logger.debug('driver_files = ' + scripts_path.get_path())
-        logger.debug("playbook_path=" + playbook_path)
-        logger.debug("inventory_path=" + inventory_path)
+        logger.debug(f'Handling request {request_id} with config_path: {config_path.get_path()} driver files path: {scripts_path.get_path()} resource properties: {resource_properties} system properties {system_properties} request properties {request_properties}')
 
-        all_properties = self.render_context_service.build(system_properties, resource_properties, request_properties, kube_location.to_dict())
+        all_properties = self.render_context_service.build(system_properties, resource_properties, request_properties, location.deployment_location)
 
         process_templates(config_path, self.templating, all_properties)
 
@@ -236,7 +216,7 @@ class AnsibleClient(Service, AnsibleClientCapability):
           if i>0:
             logger.debug('Playbook {0}, unreachable retry attempt {1}/{2}'.format(playbook_path, i+1, num_retries))
           start_time = datetime.now()
-          ret = self.run_playbook(request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties)
+          ret = self.run_playbook(request_id, location.connection_type, inventory.get_inventory_path(), playbook_path, lifecycle, all_properties)
           if not ret.host_unreachable:
             break
           end_time = datetime.now()
@@ -258,12 +238,8 @@ class AnsibleClient(Service, AnsibleClientCapability):
       logger.exception("Unexpected exception running playbook")
       return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {})
     finally:
-      try:
-          if kube_location is not None:
-            logger.debug(f'Attempting to clean up deployment location related files')
-            kube_location.clear_config_files()
-      except Exception as e:
-          logger.exception(f'Encountered an error whilst trying to clean up deployment location related files: {e}')
+      if location is not None:
+        location.cleanup()
 
       if key_property_processor is not None:
         key_property_processor.clear_key_files()
@@ -521,14 +497,18 @@ def process_templates(parent_dir, templating, all_properties):
     for file in files:
         j2_env = Environment(loader=FileSystemLoader(root), trim_blocks=True)
         path = root + '/' + file
-        logger.info('PROCESSING ' + str(file) + ' WITH ' + str(all_properties))
+        logger.debug(f'Processing template {file}')
 
         with open(path, "r") as template_file:
-          template_content = template_file.read()
-          content = templating.render(template_content, all_properties)
-          logger.debug('Wrote process template to file {0}'.format(path))
-          with open(path, "w") as template_file_write:
-              template_file_write.write(content)
+          try:
+            template_content = template_file.read()
+            content = templating.render(template_content, all_properties)
+            logger.debug('Wrote process template to file {0}'.format(path))
+            with open(path, "w") as template_file_write:
+                template_file_write.write(content)
+          except UnicodeDecodeError as ude:
+            # skip this file, not a text file
+            pass
 
 
 
