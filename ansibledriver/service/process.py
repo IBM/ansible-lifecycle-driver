@@ -34,21 +34,22 @@ class ProcessProperties(ConfigurationPropertiesGroup):
         self.use_process_pool = True
 
 class AnsibleProcessorService(Service, AnsibleProcessorCapability):
-    def __init__(self, configuration, ansible_client, **kwargs):
+    def __init__(self, configuration, **kwargs):
         self.active = False
 
         if 'messaging_service' not in kwargs:
             raise ValueError('messaging_service argument not provided')
         if 'request_queue_service' not in kwargs:
             raise ValueError('request_queue_service argument not provided')
+        if 'ansible_client' not in kwargs:
+            raise ValueError('ansible_client argument not provided')
 
         self.messaging_service = kwargs.get('messaging_service')
         self.process_properties = configuration.property_groups.get_property_group(ProcessProperties)
+        self.ansible_client = kwargs.get('ansible_client')
 
         # lifecycle requests are placed on this queue
         self.request_queue_service = kwargs.get('request_queue_service')
-
-        self.ansible_client = ansible_client
 
         # gracefully deal with SIGINT
         signal(SIGINT, self.sigint_handler)
@@ -153,9 +154,9 @@ class AnsibleRequestHandler(RequestHandler):
             logger.debug('Ansible worker finished for request {0}: {1}'.format(request, result))
             self.messaging_service.send_lifecycle_execution(result)
           else:
-            logger.warn("Empty response from Ansible worker for request {0}".format(request))
+            logger.warning("Empty response from Ansible worker for request {0}".format(request))
         else:
-          logger.warn('Null lifecycle request from request queue')
+          logger.warning('Null lifecycle request from request queue')
       except Exception as e:
         logger.error('Unexpected exception {0}'.format(e))
         traceback.print_exc(file=sys.stderr)

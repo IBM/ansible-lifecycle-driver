@@ -1,0 +1,11 @@
+---
+- hosts: resource
+  gather_facts: no
+  tasks:
+  - name: debug
+    debug:
+      msg: "properties {{ properties.hello_world_private_ip }} {{ properties.ansible_ssh_user }} {{ properties.ansible_ssh_pass }} {{ properties.ansible_become_pass }}"
+
+  - name: set fact
+    set_fact:
+      output__msg: "hello there!"
