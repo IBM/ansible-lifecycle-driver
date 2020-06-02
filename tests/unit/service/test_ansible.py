@@ -9,15 +9,19 @@ import sys
 from unittest.mock import patch, MagicMock, ANY
 from ansibledriver.service.ansible import AnsibleClient, AnsibleProperties
 from ansibledriver.service.process import ProcessProperties
+from ansibledriver.service.rendercontext import ExtendedResourceTemplateContextService
 from ignition.model.lifecycle import LifecycleExecution, STATUS_COMPLETE, STATUS_FAILED, STATUS_IN_PROGRESS
 from ignition.utils.file import DirectoryTree
 from ignition.boot.config import BootstrapApplicationConfiguration, PropertyGroups
 from ignition.utils.propvaluemap import PropValueMap
 from ignition.service.templating import ResourceTemplateContextService, Jinja2TemplatingService
-from ansibledriver.service.rendercontext import ExtendedResourceTemplateContextService
+from ignition.model.references import FindReferenceResult, FindReferenceResponse
+from ignition.model.associated_topology import AssociatedTopologyEntry, AssociatedTopology, RemovedTopologyEntry
+
 
 logger = logging.getLogger()
 logger.level = logging.INFO
+
 
 class TestAnsible(unittest.TestCase):
 
@@ -301,6 +305,36 @@ class TestAnsible(unittest.TestCase):
             })
 
             self.assertLifecycleExecutionEqual(resp, LifecycleExecution(request_id, STATUS_COMPLETE, None, {'msg': "hello there!"}))
+            self.assertTrue(os.path.exists(dst))
+        finally:
+            logger.removeHandler(stream_handler)
+
+    def test_run_find(self):
+        # configure so that we can see logging from the code under test
+        stream_handler = logging.StreamHandler(sys.stdout)
+        logger.addHandler(stream_handler)
+
+        try:
+            dst = self.__copy_directory_tree(os.getcwd() + '/tests/resources/ansible')
+
+            instance_name = "instance1"
+            driver_files = DirectoryTree(dst)
+            deployment_location = {
+                'name': 'winterfell',
+                'type': "Kubernetes",
+                'properties': PropValueMap({
+                })
+            }
+
+            expected_associated_topology = AssociatedTopology()
+            expected_properties = {
+                "prop1": "value1",
+                "prop2": "value2"
+            }
+
+            resp = self.ansible_client.run_find_playbook(instance_name, driver_files, deployment_location)
+
+            self.assertLifecycleExecutionEqual(resp, FindReferenceResponse(FindReferenceResult(instance_name, expected_associated_topology, expected_properties)))
             self.assertTrue(os.path.exists(dst))
         finally:
             logger.removeHandler(stream_handler)

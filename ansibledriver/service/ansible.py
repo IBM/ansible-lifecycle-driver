@@ -15,16 +15,23 @@ from ansible.plugins.callback.json import CallbackModule
 from ansible.plugins.loader import connection_loader
 from ansible.inventory.host import Host
 from jinja2 import Environment, FileSystemLoader
+from ignition.model.associated_topology import AssociatedTopology, RemovedTopologyEntry
 from ignition.model.lifecycle import LifecycleExecution, STATUS_COMPLETE, STATUS_FAILED, STATUS_IN_PROGRESS
 from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_ERROR, FAILURE_CODE_INTERNAL_ERROR, FAILURE_CODE_RESOURCE_NOT_FOUND
 from ignition.service.config import ConfigurationPropertiesGroup
 from ignition.service.framework import Service, Capability, interface
+from ignition.api.exceptions import BadRequest
 from ignition.utils.propvaluemap import PropValueMap
+from ignition.model.references import FindReferenceResult, FindReferenceResponse
+from ignition.templating import JinjaTemplate
+from ansibledriver.service.resourcedriver import AdditionalResourceDriverProperties
 from ansibledriver.model.deploymentlocation import DeploymentLocation
 from ansibledriver.model.inventory import Inventory
+from ansibledriver.service.keys import KeyPropertyProcessor
 
 
 logger = logging.getLogger(__name__)
+
 
 class AnsibleProperties(ConfigurationPropertiesGroup):
     def __init__(self):
@@ -33,6 +40,7 @@ class AnsibleProperties(ConfigurationPropertiesGroup):
         self.unreachable_sleep_seconds = 5 # in seconds
         self.max_unreachable_retries = 1000
         self.output_prop_prefix = 'output__'
+        self.associated_topology_prefix = 'associated_topology__'
         self.tmp_dir = '.'
 
 
@@ -46,6 +54,7 @@ class AnsibleClientCapability(Capability):
 class AnsibleClient(Service, AnsibleClientCapability):
   def __init__(self, configuration, **kwargs):
     self.ansible_properties = configuration.property_groups.get_property_group(AnsibleProperties)
+    self.resource_driver_config = configuration.property_groups.get_property_group(AdditionalResourceDriverProperties)
     if 'render_context_service' not in kwargs:
       raise ValueError('render_context_service argument not provided')
     self.render_context_service = kwargs.get('render_context_service')
@@ -104,35 +113,39 @@ class AnsibleClient(Service, AnsibleClientCapability):
 
     return callback
 
-  def run_find_playbook(self, request):
-    try:
-      driver_files = request['driver_files']
-      instance_name = request['instance_name']
-      deployment_location = request['deployment_location']
-      if not isinstance(deployment_location, dict):
-        return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Deployment Location must be an object"), {})
-      dl_properties = PropValueMap(deployment_location.get('properties', {}))
+  def run_find_playbook(self, instance_name, driver_files, deployment_location):
+    location = None
+    lifecycle = 'Find'
+    keep_files = self.resource_driver_config.keep_files
 
-      infrastructure_type = deployment_location.get('type', None)
-      if infrastructure_type is None:
-        return ValueError("Deployment Location type must be set")
+    try:
+      if instance_name is None:
+        raise BadRequest("Missing instance_name in request")
+      if driver_files is None:
+        raise BadRequest("Missing driver_files in request")
+      if deployment_location is None:
+        raise BadRequest("Missing deployment_location in request")
+
+      location = DeploymentLocation(deployment_location)
 
       config_path = driver_files.get_directory_tree('config')
       scripts_path = driver_files.get_directory_tree('scripts')
 
-      all_properties = {
-        'instance_name': instance_name,
-        'dl_properties': dl_properties
-      }
-
-      process_templates(config_path, all_properties)
-
-      playbook_path = get_lifecycle_playbook_path(scripts_path, 'Find')
+      playbook_path = get_lifecycle_playbook_path(scripts_path, lifecycle)
       if playbook_path is not None:
         if not os.path.exists(playbook_path):
-          raise ValueError('Find playbook not found')
+          raise ValueError("Playbook path does not exist")
 
-        inventory_path = self.get_inventory(self, driver_files, infrastructure_type)
+        inventory = Inventory(driver_files, location.infrastructure_type)
+
+        logger.debug(f'Handling find request for {instance_name} with config_path: {config_path.get_path()} driver files path: {scripts_path.get_path()}')
+
+        all_properties = {
+          'instance_name': instance_name,
+          'deployment_location': {
+            'properties': location.properties
+          }
+        }
 
         # always retry on unreachable
         num_retries = self.ansible_properties.max_unreachable_retries
@@ -141,7 +154,7 @@ class AnsibleClient(Service, AnsibleClientCapability):
           if i>0:
             logger.debug('Playbook {0}, unreachable retry attempt {1}/{2}'.format(playbook_path, i+1, num_retries))
           start_time = datetime.now()
-          ret = self.run_playbook(request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties)
+          ret = self.run_playbook(None, location.connection_type, inventory.get_inventory_path(), playbook_path, lifecycle, all_properties)
           if not ret.host_unreachable:
             break
           end_time = datetime.now()
@@ -152,38 +165,53 @@ class AnsibleClient(Service, AnsibleClientCapability):
             retry_seconds = max(0, self.ansible_properties.unreachable_sleep_seconds-int(delta.total_seconds()))
             time.sleep(retry_seconds)
 
-        return ret.get_find_result()
-      else:
-        raise ValueError('Find playbook not found')
-    except InvalidRequestException as ire:
-      return ValueError(f'Unexpected exception executing find playbook {ire.msg}')
-    except Exception as e:
-      logger.exception(f'Unexpected exception running playbook {e.msg}')
-      return ValueError(f'Unexpected exception executing find playbook {e.msg}')
-    finally:
-      if key_property_processor is not None:
-        key_property_processor.clear_key_files()
+        find_result = ret.get_find_result()
 
-      keep_files = request.get('keep_files', False)
+        return find_result
+      else:
+        msg = f'Find failed: no find playbook to run at path {playbook_path}'
+        logger.debug(msg)
+        raise ValueError(msg)
+    except InvalidRequestException as ire:
+      msg = f'Unexpected exception running Find playbook {playbook_path}: {ire}'
+      logger.exception(msg)
+      raise ValueError(msg)
+    except ValueError as e:
+      raise e
+    except Exception as e:
+      msg = f'Unexpected exception running playbook {e}'
+      logger.exception(msg)
+      raise ValueError(msg)
+    finally:
+      if location is not None:
+        location.cleanup()
+
       if not keep_files and driver_files is not None:
         try:
-          logger.debug('Attempting to remove lifecycle scripts at {0}'.format(driver_files.root_path))
+          logger.debug(f'Attempting to remove lifecycle scripts at {driver_files.root_path}')
           driver_files.remove_all()
         except Exception as e:
-          logger.exception('Encountered an error whilst trying to clear out lifecycle scripts directory {0}: {1}'.format(driver_files.root_path, str(e)))
+          logger.exception(f'Encountered an error whilst trying to clear out lifecycle scripts directory {driver_files.root_path}: {e}')
 
   def run_lifecycle_playbook(self, request):
-    driver_files = request['driver_files']
+    driver_files = None
     key_property_processor = None
     location = None
 
     try:
-      request_id = request['request_id']
-      lifecycle = request['lifecycle_name']
+      request_id = request.get('request_id', None)
+      if request_id is None:
+        raise BadRequest("Missing request_id in request")
+      lifecycle = request.get('lifecycle_name', None)
+      if lifecycle is None:
+        raise BadRequest("Missing lifecycle in request")
       resource_properties = request.get('resource_properties', {})
       system_properties = request.get('system_properties', {})
       request_properties = request.get('request_properties', {})
       associated_topology = request.get('associated_topology', {})
+      driver_files = request.get('driver_files', None)
+      if driver_files is None:
+        raise BadRequest("Missing driver_files in request")
 
       location = DeploymentLocation.from_request(request)
 
@@ -244,35 +272,16 @@ class AnsibleClient(Service, AnsibleClientCapability):
       if key_property_processor is not None:
         key_property_processor.clear_key_files()
 
-      keep_files = request.get('keep_files', False)
+      if 'keep_files' in request:
+        keep_files = request['keep_files']
+      else:
+        keep_files = self.resource_driver_config.keep_files
       if not keep_files and driver_files is not None:
         try:
           logger.debug('Attempting to remove lifecycle scripts at {0}'.format(driver_files.root_path))
           driver_files.remove_all()
         except Exception as e:
           logger.exception('Encountered an error whilst trying to clear out lifecycle scripts directory {0}: {1}'.format(driver_files.root_path, str(e)))
-
-    def get_inventory(self, driver_files, infrastructure_type):
-      config_path = driver_files.get_directory_tree('config')
-      inventory_path = config_path.get_file_path(f'{INVENTORY}.{infrastructure_type}')
-      if not os.path.exists(inventory_path):
-        if infrastructure_type == 'Kubernetes':
-          # try alternative path (backwards compatibility)
-          inventory_path = config_path.get_file_path(f'{INVENTORY}.k8s')
-        if not os.path.exists(inventory_path):
-          # default to 'INVENTORY'
-          inventory_path = config_path.get_file_path(f'{INVENTORY}')
-
-      if not os.path.exists(inventory_path):
-        # create temporary inventory file
-        with open(inventory_path, "w") as inventory_file:
-          inventory_file = NamedTemporaryFile(delete=False)
-          inventory_file.write(b'[run_hosts]\n')
-          inventory_file.write(b'localhost ansible_connection=local ansible_python_interpreter="/usr/bin/env python3" host_key_checking=False')
-          inventory_file.write(private_key_value)
-          inventory_file.close()
-
-      return inventory_path
 
 
 class ResultCallback(CallbackBase):
@@ -301,7 +310,7 @@ class ResultCallback(CallbackBase):
         self.properties = {}
         self.internal_properties = {}
         self.instance_id = None
-        self.associated_topology = {}
+        self.associated_topology = AssociatedTopology()
         self.failure_code = ''
         self.failure_reason = ''
 
@@ -433,33 +442,38 @@ class ResultCallback(CallbackBase):
             self.facts = result._result
 
         if 'ansible_facts' in self.facts:
-            props = self.facts['ansible_facts']
+            try:
+                props = self.facts['ansible_facts']
 
-            output_props = { key[8:]:value for key, value in props.items() if key.startswith(self.ansible_properties.output_prop_prefix) }
-            logger.debug(f'output props = {output_props}')
-            self.properties.update(output_props)
+                output_prop_prefix_length = len(self.ansible_properties.output_prop_prefix)
+                output_props = { key[output_prop_prefix_length:]:value for key, value in props.items() if key.startswith(self.ansible_properties.output_prop_prefix) }
+                self.properties.update(output_props)
+                if 'instance_id' in self.properties:
+                  self.instance_id = self.properties.get('instance_id', None)
+                  del self.properties['instance_id']
 
-            instances = { key[10:]:value for key, value in props.items() if key.startswith('instance__') }
-            instance_id = None
-            if len(instances) > 0:
-              for key, value in self.instances.items():
-                instance_id = key
-                break
-            logger.debug(f'instance_id = {instance_id}')
-            self.instance_id = instance_id
-
-            associated_topology = { key[21:]:value for key, value in props.items() if key.startswith('associated_topology__') }
-            logger.debug(f'associated_topology = {associated_topology}')
-            self.associated_topology.update(associated_topology)
+                associated_topology_prefix_length = len(self.ansible_properties.associated_topology_prefix)
+                associated_topology = { key[associated_topology_prefix_length:]:value for key, value in props.items() if key.startswith(self.ansible_properties.associated_topology_prefix) }
+                if len(associated_topology) > 0:
+                  for key, value in associated_topology.items():
+                    element_data = value.split("__")
+                    if len(element_data) != 2:
+                      logger.warning(f'Associated topology entry {element_data} is invalid')
+                    else:
+                      element_id = element_data[0]
+                      element_type = element_data[1]
+                      self.associated_topology.add_entry(key, element_id, element_type)
+            except Exception as e:
+                self.failure_reason = f'Caught exception handling playbook: failed getting outputs {e}'
+                logger.exception(self.failure_reason)
+                self.failure_details = FailureDetails(FAILURE_CODE_INFRASTRUCTURE_ERROR, self.failure_reason)
+                self.playbook_failed = True
 
     def get_find_result(self):
       if self.playbook_failed:
-        return ValueError("Find failed")
+        raise ValueError("Find failed")
       else:
-        if len(self.instances) > 0:
-          return FindReferenceResult(self.instance_id, self.associated_topology, self.outputs)
-        else:
-          # TODO
+        return FindReferenceResponse(FindReferenceResult(self.instance_id, self.associated_topology, self.properties))
 
     def get_result(self):
       if self.playbook_failed:
@@ -509,49 +523,3 @@ def process_templates(parent_dir, templating, all_properties):
           except UnicodeDecodeError as ude:
             # skip this file, not a text file
             pass
-
-
-
-
-class KeyPropertyProcessor():
-  def __init__(self, properties, system_properties, dl_properties):
-    self.properties = properties
-    self.system_properties = system_properties
-    self.dl_properties = dl_properties
-    self.key_files = []
-
-  """
-  Process (input) key properties by writing the private key out to a file so that it can be
-  referenced in e.g. inventory files.
-  """
-  def process_key_properties(self):
-    self.process_keys(self.properties)
-    self.process_keys(self.system_properties)
-    self.process_keys(self.dl_properties)
-
-  def process_keys(self, properties):
-    for prop in properties.get_keys().items_with_types():
-      self.write_private_key(properties, prop[0], prop[1])
-
-  def write_private_key(self, properties, key_prop_name, private_key):
-    with NamedTemporaryFile(delete=False, mode='w') as private_key_file:
-      logger.debug('Writing private key file {0}'.format(private_key_file.name))
-      private_key_value = private_key.get('privateKey', None)
-      private_key_file.write(private_key_value)
-      private_key_file.flush()
-      self.key_files.append(private_key_file)
-
-      logger.debug('Setting property {0}_path'.format(key_prop_name))
-      properties[key_prop_name + '_path'] = private_key_file.name
-
-      logger.debug('Setting property {0}_name'.format(key_prop_name))
-      key_name = private_key.get('keyName', None)
-      properties[key_prop_name + '_name'] = key_name
-
-  """
-  Remove any private key files generated during the Ansible run.
-  """
-  def clear_key_files(self):
-    for key_file in self.key_files:
-      logger.debug('Removing private key file {0}'.format(key_file.name))
-      os.unlink(key_file.name)

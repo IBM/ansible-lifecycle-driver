@@ -16,8 +16,11 @@ class AdditionalResourceDriverProperties(ConfigurationPropertiesGroup, Service, 
         self.keep_files = False
 
 class AnsibleDriverHandler(Service, ResourceDriverHandlerCapability):
-    def __init__(self):
-        pass
+    def __init__(self, **kwargs):
+        if 'ansible_client' not in kwargs:
+            raise ValueError('ansible_client argument not provided')
+
+        self.ansible_client = kwargs.get('ansible_client')
 
     def execute_lifecycle(self, lifecycle_name, driver_files, system_properties, resource_properties, request_properties, associated_topology, deployment_location):
         # requests are handled in sub-processes by reading off a Kafka request queue
@@ -28,4 +31,4 @@ class AnsibleDriverHandler(Service, ResourceDriverHandlerCapability):
         return None
 
     def find_reference(self, instance_name, driver_files, deployment_location):
-        return FindReferenceResponse()
+        return self.ansible_client.run_find_playbook(instance_name, driver_files, deployment_location)

@@ -13,6 +13,7 @@ ansible:
   unreachable_sleep_seconds: 5
   max_unreachable_retries: 60
   output_prop_prefix: 'output__'
+  associated_topology_prefix: 'associated_topology__'
   tmp_dir: /var/ald
 
 process:

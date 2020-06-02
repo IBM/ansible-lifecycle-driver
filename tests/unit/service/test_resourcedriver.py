@@ -10,7 +10,7 @@ from ignition.utils.file import DirectoryTree
 class TestLifecycle(unittest.TestCase):
 
     def setUp(self):
-        self.lifecycle_driver = AnsibleDriverHandler()
+        self.lifecycle_driver = AnsibleDriverHandler(ansible_client=MagicMock)
 
     def assertLifecycleExecutionEqual(self, resp, expected_resp):
         self.assertEqual(resp.status, expected_resp.status)

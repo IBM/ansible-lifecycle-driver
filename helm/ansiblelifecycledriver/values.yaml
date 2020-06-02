@@ -127,6 +127,7 @@ app:
         ## output properties are set using set_fact in the Ansible script and prefixed with this string
         ## so that the driver knows they are intended to be exported to Brent.
         output_prop_prefix: 'output__'
+        associated_topology_prefix: 'associated_topology__'
 
       process:
         ## whether to a process pool to read and process transition requests

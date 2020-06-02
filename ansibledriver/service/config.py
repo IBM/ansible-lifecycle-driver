@@ -34,4 +34,5 @@ class AnsibleDriverHandlerConfigurator():
         pass
 
     def configure(self, configuration, service_register):
-        service_register.add_service(ServiceRegistration(AnsibleDriverHandler))
+        service_register.add_service(ServiceRegistration(AnsibleDriverHandler,
+            ansible_client=AnsibleClientCapability))
