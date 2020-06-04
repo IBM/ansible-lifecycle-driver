@@ -10,6 +10,7 @@ from unittest.mock import patch, MagicMock, ANY
 from ansibledriver.service.ansible import AnsibleClient, AnsibleProperties
 from ansibledriver.service.process import ProcessProperties
 from ansibledriver.service.rendercontext import ExtendedResourceTemplateContextService
+from ansibledriver.service.resourcedriver import AdditionalResourceDriverProperties
 from ignition.model.lifecycle import LifecycleExecution, STATUS_COMPLETE, STATUS_FAILED, STATUS_IN_PROGRESS
 from ignition.utils.file import DirectoryTree
 from ignition.boot.config import BootstrapApplicationConfiguration, PropertyGroups
@@ -35,10 +36,20 @@ class TestAnsible(unittest.TestCase):
             self.assertEqual(resp.failure_details.failure_code, expected_resp.failure_details.failure_code)
             self.assertEqual(resp.failure_details.description, expected_resp.failure_details.description)
 
+    def assertFindReferenceResponseEqual(self, resp, expected_resp):
+        if expected_resp.result is not None:
+            self.assertIsNotNone(resp.result)
+            self.assertEqual(resp.result.resource_id, expected_resp.result.resource_id)
+            self.assertEqual(resp.result.associated_topology, expected_resp.result.associated_topology)
+            self.assertEqual(resp.result.outputs, expected_resp.result.outputs)
+        else:
+            self.assertIsNone(resp.result)
+
     def setUp(self):
         property_groups = PropertyGroups()
         property_groups.add_property_group(AnsibleProperties())
         property_groups.add_property_group(ProcessProperties())
+        property_groups.add_property_group(AdditionalResourceDriverProperties())
         self.configuration = BootstrapApplicationConfiguration(app_name='test', property_sources=[], property_groups=property_groups, service_configurators=[], api_configurators=[], api_error_converter=None)
         render_context_service = ExtendedResourceTemplateContextService()
         templating = Jinja2TemplatingService()
@@ -334,7 +345,7 @@ class TestAnsible(unittest.TestCase):
 
             resp = self.ansible_client.run_find_playbook(instance_name, driver_files, deployment_location)
 
-            self.assertLifecycleExecutionEqual(resp, FindReferenceResponse(FindReferenceResult(instance_name, expected_associated_topology, expected_properties)))
-            self.assertTrue(os.path.exists(dst))
+            self.assertFindReferenceResponseEqual(resp, FindReferenceResponse(FindReferenceResult(instance_name, expected_associated_topology, expected_properties)))
+            self.assertFalse(os.path.exists(dst))
         finally:
             logger.removeHandler(stream_handler)

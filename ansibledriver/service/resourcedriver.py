@@ -15,6 +15,7 @@ class AdditionalResourceDriverProperties(ConfigurationPropertiesGroup, Service, 
         super().__init__('resource_driver')
         self.keep_files = False
 
+
 class AnsibleDriverHandler(Service, ResourceDriverHandlerCapability):
     def __init__(self, **kwargs):
         if 'ansible_client' not in kwargs:

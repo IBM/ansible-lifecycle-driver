@@ -1,12 +1,11 @@
 ---
 - name: Find
-    hosts: localhost
-    gather_facts: False
+  hosts: localhost
+  gather_facts: False
 
-    tasks:
-    - name: set result
-      set_fact:
-        output__instance_id: "{{ instance_name }}"
-        output__prop1: "value1"
-        output__prop2: "value2"
-    
+  tasks:
+  - name: set result
+    set_fact:
+      output__instance_id: "{{ instance_name }}"
+      output__prop1: "value1"
+      output__prop2: "value2"
