@@ -21,6 +21,9 @@ process:
 
 messaging:
   connection_address: kafka:9092
+  # timeout waiting for initial version check on Kafka producer/consumer initialisation
+  # 5000ms is usually sufficient, increase if problems with NoBrokersAvailable occur
+  api_version_auto_timeout_ms: 5000
 
 resource_driver:
   scripts_workspace: ./lifecycle_scripts
