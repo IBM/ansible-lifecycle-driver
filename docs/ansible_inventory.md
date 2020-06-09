@@ -2,9 +2,16 @@
 
 ## Brent Resource Package
 
-The "config" subdirectory in the Brent resource package driver root directory contains Ansible inventory and ancillary configuration files. The Ansible Lifecycle Driver expects an inventory file named "inventory" in this directory (for SSH connections using the [Ansible SSH connection plugin](https://docs.ansible.com/ansible/latest/plugins/connection.html#ssh-plugins)) and/or a file named "inventory.k8s" (for K8s connections using the [Ansible kubectl connection plugin](https://docs.ansible.com/ansible/latest/plugins/connection/kubectl.html)).
+The "config" subdirectory in the Brent resource package driver root directory contains Ansible inventory and ancillary configuration files. The Ansible Driver will look for an Ansible inventory file in the config directory as follows:
 
-The driver determines which inventory file to use based on the deployment location type (i.e. "deploymentLocation.type") in the lifecycle request. If the type is "Kubernetes" the driver will expect an "inventory.k8s" file. If the type is anything other than "Kubernetes", an SSH connection and "inventory" file are expected.
+* it will first look for an inventory file named `inventory.[infrastructure_type]`, where `[infrastructure_type]` is replaced with the deployment location (infrastructure) type. For example, if the deployment location type is `Kubernetes`, it will look for an inventory file called `inventory.Kubernetes`.
+* if if doesn't find an inventory file at this location, it will default to an inventory file named `inventory`. For backwards compatibility, if the deployment location (infrastructure) type is `Kubernetes`, the driver will first look for an inventory file named `inventory.k8s`.
+* if no `inventory` file is found, the driver will construct an inventory file for the request (which will be removed after processing the request). The inventory file will look like this:
+
+  ```
+  [run_hosts]
+  localhost ansible_connection=local ansible_python_interpreter="/usr/bin/env python3" host_key_checking=False
+  ```
 
 Note: if you wish to split your inventory out into separate host variable files then you may do so. For example:
 
@@ -13,7 +20,6 @@ config
   host_vars
     host1.yml
   inventory
-  inventory.k8s
 ```
 
 ## Variable Substitution
