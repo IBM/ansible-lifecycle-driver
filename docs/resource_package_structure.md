@@ -5,7 +5,6 @@ The Brent resource package contains Ansible inventory configuration and scripts 
 ```
 config
   inventory
-  inventory.k8s
 scripts
   *.yaml
 ```

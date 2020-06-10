@@ -43,6 +43,8 @@ On a Mac:
 tar -cvz -s '/docs/ansible-lifecycle-driver-<release version number>-docs/' -f ansible-lifecycle-driver-<release version number>-docs.tgz docs/
 ```
 
+tar -cvz -s '/docs/ansible-lifecycle-driver-2.0.2-docs/' -f ansible-lifecycle-driver-2.0.2-docs.tgz docs/
+
 ## 4. Build Docker Image
 
 4.1. Move the whl now in `dist` to the `docker/whls` directory (ensure no additional whls are in the docker directory)
