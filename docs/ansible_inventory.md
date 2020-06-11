@@ -2,9 +2,16 @@
 
 ## Brent Resource Package
 
-The "config" subdirectory in the Brent resource package driver root directory contains Ansible inventory and ancillary configuration files. The Ansible Lifecycle Driver expects an inventory file named "inventory" in this directory (for SSH connections using the [Ansible SSH connection plugin](https://docs.ansible.com/ansible/latest/plugins/connection.html#ssh-plugins)) and/or a file named "inventory.k8s" (for K8s connections using the [Ansible kubectl connection plugin](https://docs.ansible.com/ansible/latest/plugins/connection/kubectl.html)).
+The "config" subdirectory in the Brent resource package driver root directory contains Ansible inventory and ancillary configuration files. The Ansible Driver will look for an Ansible inventory file in the config directory as follows:
 
-The driver determines which inventory file to use based on the deployment location type (i.e. "deploymentLocation.type") in the lifecycle request. If the type is "Kubernetes" the driver will expect an "inventory.k8s" file. If the type is anything other than "Kubernetes", an SSH connection and "inventory" file are expected.
+* it will first look for an inventory file named `inventory.[infrastructure_type]`, where `[infrastructure_type]` is replaced with the deployment location (infrastructure) type. For example, if the deployment location type is `Kubernetes`, it will look for an inventory file called `inventory.Kubernetes`.
+* if if doesn't find an inventory file at this location, it will default to an inventory file named `inventory`. For backwards compatibility, if the deployment location (infrastructure) type is `Kubernetes`, the driver will first look for an inventory file named `inventory.k8s`.
+* if no `inventory` file is found, the driver will construct an inventory file for the request (which will be removed after processing the request). The inventory file will look like this:
+
+  ```
+  [run_hosts]
+  localhost ansible_connection=local ansible_python_interpreter="/usr/bin/env python3" host_key_checking=False
+  ```
 
 Note: if you wish to split your inventory out into separate host variable files then you may do so. For example:
 
@@ -13,16 +20,15 @@ config
   host_vars
     host1.yml
   inventory
-  inventory.k8s
 ```
 
 ## Variable Substitution
 
 The Ansible Lifecycle Driver supports the substitution of LM properties in inventory files under the "config" directory, using [Jinja2 template variables](https://jinja.palletsprojects.com/en/2.10.x/templates/#variables). The following properties are available:
 
-* properties: a dictionary of LM request properties.
+* properties: a dictionary of LM request properties (these can also be accessed without the `properties.` prefix).
 * system_properties: a dictionary of system properties.
-* dl_properties: a dictionary of deployment location properties.
+* deployment_location.properties: a dictionary of deployment location properties.
 
 The system properties comprise the following:
 
@@ -37,19 +43,19 @@ The system properties comprise the following:
 
 In addition, any LM orchestration request context properties are added in here.
 
-For example, the following inventory file substitutes the LM property "properties.mgmt_ip_address" for "ansible_host":
+For example, the following inventory file substitutes the LM property "mgmt_ip_address" for "ansible_host":
 
 ```
 ---
 ansible_user: ubuntu
-ansible_host: {{ properties.mgmt_ip_address }}
+ansible_host: {{ mgmt_ip_address }}
 ansible_ssh_pass: ubuntu
 ansible_connection: ssh
 ansible_become_pass: ubuntu
 ansible_sudo_pass: ubuntu
 ```
 
-Note that both square brackets and dot notation are supported during property substitution. For example, "properties['prop1']" and "properties.prop1" are equivalent.
+Note that both square brackets and dot notation are supported during property substitution. For example, `properties['prop1']` and `properties.prop1` are equivalent.
 
 ## Support for SSH and K8s Connections
 
@@ -62,7 +68,7 @@ An example SSH inventory file (which must be located in the Brent resource packa
 ```
 ---
 ansible_user: ubuntu
-ansible_host: {{ properties.mgmt_ip_address }}
+ansible_host: {{ mgmt_ip_address }}
 ansible_ssh_pass: ubuntu
 ansible_connection: ssh
 ansible_become_pass: ubuntu
@@ -71,30 +77,19 @@ ansible_sudo_pass: ubuntu
 
 In this example, the ansible_host is set to an LM property value.
 
-## K8s Connections
+## Kubernetes Connections
 
-It is assumed that, for K8s inventory, the infrastructural part (that is, the pods and other K8s infrastructure) have been created using the [K8s VIM Driver](https://github.com/accanto-systems/k8s-vim-driver). In particular, the K8s VIM driver ensures that the following properties have been set which are required by the Ansible Lifecycle Driver K8s connection handling:
-
-* properties.host: the pod name to connect to
-
-An example K8s inventory file (which must be located in the Brent resource package at ansible/config/inventory.k8s):
+It is possible to use the [Kubectl Ansible connection plugin](https://docs.ansible.com/ansible/2.7/plugins/connection/kubectl.html) (as opposed to the default SSH connection plugin) to communicate with pods. For this to work, the deployment location properties must set the property `connection_type` to `kubectl` i.e. `deployment_location.properties == 'kubectl'` (see the [Kubernetes Driver documentation](https://github.com/accanto-systems/kubernetes-driver/blob/master/docs/user-guide/deployment-locations.md) for a description of the Kubernetes deployment location properties synatx). This will switch the Ansible driver to use kubectl to communicate with pods for the lifecycle transition request. An example inventory file showing this is:
 
 ```
 ---
 ansible_connection: kubectl
-ansible_kubectl_pod: {{ properties.host }}
-ansible_kubectl_namespace: {{ dl_properties['k8s-namespace'] }}
-ansible_kubectl_kubeconfig: {{ dl_properties.kubeconfig_path }}
+ansible_kubectl_pod: {{ podName }}
+ansible_kubectl_namespace: {{ deployment_location.properties['k8s-namespace'] }}
+ansible_kubectl_kubeconfig: {{ deployment_location.properties.kubeconfig_path }}
 ```
 
-The following table describes the K8s inventory properties:
-
-| Name            | Value | Required                           | Detail                                                                                                                     |
-| --------------- | ------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| ansible_connection      | kubectl       | Y                                  | The Ansible connection type, must be "kubectl" for K8s connections |
-| ansible_kubectl_pod | properties.host    | Y                                  | The pod to connect to
-| ansible_kubectl_namespace     | -       | Y | The K8s namespace in which the pod is running. This could be set either from "properties" or "dl_properties" (see [variable substitution](#variable-substitution))
-| ansible_kubectl_kubeconfig    | dl_properties.kubeconfig_path | Y | A kubeconfig file automatically generated by the Ansible Lifecycle Driver
+The inventory must also set `ansible_connection` to `kubectl`. `podName` is an LM property with a value set to the pod name of the pod that the driver will connect to. The `deployment_location.properties.kubeconfig_path` property holds the path of a [kubeconfig file](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) that the kubectl connection plugin will use to communicate with the pod. This file is generated by the driver from the deployment location properties during lifecycle transition execution and the property `deployment_location.properties.kubeconfig_path` is set by the driver to that path. The file is cleaned up at the end of lifecycle transition execution.
 
 ## Using a Jumphost in Inventory
 
@@ -103,14 +98,14 @@ It is often necessary to use a [Jumphost](https://docs.ansible.com/ansible/lates
 ```
 ---
 ansible_user: ubuntu
-ansible_host: {{ properties.mgmt_ip_address }}
+ansible_host: {{ mgmt_ip_address }}
 ansible_ssh_pass: ubuntu
 ansible_connection: ssh
 ansible_become_pass: ubuntu
 ansible_sudo_pass: ubuntu
-ssh_with_jumphost: "-o 'UserKnownHostsFile=/dev/null' -o StrictHostKeyChecking=no -o ProxyCommand='sshpass -p {{ properties.jumphost_password }} ssh -o 'UserKnownHostsFile=/dev/null' -o StrictHostKeyChecking=no -W %h:%p {{ properties.jumphost_username }}@{{ properties.jumphost_ip }}'"
+ssh_with_jumphost: "-o 'UserKnownHostsFile=/dev/null' -o StrictHostKeyChecking=no -o ProxyCommand='sshpass -p {{ jumphost_password }} ssh -o 'UserKnownHostsFile=/dev/null' -o StrictHostKeyChecking=no -W %h:%p {{ jumphost_username }}@{{ jumphost_ip }}'"
 ssh_without_jumphost: "-o 'UserKnownHostsFile=/dev/null' -o StrictHostKeyChecking=no"
-ansible_ssh_common_args: "{{ ssh_with_jumphost if properties.jumphost_ip is defined else ssh_without_jumphost }}"
+ansible_ssh_common_args: "{{ ssh_with_jumphost if jumphost_ip is defined else ssh_without_jumphost }}"
 ```
 
 If the LM properties have defined a "jumphost_ip" property this configuration will construct "ansible_ssh_common_args" using ProxyCommand to proxy the SSH connection through the jumphost, using jumphost properties from the LM request. If not, a standard direct SSH connection is configured.
