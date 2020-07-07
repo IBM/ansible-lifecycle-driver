@@ -1,6 +1,6 @@
 name: ansiblelifecycledriver
-version: 1.1.1.dev0
-appVersion: 1.1.1.dev0
+version: 1.1.1a2
+appVersion: 1.1.1a2
 description: A Helm chart for the Ansible Lifecycle Driver
 keywords:
 - OSS
