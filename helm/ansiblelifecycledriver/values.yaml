@@ -149,6 +149,8 @@ app:
         request_queue:
           enabled: True
           group_id: ald_request_queue
+          ## Set this to higher than the maximum time you'd expect a request to be executed (1 hour)
+          max_poll_interval_ms: 3600000
           topic:
             auto_create: True
             num_partitions: 100
