@@ -28,9 +28,6 @@ spec:
         - name: ansible-lifecycle-driver
           image: {{ .Values.docker.image }}:{{ .Values.docker.version }}
           imagePullPolicy: {{ .Values.docker.imagePullPolicy }}
-          securityContext:
-            # run as ald
-            runAsUser: 100
           ports:
           - containerPort: 8293
             protocol: TCP
