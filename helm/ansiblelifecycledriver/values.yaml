@@ -1,3 +1,10 @@
+global:
+  # While the driver pod can run within Openshift's restricted SCC, if
+  # another SCC is applied to the pod via a service account that doesn't support
+  # the correct runAsUser type (i.e. MustRunAsNonRoot), arbitraryUids can be
+  # disabled. Otherwise, the default value (true) shouldn't need to be updated.
+  arbitraryUids: true
+
 ## Docker Image for the osslm-ansible-rm application
 docker:
   ## Make this the full path, including registry host and port if using one
