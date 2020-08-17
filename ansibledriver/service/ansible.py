@@ -22,6 +22,9 @@ from ignition.service.framework import Service, Capability, interface
 from ignition.utils.propvaluemap import PropValueMap
 from ansibledriver.model.deploymentlocation import DeploymentLocation
 from ansibledriver.model.inventory import Inventory
+from ignition.model import associated_topology
+from ignition.model.associated_topology import AssociatedTopology
+from _ast import Try
 
 
 logger = logging.getLogger(__name__)
@@ -115,8 +118,8 @@ class AnsibleClient(Service, AnsibleClientCapability):
       resource_properties = request.get('resource_properties', {})
       system_properties = request.get('system_properties', {})
       request_properties = request.get('request_properties', {})
-      associated_topology = request.get('associated_topology', {})
-
+      associated_topology = request.get('associated_topology', None)
+      
       location = DeploymentLocation.from_request(request)
 
       config_path = driver_files.get_directory_tree('config')
@@ -137,7 +140,7 @@ class AnsibleClient(Service, AnsibleClientCapability):
 
         logger.debug(f'Handling request {request_id} with config_path: {config_path.get_path()} driver files path: {scripts_path.get_path()} resource properties: {resource_properties} system properties {system_properties} request properties {request_properties}')
 
-        all_properties = self.render_context_service.build(system_properties, resource_properties, request_properties, location.deployment_location)
+        all_properties = self.render_context_service.build(system_properties, resource_properties, request_properties, location.deployment_location, associated_topology)
 
         process_templates(config_path, self.templating, all_properties)
 
@@ -213,6 +216,8 @@ class ResultCallback(CallbackBase):
         self.internal_resource_instances = []
         self.failure_code = ''
         self.failure_reason = ''
+        
+        self.associated_topology = None
 
     def _new_play(self, play):
         return {
@@ -343,18 +348,31 @@ class ResultCallback(CallbackBase):
 
         if 'ansible_facts' in self.facts:
             props = self.facts['ansible_facts']
-
-            props = { key[8:]:value for key, value in props.items() if key.startswith(self.ansible_properties.output_prop_prefix) }
-
-            logger.debug('output props = {0}'.format(props))
-
-            self.properties.update(props)
-
+            """
+            output_facts = { key[8:]:value for key, value in props.items() if key.startswith(self.ansible_properties.output_prop_prefix) or key == 'associated_topology'}
+            logger.debug('output props = {0}'.format(output_facts))
+            self.properties.update(output_facts)
+            """
+            
+            for key, value in props.items():
+                if key.startswith(self.ansible_properties.output_prop_prefix):
+                    output_facts = { key[8:]:value }
+                    logger.debug('output props = {0}'.format(output_facts))
+                    self.properties.update(output_facts)
+                elif key == 'associated_topology':
+                    try:
+                        logger.debug('associated_topology = {0}'.format(associated_topology)) 
+                        self.associated_topology = AssociatedTopology.from_dict(value)
+                    except ValueError as ve:
+                        logger.exception('An error has occurred while parsing the ansible fact \'{0}\'. {1}'.format(key, str(ve)))
+                    except Exception as e:
+                        logger.exception('An internal error has occurred. {0}', str(e))
+                    
     def get_result(self):
       if self.playbook_failed:
         return LifecycleExecution(self.request_id, STATUS_FAILED, self.failure_details, self.properties)
       else:
-        return LifecycleExecution(self.request_id, STATUS_COMPLETE, None, self.properties)
+        return LifecycleExecution(self.request_id, STATUS_COMPLETE, None, self.properties, self.associated_topology)
 
 class InvalidRequestException(Exception):
   """Raised when a REST request is invalid
@@ -402,7 +420,7 @@ def process_templates(parent_dir, templating, all_properties):
 
 
 class KeyPropertyProcessor():
-  def __init__(self, properties, system_properties, dl_properties):
+  def __init__(self, properties, system_properties, dl_properties, associated_topology = None):
     self.properties = properties
     self.system_properties = system_properties
     self.dl_properties = dl_properties
