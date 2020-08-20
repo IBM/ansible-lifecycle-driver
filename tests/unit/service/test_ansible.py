@@ -515,7 +515,7 @@ class TestAnsible(unittest.TestCase):
                 }
             })
 
-            self.assertLifecycleExecutionEqual(resp, LifecycleExecution(request_id, STATUS_COMPLETE, None, {'msg': "Associated topology returned"}, associated_topology))
+            self.assertLifecycleExecutionEqual(resp, LifecycleExecution(request_id, STATUS_COMPLETE, None, {'msg': "Associated topology returned", 'public_ip': "10.21.28.94", 'internal_ip': "10.10.10.42"}, associated_topology))
             self.assertTrue(os.path.exists(dst))
         finally:
             logger.removeHandler(stream_handler)

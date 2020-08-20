@@ -9,6 +9,22 @@
       name_2: &name_2 "apache2"
       id_2: "910111213"
       type_2: "Openstack"
+      stack_create: {
+        stack: {
+          outputs: [
+            {
+              description: "No description given",
+              output_key: "public_ip",
+              output_value: "10.21.28.94"
+            },
+            {
+              description: "No description given",
+              output_key: "internal_ip",
+              output_value: "10.10.10.42"
+            }
+          ]
+        }
+       }
   tasks:
   - name: debug
     debug:
@@ -29,3 +45,18 @@
             id: "{{ id_2 }}"
             type: "{{ type_2 }}"
       output__msg: "Associated topology returned"
+  - name: send message 
+    set_fact: 
+      output__msg: "Associated topology returned"
+  - name: set public ip
+    set_fact:
+      output__public_ip: "{{ item.output_value }}"
+    loop:
+       "{{ stack_create.stack.outputs }}"
+    when: "'public_ip' in item.output_key"
+  - name: set internal ip
+    set_fact:
+      output__internal_ip: "{{ item.output_value }}"
+    loop:
+       "{{ stack_create.stack.outputs }}"
+    when: "'internal_ip' in item.output_key"

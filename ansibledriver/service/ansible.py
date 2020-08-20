@@ -341,20 +341,27 @@ class ResultCallback(CallbackBase):
         """
         logger.debug('v2_runner_on_ok {0}'.format(result))
 
+        props = []
+        
         if 'results' in result._result.keys():
             self.facts = result._result['results']
+            props = [ item['ansible_facts'] for item in self.facts if 'ansible_facts' in item ]
         else:
             self.facts = result._result
+            if 'ansible_facts' in self.facts:
+                props = [ self.facts['ansible_facts'] ]
 
+        """
         if 'ansible_facts' in self.facts:
+            
             props = self.facts['ansible_facts']
-            """
             output_facts = { key[8:]:value for key, value in props.items() if key.startswith(self.ansible_properties.output_prop_prefix) or key == 'associated_topology'}
             logger.debug('output props = {0}'.format(output_facts))
             self.properties.update(output_facts)
             """
             
-            for key, value in props.items():
+        for prop in props:
+            for key, value in prop.items():
                 if key.startswith(self.ansible_properties.output_prop_prefix):
                     output_facts = { key[8:]:value }
                     logger.debug('output props = {0}'.format(output_facts))
@@ -367,7 +374,7 @@ class ResultCallback(CallbackBase):
                         logger.exception('An error has occurred while parsing the ansible fact \'{0}\'. {1}'.format(key, str(ve)))
                     except Exception as e:
                         logger.exception('An internal error has occurred. {0}', str(e))
-                    
+                
     def get_result(self):
       if self.playbook_failed:
         return LifecycleExecution(self.request_id, STATUS_FAILED, self.failure_details, self.properties)
