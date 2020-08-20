@@ -14,6 +14,8 @@ from ansible.plugins.callback import CallbackBase
 from ansible.plugins.callback.json import CallbackModule
 from ansible.plugins.loader import connection_loader
 from ansible.inventory.host import Host
+from ansible import context
+from ansible.module_utils.common.collections import ImmutableDict
 from jinja2 import Environment, FileSystemLoader
 from ignition.model.lifecycle import LifecycleExecution, STATUS_COMPLETE, STATUS_FAILED, STATUS_IN_PROGRESS
 from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_ERROR, FAILURE_CODE_INTERNAL_ERROR, FAILURE_CODE_RESOURCE_NOT_FOUND
@@ -68,31 +70,33 @@ class AnsibleClient(Service, AnsibleClientCapability):
                                      'diff'])
     # initialize needed objects
     loader = DataLoader()
-    options = Options(connection=connection_type,
-                      listhosts=None,
-                      listtasks=None,
-                      listtags=None,
-                      syntax=None,
-                      module_path=None,
-                      become=None,
-                      become_method='sudo',
-                      become_user='root',
-                      check=False,
-                      diff=False,
-                      forks=20)
+    
+    context.CLIARGS = ImmutableDict(connection=connection_type, 
+                                    module_path=None, 
+                                    forks=20, 
+                                    become=None,
+                                    become_method='sudo', 
+                                    become_user='root', 
+                                    check=False, 
+                                    diff=False,
+                                    listhosts=None, 
+                                    listtasks=None, 
+                                    listtags=None, 
+                                    syntax=None,
+                                    start_at_task=None)
+
     passwords = {'become_pass': ''}
 
     # create inventory and pass to var manager
     inventory = InventoryManager(loader=loader, sources=inventory_path)
     variable_manager = VariableManager(loader=loader, inventory=inventory)
-    variable_manager.extra_vars = all_properties
+    variable_manager._extra_vars = all_properties
     # Setup playbook executor, but don't run until run() called
     pbex = PlaybookExecutor(
         playbooks=[playbook_path],
         inventory=inventory,
         variable_manager=variable_manager,
         loader=loader,
-        options=options,
         passwords=passwords
     )
 
