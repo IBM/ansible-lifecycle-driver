@@ -83,7 +83,8 @@ class AnsibleClient(Service, AnsibleClientCapability):
                                     listtasks=None, 
                                     listtags=None, 
                                     syntax=None,
-                                    start_at_task=None)
+                                    start_at_task=None, 
+                                    verbosity=1)
 
     passwords = {'become_pass': ''}
 
