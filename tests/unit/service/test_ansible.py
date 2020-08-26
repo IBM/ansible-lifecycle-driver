@@ -371,7 +371,7 @@ class TestAnsible(unittest.TestCase):
             dst = self.__copy_directory_tree(str(pathlib.Path(__file__).parent.absolute()) + '/../../resources/ansible_input_associated_topology')
 
             resp = self.ansible_client.run_lifecycle_playbook({
-            'lifecycle_name': 'install',
+            'lifecycle_name': 'adopt',
             'driver_files': DirectoryTree(dst),
             'system_properties': system_properties,
             'resource_properties': properties,
@@ -391,7 +391,7 @@ class TestAnsible(unittest.TestCase):
         finally:
             logger.removeHandler(stream_handler)
             
-    def test_run_lifecycle_with_wrong_associated_topology_var(self):
+    def test_run_lifecycle_with_malformed_associated_topology_in_playbook(self):
         # configure so that we can see logging from the code under test
         stream_handler = logging.StreamHandler(sys.stdout)
         logger.addHandler(stream_handler)
@@ -435,7 +435,7 @@ class TestAnsible(unittest.TestCase):
 
             })
 
-            dst = self.__copy_directory_tree(str(pathlib.Path(__file__).parent.absolute()) + '/../../resources/ansible_wrong_associated_topology_var')
+            dst = self.__copy_directory_tree(str(pathlib.Path(__file__).parent.absolute()) + '/../../resources/ansible_with_malformed_associated_topology_in_playbook')
 
             resp = self.ansible_client.run_lifecycle_playbook({
             'lifecycle_name': 'adopt',
@@ -487,10 +487,10 @@ class TestAnsible(unittest.TestCase):
             system_properties = PropValueMap({
             })
             
-            dst = self.__copy_directory_tree(str(pathlib.Path(__file__).parent.absolute()) + '/../../resources/ansible_returning_associated_topology')
+            dst = self.__copy_directory_tree(str(pathlib.Path(__file__).parent.absolute()) + '/../../resources/ansible_returning_associated_topology_and_outputs')
 
             resp = self.ansible_client.run_lifecycle_playbook({
-            'lifecycle_name': 'adopt',
+            'lifecycle_name': 'create',
             'driver_files': DirectoryTree(dst),
             'system_properties': system_properties,
             'resource_properties': properties,
@@ -552,7 +552,7 @@ class TestAnsible(unittest.TestCase):
             dst = self.__copy_directory_tree(str(pathlib.Path(__file__).parent.absolute()) + '/../../resources/ansible_missing_associated_topology_id_in_fact')
 
             resp = self.ansible_client.run_lifecycle_playbook({
-            'lifecycle_name': 'adopt',
+            'lifecycle_name': 'create',
             'driver_files': DirectoryTree(dst),
             'system_properties': system_properties,
             'resource_properties': properties,

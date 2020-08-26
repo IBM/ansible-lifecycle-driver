@@ -24,7 +24,6 @@ from ansibledriver.model.deploymentlocation import DeploymentLocation
 from ansibledriver.model.inventory import Inventory
 from ignition.model import associated_topology
 from ignition.model.associated_topology import AssociatedTopology
-from _ast import Try
 
 
 logger = logging.getLogger(__name__)
@@ -350,15 +349,6 @@ class ResultCallback(CallbackBase):
             self.facts = result._result
             if 'ansible_facts' in self.facts:
                 props = [ self.facts['ansible_facts'] ]
-
-        """
-        if 'ansible_facts' in self.facts:
-            
-            props = self.facts['ansible_facts']
-            output_facts = { key[8:]:value for key, value in props.items() if key.startswith(self.ansible_properties.output_prop_prefix) or key == 'associated_topology'}
-            logger.debug('output props = {0}'.format(output_facts))
-            self.properties.update(output_facts)
-            """
             
         for prop in props:
             for key, value in prop.items():
@@ -427,7 +417,7 @@ def process_templates(parent_dir, templating, all_properties):
 
 
 class KeyPropertyProcessor():
-  def __init__(self, properties, system_properties, dl_properties, associated_topology = None):
+  def __init__(self, properties, system_properties, dl_properties):
     self.properties = properties
     self.system_properties = system_properties
     self.dl_properties = dl_properties
