@@ -91,6 +91,7 @@ Go back one directory, clear out any existing builds, then execute the setup com
 cd ../
 rm -rf ./build
 rm -rf ./dist
+rm docker/whls/*
 
 python3 setup.py bdist_wheel
 ```
@@ -111,7 +112,7 @@ cd docker
 
 You can now build the docker image. You should give the image and appropriate version number so you can manage multiple versions as you make further changes. It is recommended to use the following format:
 
-`<release_version_number>+<my_label>`
+`<release_version_number>.<my_label>`
 
 Where:
 
@@ -121,7 +122,7 @@ Where:
 > Ensure `<release version number>` matches the value on the `.whl` file. E.g. `2.1.0.dev0`
 
 ```
-docker build -t ansible-lifecycle-driver:<release_version_number>+<my_label> .
+docker build -t ansible-lifecycle-driver:<release_version_number>.<my_label> .
 ```
 
 **NOTE:** If you do not choose a sensible version number for the image you may make it very difficult to get support from the development teams, as they will not be able to identify the version of the code you have
@@ -129,7 +130,7 @@ docker build -t ansible-lifecycle-driver:<release_version_number>+<my_label> .
 The image can now be copied to your target Kubernetes environment:
 
 ```
-docker save ansible-lifecycle-driver:<release_version_number>+<my_label> -o ald.img
+docker save ansible-lifecycle-driver:<release_version_number>.<my_label> -o ald.img
 
 scp ald.img <user>@<target host>:ald.img 
 ```
@@ -147,7 +148,7 @@ Update your Ansible driver deployment to use this image, either:
 At install time:
 
 ```
-helm install ansiblelifecycledriver-<version>.tgz --name ansible-lifecycle-driver --set docker.image=ansible-lifecycle-driver --set docker.version=<release_version_number>+<my_label>
+helm install ansiblelifecycledriver-<version>.tgz --name ansible-lifecycle-driver --set docker.image=ansible-lifecycle-driver --set docker.version=<release_version_number>.<my_label>
 ```
 
 Or post-installation:
