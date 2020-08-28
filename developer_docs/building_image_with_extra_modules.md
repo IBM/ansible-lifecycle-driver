@@ -52,9 +52,7 @@ hpOneView==5.3.0
 
 ## Example
 
-The directories under `docker` already include libraries related to the HP OneView module. This will act as our example. 
-
-The HP OneView module was added by first cloning the repo:
+The HP OneView module will act as our example, it can be added by first cloning the repo:
 
 ```
 git clone https://github.com/HewlettPackard/oneview-ansible.git
