@@ -26,6 +26,8 @@ cp -r oneview-ansible/library/module_utils/*.py module_utils
 
 Add any extra modules you wish. If it's a Python module, you can add it to `extra-requirements.txt`. Additions to this file **SHOULD** be pushed up to the repository.
 
+Follow the instructions in [building_image_with_extra_modules](../developer_docs/building_image_with_extra_modules.md#build-the-image) to build the `whl` and create a docker image. Make sure you use the following version number `2.1.0.dev0+nfviautomation`: 
+
 ```
 docker build -t ansible-lifecycle-driver:2.1.0.dev0+nfviautomation .
 ```
