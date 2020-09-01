@@ -28,9 +28,10 @@ spec:
         - name: ansible-lifecycle-driver
           image: {{ .Values.docker.image }}:{{ .Values.docker.version }}
           imagePullPolicy: {{ .Values.docker.imagePullPolicy }}
-          securityContext:
-            # run as ald
+          {{- if or (not (.Capabilities.APIVersions.Has "security.openshift.io/v1")) (eq .Release.Namespace "kube-system") (ne (toString .Values.global.arbitraryUids) "true") }}
+          securityContent:
             runAsUser: 100
+          {{- end }}
           ports:
           - containerPort: 8293
             protocol: TCP
