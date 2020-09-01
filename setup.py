@@ -24,6 +24,7 @@ setup(
         'uwsgi>=2.0.18,<3.0',
         'gunicorn>=19.9.0,<20.0',
         'testfixtures>=6.12.1,<7.0'
+        'openstacksdk>=0.48.0'
     ],
     entry_points='''
         [console_scripts]
