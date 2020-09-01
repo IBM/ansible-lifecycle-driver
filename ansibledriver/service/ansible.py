@@ -22,6 +22,8 @@ from ignition.service.framework import Service, Capability, interface
 from ignition.utils.propvaluemap import PropValueMap
 from ansibledriver.model.deploymentlocation import DeploymentLocation
 from ansibledriver.model.inventory import Inventory
+from ignition.model import associated_topology
+from ignition.model.associated_topology import AssociatedTopology
 
 
 logger = logging.getLogger(__name__)
@@ -115,8 +117,8 @@ class AnsibleClient(Service, AnsibleClientCapability):
       resource_properties = request.get('resource_properties', {})
       system_properties = request.get('system_properties', {})
       request_properties = request.get('request_properties', {})
-      associated_topology = request.get('associated_topology', {})
-
+      associated_topology = request.get('associated_topology', None)
+      
       location = DeploymentLocation.from_request(request)
 
       config_path = driver_files.get_directory_tree('config')
@@ -137,7 +139,7 @@ class AnsibleClient(Service, AnsibleClientCapability):
 
         logger.debug(f'Handling request {request_id} with config_path: {config_path.get_path()} driver files path: {scripts_path.get_path()} resource properties: {resource_properties} system properties {system_properties} request properties {request_properties}')
 
-        all_properties = self.render_context_service.build(system_properties, resource_properties, request_properties, location.deployment_location)
+        all_properties = self.render_context_service.build(system_properties, resource_properties, request_properties, location.deployment_location, associated_topology)
 
         process_templates(config_path, self.templating, all_properties)
 
@@ -213,6 +215,8 @@ class ResultCallback(CallbackBase):
         self.internal_resource_instances = []
         self.failure_code = ''
         self.failure_reason = ''
+        
+        self.associated_topology = None
 
     def _new_play(self, play):
         return {
@@ -336,25 +340,40 @@ class ResultCallback(CallbackBase):
         """
         logger.debug('v2_runner_on_ok {0}'.format(result))
 
+        props = []
+        
         if 'results' in result._result.keys():
             self.facts = result._result['results']
+            props = [ item['ansible_facts'] for item in self.facts if 'ansible_facts' in item ]
         else:
             self.facts = result._result
-
-        if 'ansible_facts' in self.facts:
-            props = self.facts['ansible_facts']
-
-            props = { key[8:]:value for key, value in props.items() if key.startswith(self.ansible_properties.output_prop_prefix) }
-
-            logger.debug('output props = {0}'.format(props))
-
-            self.properties.update(props)
-
+            if 'ansible_facts' in self.facts:
+                props = [ self.facts['ansible_facts'] ]
+            
+        for prop in props:
+            for key, value in prop.items():
+                if key.startswith(self.ansible_properties.output_prop_prefix):
+                    output_facts = { key[8:]:value }
+                    logger.debug('output props = {0}'.format(output_facts))
+                    self.properties.update(output_facts)
+                elif key == 'associated_topology':
+                    try:
+                        logger.debug('associated_topology = {0}'.format(associated_topology)) 
+                        self.associated_topology = AssociatedTopology.from_dict(value)
+                    except ValueError as ve:
+                      self.failure_reason = f'An error has occurred while parsing the ansible fact \'{key}\'. {ve}'
+                      self.failure_details = FailureDetails(FAILURE_CODE_INFRASTRUCTURE_ERROR, self.failure_reason)
+                      self.playbook_failed = True
+                    except Exception as e:
+                      self.failure_reason = f'An internal error has occurred. {e}'
+                      self.failure_details = FailureDetails(FAILURE_CODE_INFRASTRUCTURE_ERROR, self.failure_reason)
+                      self.playbook_failed = True
+                
     def get_result(self):
       if self.playbook_failed:
         return LifecycleExecution(self.request_id, STATUS_FAILED, self.failure_details, self.properties)
       else:
-        return LifecycleExecution(self.request_id, STATUS_COMPLETE, None, self.properties)
+        return LifecycleExecution(self.request_id, STATUS_COMPLETE, None, self.properties, self.associated_topology)
 
 class InvalidRequestException(Exception):
   """Raised when a REST request is invalid

@@ -37,4 +37,3 @@ WORKDIR /home/ald
 EXPOSE 8293
 
 CMD ["ald"]
-
