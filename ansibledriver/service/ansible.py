@@ -361,9 +361,13 @@ class ResultCallback(CallbackBase):
                         logger.debug('associated_topology = {0}'.format(associated_topology)) 
                         self.associated_topology = AssociatedTopology.from_dict(value)
                     except ValueError as ve:
-                        logger.exception('An error has occurred while parsing the ansible fact \'{0}\'. {1}'.format(key, str(ve)))
+                      self.failure_reason = f'An error has occurred while parsing the ansible fact \'{key}\'. {ve}'
+                      self.failure_details = FailureDetails(FAILURE_CODE_INFRASTRUCTURE_ERROR, self.failure_reason)
+                      self.playbook_failed = True
                     except Exception as e:
-                        logger.exception('An internal error has occurred. {0}', str(e))
+                      self.failure_reason = f'An internal error has occurred. {e}'
+                      self.failure_details = FailureDetails(FAILURE_CODE_INFRASTRUCTURE_ERROR, self.failure_reason)
+                      self.playbook_failed = True
                 
     def get_result(self):
       if self.playbook_failed:
