@@ -122,7 +122,7 @@ class AnsibleClient(Service, AnsibleClientCapability):
       config_path = driver_files.get_directory_tree('config')
       scripts_path = driver_files.get_directory_tree('scripts')
 
-      key_property_processor = KeyPropertyProcessor(resource_properties, system_properties, location.properties)
+      key_property_processor = KeyPropertyProcessor(resource_properties, system_properties, location.properties())
 
       playbook_path = get_lifecycle_playbook_path(scripts_path, lifecycle)
       if playbook_path is not None:
@@ -137,7 +137,7 @@ class AnsibleClient(Service, AnsibleClientCapability):
 
         logger.debug(f'Handling request {request_id} with config_path: {config_path.get_path()} driver files path: {scripts_path.get_path()} resource properties: {resource_properties} system properties {system_properties} request properties {request_properties}')
 
-        all_properties = self.render_context_service.build(system_properties, resource_properties, request_properties, location.deployment_location)
+        all_properties = self.render_context_service.build(system_properties, resource_properties, request_properties, location.deployment_location())
 
         process_templates(config_path, self.templating, all_properties)
 
