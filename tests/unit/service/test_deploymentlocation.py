@@ -1,6 +1,7 @@
 import logging
 import os
 import unittest
+from ignition.locations.kubernetes import KubernetesDeploymentLocation
 from ignition.locations.exceptions import InvalidDeploymentLocationError
 from ignition.utils.propvaluemap import PropValueMap
 from ansibledriver.model.deploymentlocation import DeploymentLocation
@@ -71,8 +72,6 @@ class TestDeploymentLocation(unittest.TestCase):
         self.assertEqual(location.connection_type, 'ssh')
 
     def test_k8s_deployment_location(self):
-
-
         deployment_location = {
             'name': 'dl',
             'type': 'Kubernetes',
@@ -82,12 +81,12 @@ class TestDeploymentLocation(unittest.TestCase):
             })
         }
         location = DeploymentLocation(deployment_location)
-        self.assertIsInstance(location.properties, PropValueMap)
-        self.assertIsNotNone(location.kube_location)
-        self.assertIsNotNone(location.properties.get('kubeconfig_path', None))
-        kubeconfig_path = location.properties.get('kubeconfig_path', None)
-        self.assertIsNotNone(kubeconfig_path)
-        self.assertTrue(os.path.isfile(kubeconfig_path))
+        self.assertIsNotNone(location.kube_location())
+        self.assertIsInstance(location.kube_location(), KubernetesDeploymentLocation)
+        self.assertIsInstance(location.deployment_location(), dict)
+        self.assertIsInstance(location.properties(), PropValueMap)
+        self.assertIsNotNone(location.properties().get('kubeconfig_path', None))
+        self.assertTrue(os.path.isfile(location.properties().get('kubeconfig_path', None)))
         location.cleanup()
-        self.assertFalse(os.path.isfile(kubeconfig_path))
+        self.assertFalse(os.path.isfile(location.properties().get('kubeconfig_path', None)))
 
