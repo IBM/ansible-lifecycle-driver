@@ -25,7 +25,7 @@ This is an example of an associated topology with an internal resource instance 
 
 ```
 {
-  'stack1_': {
+  'stack_1': {
     'id': '8826f231-b7e2-424f-8764-2fdd6859940a',
     'type': 'Openstack'
   }
@@ -34,7 +34,6 @@ This is an example of an associated topology with an internal resource instance 
 This is an example of how to consume the associated topology in a script:
 ```
 ...
-  tasks: 
   - name: Retrieve the stack id
     set_fact:
       stack_id: "{{ item.value.id }}"
@@ -75,7 +74,7 @@ The prefix can be changed to something other than "output__" by setting the prop
 Additionally, internal resource instances can be returned to LM by setting a fact named _associated_topology_.
 This is an example of a returned associated_topology in an ansible script:
 ```
-...
+- name set the associated topology
   set_fact: 
     associated_topology: 
       stack_1: 
