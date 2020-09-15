@@ -80,5 +80,5 @@ This is an example of a returned associated_topology in an ansible script:
     associated_topology: 
       stack_1: 
         id: '8826f231-b7e2-424f-8764-2fdd6859940a'
-          type: 'Openstack'
+        type: 'Openstack'
 ```
