@@ -33,7 +33,6 @@ This is an example of an associated topology with an internal resource instance 
 ```
 This is an example of how to consume the associated topology in a script:
 ```
-...
   - name: Retrieve the stack id
     set_fact:
       stack_id: "{{ item.value.id }}"
