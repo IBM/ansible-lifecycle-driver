@@ -1,3 +1,4 @@
 hpICsp
 hpOneView==5.3.0
 netaddr==0.7.19
+omsdk==1.2.445
