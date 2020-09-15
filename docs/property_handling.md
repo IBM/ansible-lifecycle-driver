@@ -24,12 +24,12 @@ The associated topology dictionary carries information about the internal resour
 This is an example of an associated topology with an internal resource instance referring to an OpenStack stack:
 
 ```
-            {
-                'stack1_': {
-                    'id': '8826f231-b7e2-424f-8764-2fdd6859940a',
-                    'type': 'Openstack'
-                }
-            }
+{
+  'stack1_': {
+    'id': '8826f231-b7e2-424f-8764-2fdd6859940a',
+    'type': 'Openstack'
+  }
+}
 ```
 This is an example of how to consume the associated topology in a script:
 ```
@@ -77,8 +77,8 @@ This is an example of a returned associated_topology in an ansible script:
 ```
 ...
   set_fact: 
-      associated_topology: 
-         stack_1: 
-            id: '8826f231-b7e2-424f-8764-2fdd6859940a'
-            type: 'Openstack'
+    associated_topology: 
+      stack_1: 
+        id: '8826f231-b7e2-424f-8764-2fdd6859940a'
+          type: 'Openstack'
 ```
