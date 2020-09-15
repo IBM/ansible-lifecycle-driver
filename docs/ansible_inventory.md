@@ -29,6 +29,7 @@ The Ansible Lifecycle Driver supports the substitution of LM properties in inven
 * properties: a dictionary of LM request properties (these can also be accessed without the `properties.` prefix).
 * system_properties: a dictionary of system properties.
 * deployment_location.properties: a dictionary of deployment location properties.
+* associated_topology: a dictionary with associated topology properties
 
 The system properties comprise the following:
 
