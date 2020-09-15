@@ -75,10 +75,10 @@ class TestDeploymentLocation(unittest.TestCase):
         deployment_location = {
             'name': 'dl',
             'type': 'Kubernetes',
-            'properties': self.__propvaluemap({
+            'properties': {
                 'connection_type': 'kubectl',
                 'clientConfig': EXAMPLE_KUBECTL_CONFIG
-            })
+            }
         }
         location = DeploymentLocation(deployment_location)
         self.assertIsNotNone(location.kube_location())

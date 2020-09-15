@@ -44,7 +44,7 @@ class DeploymentLocation():
         return self.__deployment_location
 
     def properties(self):
-        return self.__deployment_location['properties']
+        return PropValueMap(self.__deployment_location['properties'])
 
     def kube_location(self):
         return self.__kube_location
