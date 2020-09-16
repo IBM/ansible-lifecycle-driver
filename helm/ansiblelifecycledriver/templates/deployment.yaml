@@ -1,9 +1,12 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ansible-lifecycle-driver
 spec:
   replicas: {{ .Values.app.replicas }}
+  selector:
+    matchLabels:
+      app: ansible-lifecycle-driver
   template:
     metadata:
       labels:
@@ -28,9 +31,11 @@ spec:
         - name: ansible-lifecycle-driver
           image: {{ .Values.docker.image }}:{{ .Values.docker.version }}
           imagePullPolicy: {{ .Values.docker.imagePullPolicy }}
+          {{- if or (not (.Capabilities.APIVersions.Has "security.openshift.io/v1")) (eq .Release.Namespace "kube-system") (ne (toString .Values.global.arbitraryUids) "true") }}
+          # run as ald user (100)
           securityContext:
-            # run as ald
             runAsUser: 100
+          {{- end }}
           ports:
           - containerPort: 8293
             protocol: TCP
