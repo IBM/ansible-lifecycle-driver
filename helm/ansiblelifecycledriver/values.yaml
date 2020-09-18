@@ -147,6 +147,21 @@ app:
         # timeout waiting for initial version check on Kafka producer/consumer initialisation
         # 5000ms is usually sufficient, increase if problems with NoBrokersAvailable occur
         api_version_auto_timeout_ms: 5000
+        topics:
+          lifecycle_execution_events:
+            name: lm_vnfc_lifecycle_execution_events
+            auto_create: True
+            num_partitions: 1
+            replication_factor: 1
+          job_queue:
+            auto_create: True
+            num_partitions: 100
+            replication_factor: 1
+            config:
+              retention.ms: 60000
+              message.timestamp.difference.max.ms: 60000
+              file.delete.delay.ms: 60000
+#              api_version_auto_timeout_ms: 10000
 
       resource_driver:
         ## workspace for holding lifecycle scripts
