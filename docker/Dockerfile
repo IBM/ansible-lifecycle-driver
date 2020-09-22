@@ -31,6 +31,9 @@ RUN addgroup -S ald \
 COPY --chown=ald:0 ansible.cfg /etc/ansible/ansible.cfg
 COPY --chown=ald:0 ald_config.yml /var/ald/ald_config.yml 
 
+# Set HOME variable for OCP arbitrary user
+ENV HOME /home/ald
+
 USER ald
 WORKDIR /home/ald
 
