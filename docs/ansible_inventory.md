@@ -29,6 +29,7 @@ The Ansible Lifecycle Driver supports the substitution of LM properties in inven
 * properties: a dictionary of LM request properties (these can also be accessed without the `properties.` prefix).
 * system_properties: a dictionary of system properties.
 * deployment_location.properties: a dictionary of deployment location properties.
+* associated_topology: a dictionary of associated topology entries.
 
 The system properties comprise the following:
 
@@ -79,7 +80,7 @@ In this example, the ansible_host is set to an LM property value.
 
 ## Kubernetes Connections
 
-It is possible to use the [Kubectl Ansible connection plugin](https://docs.ansible.com/ansible/2.7/plugins/connection/kubectl.html) (as opposed to the default SSH connection plugin) to communicate with pods. For this to work, the deployment location properties must set the property `connection_type` to `kubectl` i.e. `deployment_location.properties == 'kubectl'` (see the [Kubernetes Driver documentation](https://github.com/accanto-systems/kubernetes-driver/blob/master/docs/user-guide/deployment-locations.md) for a description of the Kubernetes deployment location properties synatx). This will switch the Ansible driver to use kubectl to communicate with pods for the lifecycle transition request. An example inventory file showing this is:
+It is possible to use the [Kubectl Ansible connection plugin](https://docs.ansible.com/ansible/2.7/plugins/connection/kubectl.html) (as opposed to the default SSH connection plugin) to communicate with pods. For this to work, the deployment location properties must set the property `connection_type` to `kubectl` i.e. `deployment_location.properties.connection_type == 'kubectl'` (see the [Kubernetes Driver documentation](https://github.com/accanto-systems/kubernetes-driver/blob/master/docs/user-guide/deployment-locations.md) for a description of the Kubernetes deployment location properties synatx). This will switch the Ansible driver to use `kubectl` to communicate with pods for the lifecycle transition request. An example inventory file showing this is:
 
 ```
 ---

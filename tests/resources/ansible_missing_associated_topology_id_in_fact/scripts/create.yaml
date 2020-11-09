@@ -1,0 +1,13 @@
+---
+- hosts: testhost
+  gather_facts: no
+  tasks:
+  - name: debug
+    debug:
+      # msg: Playbook with missing id in the associated topology's fact
+      msg: "Playbook with missing id in the associated topology's fact"
+            
+  - name: set fact
+    set_fact: 
+      # Associated topology with missing id:
+      associated_topology: {'apache1': {'type':'Openstack', 'VM':'vm name'}}

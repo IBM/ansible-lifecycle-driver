@@ -7,6 +7,7 @@ The Ansible Lifecycle Driver supports the substitution of LM properties in all f
 * properties: a dictionary of LM request properties (these can also be accessed without the `properties.` prefix).
 * system_properties: a dictionary of system properties.
 * deployment_location.properties: a dictionary of deployment location properties.
+* associated_topology: a dictionary of associated topology entries.
 
 The system properties comprise the following:
 
@@ -19,6 +20,24 @@ The system properties comprise the following:
 | deploymentLocation                         | The name of the LM deployment location name in which the resource instance resides    |
 | resourceType                         | The resource instance type |
 
+The associated topology dictionary carries information about the internal resource instances associated to a resource instance. Each entry in the associated topology corresponds to an internal resource instance and has a type and a unique id.  
+This is an example of an associated topology with an internal resource instance referring to an OpenStack stack:
+
+```
+{
+  'stack_1': {
+    'id': '8826f231-b7e2-424f-8764-2fdd6859940a',
+    'type': 'Openstack'
+  }
+}
+```
+This is an example of how to consume the associated topology in a script:
+```
+  - name: Retrieve the stack id
+    set_fact:
+      stack_id: "{{ item.value.id }}"
+    with_dict: "{{ associated_topology }}"
+```
 Variable substitution is achieved by referencing the property in a Jinja2 template, as follows (dot and square bracket notation are both supported):
 
 ```
@@ -35,9 +54,11 @@ Variable substitution is achieved by referencing the property in a Jinja2 templa
       msg: "bindIP = {{ voice_ip_address }} resourceId = {{ system_properties.resourceId }}"
 ```
 
+
+
 ## Returning properties to LM
 
-Properties can be returned to LM by setting facts with a prefix "output__". For example, to set a property "msg":
+Resource properties can be returned to LM by setting facts with a prefix "output__". For example, to set a property "msg":
 
 ```
 - name: set fact
@@ -48,3 +69,18 @@ Properties can be returned to LM by setting facts with a prefix "output__". For 
 The Ansible Lifecycle Driver will recognize this as a property to be returned to LM in the response. Any number of properties can be returned in this way.
 
 The prefix can be changed to something other than "output__" by setting the property "app.config.override.ansible.output_prop_prefix" when installing the driver using the Helm chart.
+
+Additionally, internal resource instances can be returned to LM by setting a fact named _associated_topology_.
+This is an example of a returned associated topology containing multiple entries:
+```
+- name set the associated topology
+  set_fact: 
+    associated_topology: 
+      stack_1: 
+        id: '8826f231-b7e2-424f-8764-2fdd6859940a'
+        type: 'Openstack'
+      stack_2: 
+        id: '9b65cc0f-8457-43d6-b75e-71de549fa2b0'
+        type: 'Openstack'
+```
+Each entry corresponds to an OpenStack stack instance with the _id_ parameter containing the ID of the stack.
