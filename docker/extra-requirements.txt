@@ -3,3 +3,5 @@ hpeOneView==5.4.0
 netaddr==0.7.19
 omsdk==1.2.445
 python-hpilo==4.4.1
+py-junos-eznc>=2.5.0
+jxmlease>=1.0.1
