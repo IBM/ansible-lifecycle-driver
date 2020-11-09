@@ -18,13 +18,12 @@ RUN addgroup -S ald \
  && chmod -R 775 /var/ald \
  && chown -R ald:0 /home/ald \
  && chmod -R 775 /home/ald \
- && apk add --no-cache bash openssh sshpass curl binutils libc-dev \
+ && apk add --no-cache bash openssh sshpass curl binutils libc-dev libxml2-dev libxslt-dev \
  # These packages need to be installed so that we can install the Python dependencies.
  # We make this virtual so that we can remove them later
  && apk add --no-cache --virtual .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git \
  && for i in /whls/ignition*.whl; do if [ "$i" != "/whls/ignition*.whl" ]; then pip install --no-warn-script-location "$i"; fi done \
  && for i in /whls/*.whl; do pip install "$i"; done \
- && apk del .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git \
  && curl -L https://storage.googleapis.com/kubernetes-release/release/v1.19.0/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
  && chmod +x /usr/local/bin/kubectl
 
@@ -36,7 +35,8 @@ COPY --chown=ald:0 module_utils /etc/ansible/module_utils
 COPY --chown=ald:0 roles /etc/ansible/roles
 
 # Install extra requirements to be built into the driver
-RUN pip install -r /home/ald/extra-requirements.txt
+RUN pip install -r /home/ald/extra-requirements.txt \
+ && apk del .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git
 
 # Set HOME variable for OCP arbitrary user
 ENV HOME /home/ald
