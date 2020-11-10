@@ -86,7 +86,7 @@ helm package helm/ansiblelifecycledriver
 5.5 Push the docker image to Dockerhub with:
 
 ```
-docker push accanto/ansible-lifecycle-driver:<release version number>
+docker push ibmcom/ansible-lifecycle-driver:<release version number>
 ```
 
 ## 7. Set next development version
