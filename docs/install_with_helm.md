@@ -11,10 +11,10 @@ You will also need a controller machine (can be one of the Kubernetes cluster no
 
 ### Download
 
-Download the Helm chart from the [releases](https://github.com/accanto-systems/ansible-lifecycle-driver/releases) page to your machine.
+Download the Helm chart from the [releases](https://github.com/IBM/ansible-lifecycle-driver/releases) page to your machine.
 
 ```
-wget https://github.com/accanto-systems/ansible-lifecycle-driver/releases/download/<version>/ansiblelifecycledriver-<version>.tgz
+wget https://github.com/IBM/ansible-lifecycle-driver/releases/download/<version>/ansiblelifecycledriver-<version>.tgz
 ```
 
 ### Install 
@@ -31,7 +31,7 @@ The above installation will expect Kafka to be running in the same Kubernetes na
 helm install ansiblelifecycledriver-<version>.tgz --name ansible-lifecycle-driver --set app.config.override.messaging.connection_address=myhost:myport
 ```
 
-The Ansible Lifecycle Driver uses an Ignition [Request Queue](https://github.com/accanto-systems/ignition/blob/master/docs/user-guide/framework/bootstrap-components/request_queue.md) to process transitions. Note the overrides for the Kafka request queue topic number of partitions and replication factory. The number of partitions determines an upper limit on how many transitions can be run in parallel, the replication factor improves fault tolerance and should be set to less than or equal to the number of Kafka brokers in your cluster.
+The Ansible Lifecycle Driver uses an Ignition [Request Queue](https://github.com/IBM/ignition/blob/master/docs/user-guide/framework/bootstrap-components/request_queue.md) to process transitions. Note the overrides for the Kafka request queue topic number of partitions and replication factory. The number of partitions determines an upper limit on how many transitions can be run in parallel, the replication factor improves fault tolerance and should be set to less than or equal to the number of Kafka brokers in your cluster.
 
 The driver runs with SSL enabled by default. The installation will generate a self-signed certificate and key by default, adding them to the Kubernetes secret "ald-tls". To use a custom certificate and key in your own secret, override the properties under "apps.config.security.ssl.secret".
 
