@@ -25,7 +25,7 @@ Install the chart using the helm CLI:
 helm install ansiblelifecycledriver-<version>.tgz --name ansible-lifecycle-driver --set app.config.override.lifecycle.request_queue.topic.num_partitions=100,app.config.override.lifecycle.request_queue.topic.replication_factor=1
 ```
 
-The above installation will expect Kafka to be running in the same Kubernetes namespace with name `foundation-kafka`, which is the default installed by Stratoss&trade; Lifecycle Manager. If different, override the Kafka address:
+The above installation will expect Kafka to be running in the same Kubernetes namespace with name `alm-kafka`, which is the default installed by Stratoss&trade; Lifecycle Manager. If different, override the Kafka address:
 
 ```
 helm install ansiblelifecycledriver-<version>.tgz --name ansible-lifecycle-driver --set app.config.override.messaging.connection_address=myhost:myport
