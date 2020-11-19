@@ -16,12 +16,13 @@ Navigate to the `docker` repo of this repository, to find the source files for t
 cd docker
 ```
 
-There are 4 types of libraries you can add:
+There are 5 types of libraries you can add:
 
 1. Ansible modules
 2. Ansible roles
 3. Ansible module utils
-4. Python libraries
+4. Ansible collections
+5. Python libraries
 
 To add Ansible modules, copy the `.py` for each module into the `library` directory:
 
@@ -42,6 +43,14 @@ To add Ansible module utils, copy the `.py` for each into the `library` director
 cp path/to/my/module_utils/*.py library/
 ```
 
+To add Ansible collections, copy them into the `collections` directory:
+
+```
+cp path/to/my/collection collections/
+```
+
+Many of the Ansible components can also be [installed with Ansible Galaxy](#install-ansible-components-with-galaxy)
+
 To add Python libraries, add entires for them into the `extra-requirements.txt` file:
 
 ```
@@ -49,6 +58,20 @@ hpOneView==5.3.0
 ```
 
 > Ideally, include a version range or explicit version
+
+## Install Ansible Components with Galaxy
+
+To install roles with Ansible galaxy:
+
+```
+ansible-galaxy install <role to install> --roles-path ./roles
+```
+
+To install collections with Ansible galaxy:
+
+```
+ansible-galaxy collection install <collection to install> -p ./collections
+```
 
 ## Example
 

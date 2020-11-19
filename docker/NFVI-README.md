@@ -8,6 +8,13 @@ Ansible Modules:
 Python Modules:
 - Listed in extra-requirements.txt
 
+You'll notice that there are additional directories copied into the image for Ansible components:
+
+- `library` - for modules
+- `module_utils` - for module util functions
+- `roles` - for Ansible roles
+- `collections` - for Ansible collections
+
 # Prerequisite
 
 These instructions assume you have Python3.6.9+ installed and a clone of this repo.
@@ -36,7 +43,13 @@ cp -r oneview-ansible/library/*.py library/
 cp -r oneview-ansible/library/module_utils/*.py module_utils
 ```
 
-Add any extra modules you wish. If it's a Python module, you can add it to `extra-requirements.txt`. Additions to this file **SHOULD** be pushed up to the repository.
+Add any extra modules/roles/collections you wish. You can see how to do this, manually or with Ansible galaxy [in these instructions](building_image_with_extra_modules.md). In short, you can add libraries, collections, roles with galaxy by directing the installation to the necessary directory:
+
+```
+ansible-galaxy collection install <collection to install> -p ./collections
+```
+
+To add Python modules, you can add it to `extra-requirements.txt`. Additions to this file **SHOULD** be pushed up to the repository.
 
 To build the `ansible-lifecycle-driver:2.1.0.dev0.nfviautomation` docker image, run the below script from the root of this project:
 

@@ -30,6 +30,7 @@ COPY --chown=ald:ald ald_config.yml /var/ald/ald_config.yml
 COPY --chown=ald:ald library /etc/ansible/library
 COPY --chown=ald:ald module_utils /etc/ansible/module_utils
 COPY --chown=ald:ald roles /etc/ansible/roles
+COPY --chown=ald:ald collections /etc/ansible/collections
 
 RUN for i in /home/ald/whls/ignition*.whl; do if [ "$i" != "/home/ald/whls/ignition*.whl" ]; then pip install --no-warn-script-location --user "$i"; fi done \
  && for i in /home/ald/whls/*.whl; do pip install --no-warn-script-location --user "$i"; done \
