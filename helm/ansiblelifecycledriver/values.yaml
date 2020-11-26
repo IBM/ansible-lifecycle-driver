@@ -134,6 +134,9 @@ app:
         ## output properties are set using set_fact in the Ansible script and prefixed with this string
         ## so that the driver knows they are intended to be exported to Brent.
         output_prop_prefix: 'output__'
+        
+        ## Disable logs from Ansible playbook execution
+        #log_progress_events: True
 
       process:
         ## whether to a process pool to read and process transition requests
