@@ -289,8 +289,7 @@ class ResultCallback(CallbackBase):
             hosts = sorted(stats.processed.keys())
             host_stats = {}
             for h in hosts:
-                s = stats.summarize(h)
-                host_stats[h] = s
+                host_stats[h] = stats.summarize(h)
             
             event = PlaybookResultEvent(plays=self.plays, host_stats=host_stats)
             self.event_logger.add(event)
@@ -329,7 +328,6 @@ class ResultCallback(CallbackBase):
             self.event_logger.add(event)
 
     def __handle_unreachable(self, result):
-        # TODO do not overwrite if already set
         self.failed_task = result._task.get_name()
         self.host_unreachable_log.append(dict(task=self.failed_task, result=result._result))
         self.host_unreachable = True

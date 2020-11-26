@@ -6,8 +6,8 @@ During the execution of playbooks the following events are logged as Resource tr
 | --- | --- |
 | PlayStartedEvent | Indicates a play, within a playbook, has started |
 | PlayMatchedNoNoHostsEvent | Indicates a play had no matching hosts so did not execute |
-| TaskStartedEvent | Indicates a task, within a play, has started. The task may be executed on multiple hosts but this event will only be omitted once |
-| TaskStartedOnHostEvent | Indicates a task, within a play, has started on a particular host Note: only omitted when this driver upgrades to v2.8+ of Ansible (currently v2.7) | 
+| TaskStartedEvent | Indicates a task, within a play, has started. The task may be executed on multiple hosts but this event will only be emitted once |
+| TaskStartedOnHostEvent | Indicates a task, within a play, has started on a particular host Note: only emitted when this driver upgrades to v2.8+ of Ansible (currently v2.7) | 
 | TaskCompletedOnHostEvent | Indicates a task completed successfully. One event should be created for each host the task is executed on |
 | TaskRetryOnHostEvent | Indicates a task is being retried (using "retries" and "until" on a task in a playbook). One event will be created for each retry. Note: if using "with_items" or any other loop, then an event will be created for each retry for each item however it's not possible to get hold of the item label |
 | TaskFailedOnHostEvent | Indicates a task failed. One event should be created for each host the task fails on |

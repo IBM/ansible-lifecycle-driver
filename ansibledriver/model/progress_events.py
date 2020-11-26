@@ -54,7 +54,7 @@ class PlayStartedEvent(AnsibleEvent):
 
 class TaskStartedEvent(AnsibleEvent):
     """
-    Indicates a task, within a play, has started. The task may be executed on multiple hosts but this event will only be omitted once
+    Indicates a task, within a play, has started. The task may be executed on multiple hosts but this event will only be emitted once
     """
 
     progress_event_type = 'ansible/TaskStarted'
