@@ -1,0 +1,62 @@
+---
+- hosts: testhost
+  gather_facts: no
+  # Set some variables here
+  vars:
+      name_1: &name_1 "apache1"
+      id_1: "12345678"
+      type_1: "Openstack"
+      name_2: &name_2 "apache2"
+      id_2: "910111213"
+      type_2: "Openstack"
+      stack_create: {
+        stack: {
+          outputs: [
+            {
+              description: "No description given",
+              output_key: "public_ip",
+              output_value: "10.21.28.94"
+            },
+            {
+              description: "No description given",
+              output_key: "internal_ip",
+              output_value: "10.10.10.42"
+            }
+          ]
+        }
+       }
+  tasks:
+  - name: debug
+    debug:
+      # msg: "associated topology: {{ associated_topology.apache1.id }} {{ associated_topology.apache1.type }} {{ associated_topology.apache2.id }} {{ associated_topology.apache2.type }}"
+      msg: "{{ name_1 }} {{ id_1 }} {{ type_1 }} {{ name_2 }} {{ id_2 }} {{ type_2 }}"
+            
+  - name: set fact
+    set_fact: 
+      # set the associated topology that will be returned to ALM as ansible fact 
+      # This is a simple example:
+      # associated_topology: {'apache1': {'id':'12345678', 'type':'Openstack'}, 'apache2': {'id':'910111213', 'type':'Openstack'}}
+      # With variable substitution
+      associated_topology: 
+         *name_1: 
+            id: "{{ id_1 }}"
+            type: "{{ type_1 }}"
+         *name_2: 
+            id: "{{ id_2 }}"
+            type: "{{ type_2 }}"
+      output__msg: "Associated topology returned"
+  - name: send message 
+    set_fact: 
+      output__msg: "Associated topology returned"
+  - name: set public ip
+    set_fact:
+      output__public_ip: "{{ item.output_value }}"
+    loop:
+       "{{ stack_create.stack.outputs }}"
+    when: "'public_ip' in item.output_key"
+  - name: set internal ip
+    set_fact:
+      output__internal_ip: "{{ item.output_value }}"
+    loop:
+       "{{ stack_create.stack.outputs }}"
+    when: "'internal_ip' in item.output_key"

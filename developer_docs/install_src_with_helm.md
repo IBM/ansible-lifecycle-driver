@@ -44,10 +44,10 @@ Run the helm chart, setting the Docker image version if different to the default
 helm install helm/ansiblelifecycledriver --name ansiblelifecycledriver --set docker.version=<driver-version>
 ```
 
-The above installation will expect Kafka to be running in the same Kubernetes namespace with name `foundation-kafka`, which is the default installed by Stratoss&trade; Lifecycle Manager. If different, override the Kafka address:
+By default, the driver will attempt to connect to Kafka with the address `alm-kafka:9092`. For [All In One](https://github.com/accanto-systems/lm-allinone) it should be set to `foundation-kafka:9092`:
 
 ```
-helm install helm/ansiblelifecycledriver --name ansiblelifecycledriver --set app.config.override.messaging.connection_address=myhost:myport
+helm install helm/ansiblelifecycledriver --name ansiblelifecycledriver --set app.config.override.messaging.connection_address=foundation-kafka:9092
 ```
 
 # Access Swagger UI

@@ -59,10 +59,10 @@ cp dist/ansible_lifecycle_driver-<release version number>-py3-none-any.whl docke
 cd docker
 ```
 
-4.3. Build the docker image (**tag with release version number and accanto repository**)
+4.3. Build the docker image (**tag with release version number and ibmcom repository**)
 
 ```
-docker build -t accanto/ansible-lifecycle-driver:<release version number> .
+docker build -t ibmcom/ansible-lifecycle-driver:<release version number> .
 ```
 
 ## 5. Build Helm Chart
@@ -86,7 +86,7 @@ helm package helm/ansiblelifecycledriver
 5.5 Push the docker image to Dockerhub with:
 
 ```
-docker push accanto/ansible-lifecycle-driver:<release version number>
+docker push ibmcom/ansible-lifecycle-driver:<release version number>
 ```
 
 ## 7. Set next development version

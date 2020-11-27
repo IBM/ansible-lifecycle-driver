@@ -1,0 +1,8 @@
+---
+ansible_host: {{ hello_world_private_ip }}
+ansible_connection: ssh
+ansible_user: {{ ansible_ssh_user }}
+ansible_ssh_user: {{ ansible_ssh_user }}
+ansible_password: {{ ansible_ssh_pass }}
+ansible_ssh_pass: {{ ansible_ssh_pass }}
+ansible_become_pass: {{ ansible_become_pass }}
