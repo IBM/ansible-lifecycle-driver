@@ -24,6 +24,11 @@ logger.level = logging.DEBUG
 stream_handler = logging.StreamHandler(sys.stdout)
 logger.addHandler(stream_handler)
 
+class EmptyEventLogger:
+    
+    def add(self, event):
+        pass
+
 class TestAnsible(unittest.TestCase):
 
     def assertLifecycleExecutionEqual(self, resp, expected_resp):
@@ -57,7 +62,7 @@ class TestAnsible(unittest.TestCase):
         self.configuration = BootstrapApplicationConfiguration(app_name='test', property_sources=[], property_groups=property_groups, service_configurators=[], api_configurators=[], api_error_converter=None)
         render_context_service = ExtendedResourceTemplateContextService()
         templating = Jinja2TemplatingService()
-        self.ansible_client = AnsibleClient(self.configuration, templating=templating, render_context_service=render_context_service)
+        self.ansible_client = AnsibleClient(self.configuration, templating=templating, render_context_service=render_context_service, event_logger=EmptyEventLogger())
 
     def __copy_directory_tree(self, src):
         temp_dir = tempfile.mkdtemp(prefix="")
