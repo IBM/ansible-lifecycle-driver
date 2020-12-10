@@ -353,7 +353,7 @@ class ResultCallback(CallbackBase):
         for prop in props:
             for key, value in prop.items():
                 if key.startswith(self.ansible_properties.output_prop_prefix):
-                    output_facts = { key[8:]:value }
+                    output_facts = { key[len(self.ansible_properties.output_prop_prefix):]: value }
                     logger.debug('output props = {0}'.format(output_facts))
                     self.properties.update(output_facts)
                 elif key == 'associated_topology':

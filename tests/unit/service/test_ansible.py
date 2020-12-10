@@ -92,6 +92,40 @@ class TestAnsible(unittest.TestCase):
                 'ansible_become_pass': {
                     'value': 'accanto',
                     'type': 'string'
+                },
+                'bool_prop': {
+                    'value': True,
+                    'type': 'boolean'
+                },
+                'int_prop': {
+                    'value': 123,
+                    'type': 'integer'
+                },
+                'float_prop': {
+                    'value': 1.2,
+                    'type': 'float'
+                },
+                'timestamp_prop': {
+                    'value': '2020-11-23T11:49:33.308703Z',
+                    'type': 'timestamp'
+                },
+                'map_prop': {
+                    'value': {
+                        'A': 1,
+                        'B': 'A string'
+                    },
+                    'type': 'map'
+                },
+                'list_prop': {
+                    'value': ['a', 'b', 'c'],
+                    'type': 'list'
+                },
+                'custom_type_prop': {
+                    'value': {
+                        'name': 'Testing',
+                        'age': 42
+                    },
+                    'type': 'MyCustomType'
                 }
             })
             system_properties = PropValueMap({
@@ -297,6 +331,40 @@ class TestAnsible(unittest.TestCase):
                 'ansible_become_pass': {
                     'value': 'accanto',
                     'type': 'string'
+                },
+                'bool_prop': {
+                    'value': True,
+                    'type': 'boolean'
+                },
+                'int_prop': {
+                    'value': 123,
+                    'type': 'integer'
+                },
+                'float_prop': {
+                    'value': 1.2,
+                    'type': 'float'
+                },
+                'timestamp_prop': {
+                    'value': '2020-11-23T11:49:33.308703Z',
+                    'type': 'timestamp'
+                },
+                'map_prop': {
+                    'value': {
+                        'A': 1,
+                        'B': 'A string'
+                    },
+                    'type': 'map'
+                },
+                'list_prop': {
+                    'value': ['a', 'b', 'c'],
+                    'type': 'list'
+                },
+                'custom_type_prop': {
+                    'value': {
+                        'name': 'Testing',
+                        'age': 42
+                    },
+                    'type': 'MyCustomType'
                 }
             })
             system_properties = PropValueMap({
@@ -568,5 +636,70 @@ class TestAnsible(unittest.TestCase):
             
             self.assertLifecycleExecutionEqual(resp, LifecycleExecution(request_id, STATUS_COMPLETE, None, {}, None))
             self.assertTrue(os.path.exists(dst))
+        finally:
+            logger.removeHandler(stream_handler)
+
+    def test_run_lifecycle_with_outputs_of_different_types(self):
+        stream_handler = logging.StreamHandler(sys.stdout)
+        logger.addHandler(stream_handler)
+        try:
+            request_id = uuid.uuid4().hex
+
+            properties = PropValueMap({
+                'hello_world_private_ip': {
+                    'value': '10.220.217.113',
+                    'type': 'string'
+                },
+                'ansible_ssh_user': {
+                    'value': 'accanto',
+                    'type': 'string'
+                },
+                'ansible_ssh_pass': {
+                    'value': 'accanto',
+                    'type': 'string'
+                },
+                'ansible_become_pass': {
+                    'value': 'accanto',
+                    'type': 'string'
+                }
+            })
+            system_properties = PropValueMap({
+            })
+
+            dst = self.__copy_directory_tree(str(pathlib.Path(__file__).parent.absolute()) + '/../../resources/ansible_outputs')
+
+            resp = self.ansible_client.run_lifecycle_playbook({
+            'lifecycle_name': 'install',
+            'driver_files': DirectoryTree(dst),
+            'system_properties': system_properties,
+            'resource_properties': properties,
+            'deployment_location': {
+                'name': 'winterfell',
+                'type': "Kubernetes",
+                'properties': PropValueMap({
+                })
+            },
+            'request_id': request_id
+            })
+
+            expected_outputs = {
+                'string_prop': 'Hello',
+                'int_prop': 1,
+                'float_prop': 1.2,
+                'bool_prop': True,
+                'timestamp_prop': '2020-11-23T11:49:33.308703Z',
+                'map_prop': {     
+                    'A': 'ValueA',
+                    'B': 123
+                },
+                'list_prop': ['A', 'B'],
+                'custom_type_prop': {
+                    'name': 'Testing',
+                    'age': 42
+                }
+            }
+
+            self.assertLifecycleExecutionEqual(resp, LifecycleExecution(request_id, STATUS_COMPLETE, None, expected_outputs))
+            self.assertFalse(os.path.exists(dst))
         finally:
             logger.removeHandler(stream_handler)
