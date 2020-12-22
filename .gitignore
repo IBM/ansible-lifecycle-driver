@@ -110,8 +110,14 @@ lifecycle_scripts/**
 test_workspace/
 tests/resources/ansible-copy
 
-# Docker whls
+# Docker library
 docker/whls/
+docker/library/*
+!docker/library/.gitkeep 
+docker/roles/*
+!docker/roles/.gitkeep 
+docker/module_utils/*
+!docker/module_utils/.gitkeep 
 
 # IDEs
 .vscode
