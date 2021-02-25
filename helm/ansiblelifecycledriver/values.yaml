@@ -8,8 +8,8 @@ global:
 ## Docker Image for the osslm-ansible-rm application
 docker:
   ## Make this the full path, including registry host and port if using one
-  image: ibmcom/ansible-lifecycle-driver
-  version: 2.2.0.dev0
+  image: alm-docker-local.artifactory.swg-devops.com/tnc/ansible-lifecycle-driver
+  version: 2.2.0.nfvi
   imagePullPolicy: IfNotPresent
 
 ## Configuration for the application deployment
