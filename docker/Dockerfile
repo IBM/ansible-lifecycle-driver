@@ -8,6 +8,7 @@ ARG NUM_THREADS
 ENV NUM_THREADS ${NUM_THREADS:-2}
 ARG WSGI_CONTAINER
 ENV WSGI_CONTAINER ${WSGI_CONTAINER:-gunicorn}
+ENV CRYPTOGRAPHY_DONT_BUILD_RUST=1
 
 COPY whls/*.whl /whls/
 
@@ -21,15 +22,18 @@ RUN addgroup -S ald \
  && apk add --no-cache bash openssh sshpass curl binutils libc-dev \
  # These packages need to be installed so that we can install the Python dependencies.
  # We make this virtual so that we can remove them later
- && apk add --no-cache --virtual .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git \
- && for i in /whls/ignition*.whl; do if [ "$i" != "/whls/ignition*.whl" ]; then pip install --no-warn-script-location "$i"; fi done \
- && for i in /whls/*.whl; do pip install "$i"; done \
+ && apk add --no-cache --virtual .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git libc-dev libxslt-dev \
+ && apk add --no-cache libxslt \
+ && python3 -m pip install --upgrade pip \
+ && pip install --no-cache-dir --upgrade pip \
+ && for i in /whls/ignition*.whl; do if [ "$i" != "/whls/ignition*.whl" ]; then pip install --no-cache-dir --no-warn-script-location "$i"; fi done \
+ && for i in /whls/*.whl; do pip install --no-cache-dir "$i"; done \
  && apk del .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git \
  && curl -L https://storage.googleapis.com/kubernetes-release/release/v1.19.0/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
  && chmod +x /usr/local/bin/kubectl
 
 COPY --chown=ald:0 ansible.cfg /etc/ansible/ansible.cfg
-COPY --chown=ald:0 ald_config.yml /var/ald/ald_config.yml 
+COPY --chown=ald:0 ald_config.yml /var/ald/ald_config.yml
 
 # Set HOME variable for OCP arbitrary user
 ENV HOME /home/ald
