@@ -110,7 +110,8 @@ lifecycle_scripts/**
 test_workspace/
 tests/resources/ansible-copy
 
-# Docker
+
+# Docker library
 docker/whls/
 docker/library/*
 !docker/library/.gitkeep 

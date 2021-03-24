@@ -1,0 +1,20 @@
+---
+- hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: set fact
+    set_fact:
+      output__string_prop: "Hello"
+      output__int_prop: 1
+      output__float_prop: 1.2
+      output__bool_prop: True
+      output__timestamp_prop: "2020-11-23T11:49:33.308703Z"
+      output__map_prop:
+        A: "ValueA"
+        B: 123
+      output__list_prop:
+        - A
+        - B
+      output__custom_type_prop:
+        name: Testing
+        age: 42

@@ -14,6 +14,7 @@ ansible:
   max_unreachable_retries: 60
   output_prop_prefix: 'output__'
   tmp_dir: /var/ald
+  log_progress_events: True
 
 process:
   process_pool_size: 10
