@@ -5,6 +5,7 @@ import shutil
 import json
 import argparse
 import jinja2 as jinja
+import platform
 
 PKG_ROOT = 'ansibledriver'
 PKG_INFO = 'pkg_info.json'
@@ -19,9 +20,9 @@ DOCKER_PATH = 'docker'
 DOCKER_IMG_NAME = 'ansible-lifecycle-driver'
 DOCKER_REGISTRY = 'ibmcom'
 
-HELM_CHART_PATH = os.path.join('helm', 'ansible-lifecycle-driver')
-HELM_CHART_NAME = 'ansible-lifecycle-driver'
-HELM_CHART_NAME_FORMAT = 'ansible-lifecycle-driver-{0}.tgz'
+HELM_CHART_PATH = os.path.join('helm', 'ansiblelifecycledriver')
+HELM_CHART_NAME = 'ansiblelifecycledriver'
+HELM_CHART_NAME_FORMAT = 'ansiblelifecycledriver-{0}.tgz'
 
 parser=argparse.ArgumentParser()
 
@@ -250,7 +251,12 @@ class Builder:
             docs_output = DOCS_FORMAT.format(version=self.project_version)
             docs_output_file = docs_output + '.tgz'
             transform_command = 's/{0}/{1}/'.format(DOCS_DIR, docs_output)
-            s.run_cmd('tar', '-cvzf', docs_output_file, DOCS_DIR+'/', '--transform', transform_command)
+            # Note that a system running on Mac will return 'Darwin' for platform.system()
+            if platform.system() == 'Darwin':
+                transform_command = '/{0}/{1}/'.format(DOCS_DIR, docs_output)                
+                s.run_cmd('tar', '-cvz', '-s', transform_command, '-f', docs_output_file, DOCS_DIR+'/')
+            else:
+                s.run_cmd('tar', '-cvzf', docs_output_file, DOCS_DIR+'/', '--transform', transform_command)
 
 def main():
   builder = Builder()
