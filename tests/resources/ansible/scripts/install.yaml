@@ -6,6 +6,10 @@
     debug:
       # note: use both "base" property names and property names prefixed with "properties" (the latter for backwards compatibility)
       msg: "properties {{ hello_world_private_ip }} {{ ansible_ssh_user }} {{ ansible_ssh_pass }} {{ ansible_become_pass }} {{ properties.hello_world_private_ip }} {{ properties.ansible_ssh_user }} {{ properties.ansible_ssh_pass }} {{ properties.ansible_become_pass }}"
+  
+  - name: debug prop values
+    debug:
+      msg: "properties {{ bool_prop }}, {{ int_prop }}, {{ float_prop }}, {{ timestamp_prop }} ,{{ map_prop }}, {{ list_prop }}, {{ custom_type_prop }}"
 
   - name: set fact
     set_fact:

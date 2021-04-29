@@ -14,6 +14,7 @@ from ansible.plugins.callback import CallbackBase
 from ansible.plugins.callback.json import CallbackModule
 from ansible.plugins.loader import connection_loader
 from ansible.inventory.host import Host
+from ansible.playbook.task_include import TaskInclude
 from jinja2 import Environment, FileSystemLoader
 from ignition.model.lifecycle import LifecycleExecution, STATUS_COMPLETE, STATUS_FAILED, STATUS_IN_PROGRESS
 from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_ERROR, FAILURE_CODE_INTERNAL_ERROR, FAILURE_CODE_RESOURCE_NOT_FOUND
@@ -24,6 +25,7 @@ from ansibledriver.model.deploymentlocation import DeploymentLocation
 from ansibledriver.model.inventory import Inventory
 from ignition.model import associated_topology
 from ignition.model.associated_topology import AssociatedTopology
+from ansibledriver.model.progress_events import *
 
 
 logger = logging.getLogger(__name__)
@@ -36,6 +38,7 @@ class AnsibleProperties(ConfigurationPropertiesGroup):
         self.max_unreachable_retries = 1000
         self.output_prop_prefix = 'output__'
         self.tmp_dir = '.'
+        self.log_progress_events = True
 
 
 class AnsibleClientCapability(Capability):
@@ -54,6 +57,9 @@ class AnsibleClient(Service, AnsibleClientCapability):
     if 'templating' not in kwargs:
       raise ValueError('templating argument not provided')
     self.templating = kwargs.get('templating')
+    if 'event_logger' not in kwargs:
+      raise ValueError('event_logger argument not provided')
+    self.event_logger = kwargs.get('event_logger')
 
   def run_playbook(self, request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties):
     Options = namedtuple('Options', ['connection',
@@ -98,7 +104,7 @@ class AnsibleClient(Service, AnsibleClientCapability):
         passwords=passwords
     )
 
-    callback = ResultCallback(self.ansible_properties, request_id, lifecycle)
+    callback = ResultCallback(self.ansible_properties, request_id, lifecycle, self.event_logger)
     pbex._tqm._stdout_callback = callback
 
     pbex.run()
@@ -194,13 +200,14 @@ class ResultCallback(CallbackBase):
     the end of the execution, look into utilizing the ``json`` callback plugin
     or writing your own custom callback plugin
     """
-    def __init__(self, ansible_properties, request_id, lifecycle, display=None):
+    def __init__(self, ansible_properties, request_id, lifecycle, event_logger, display=None):
         super(ResultCallback, self).__init__(display)
         self.ansible_properties = ansible_properties
         self.request_id = request_id
         self.facts = {}
-        self.results = []
+        self.plays = []
         self.lifecycle = lifecycle
+        self.event_logger = event_logger
 
         self.playbook_failed = False
 
@@ -221,103 +228,200 @@ class ResultCallback(CallbackBase):
     def _new_play(self, play):
         return {
             'play': {
-                'name': play.name,
+                'name': play.get_name().strip(),
                 'id': str(play._uuid)
-            },
-            'tasks': []
+            }
         }
 
     def _new_task(self, task):
         return {
             'task': {
-                'name': task.name,
+                'name': task.get_name().strip(),
                 'id': str(task._uuid)
             },
             'hosts': {}
         }
 
     def v2_playbook_on_play_start(self, play):
-        logger.debug('v2_playbook_on_play_start ok {0}'.format(play))
-        self.results.append(self._new_play(play))
+        """
+        Called when a play begins
+        Note: ONE playbook can have MANY plays
+        """
+        logger.debug('v2_playbook_on_play_start: {0}'.format(play))
+        if self.ansible_properties.log_progress_events:
+            play_name = play.get_name().strip()
+            event = PlayStartedEvent(play_name=play_name)
+            self.event_logger.add(event)
+        self.plays.append(self._new_play(play))
 
     def v2_playbook_on_task_start(self, task, is_conditional):
-        logger.debug('v2_playbook_on_task_start ok {0} {1}'.format(task, is_conditional))
+        """
+        Called when a task starts 
+        Note: even if a task is going to run on multiple hosts, this function is only called ONCE
+        """
+        logger.debug('v2_playbook_on_task_start: {0} (is_conditional={1})'.format(task, is_conditional))
+        self._log_task_start(task)
 
     def v2_playbook_on_handler_task_start(self, task):
-        logger.debug('v2_playbook_on_handler_task_start ok {0}'.format(task))
+        logger.debug('v2_playbook_on_handler_task_start: {0}'.format(task))
+        self._log_task_start(task, prefix='Handler/')
+
+    def _log_task_start(self, task, prefix=None):
+        if self.ansible_properties.log_progress_events:
+            if prefix is None:
+              prefix = ''
+            task_name = '{0}{1}'.format(prefix, task.get_name().strip())
+            event = TaskStartedEvent(task_name=task_name)
+            if not task.no_log:
+              # Include args if the task has not been configured with the no_log option
+              for arg_name, arg_value in task.args.items():
+                event.args[str(arg_name)] = str(arg_value)
+            else:
+              event.args_hidden = True
+            self.event_logger.add(event)
 
     def v2_playbook_on_stats(self, stats):
-        """Display info about playbook statistics"""
-
-        hosts = sorted(stats.processed.keys())
-
-        summary = {}
-        for h in hosts:
-            s = stats.summarize(h)
-            summary[h] = s
-
-        output = {
-            'plays': self.results,
-            'stats': summary
-        }
-
-        logger.debug('v2_playbook_on_stats {0}'.format(json.dumps(output, indent=4, sort_keys=True)))
+        """
+        Called at the end of playbook execution (even in failure)
+        """
+        logger.debug('v2_playbook_on_stats: {0}'.format(stats))
+        if self.ansible_properties.log_progress_events:
+            hosts = sorted(stats.processed.keys())
+            host_stats = {}
+            for h in hosts:
+                host_stats[h] = stats.summarize(h)
+            
+            event = PlaybookResultEvent(plays=self.plays, host_stats=host_stats)
+            self.event_logger.add(event)
 
     def v2_playbook_on_no_hosts_matched(self):
+        """
+        Called if a play did not match any hosts (will be called after v2_playbook_on_play_start if this occurs)
+        """
         logger.debug('v2_playbook_on_no_hosts_matched')
+        if self.ansible_properties.log_progress_events:
+            # We can assume it's the last play that started. Need to be wary of the "free" strategy but I think this works even then
+            if len(self.plays) == 0:
+                play_name = 'Unknown'
+            else:
+                play_name = self.plays[-1]['play']['name']
+            event = PlayMatchedNoNoHostsEvent(play_name=play_name)
+            self.event_logger.add(event)
 
     def v2_runner_on_unreachable(self, result, ignore_errors=False):
         """
-        ansible task failed as host was unreachable
+        Called if a host is unreachable on execution of a task
         """
-        logger.debug('v2_runner_on_unreachable {0}'.format(result))
+        logger.debug('v2_runner_on_unreachable: {0}'.format(result._task))
         self.__handle_unreachable(result)
         logger.error('task: \'' + self.failed_task + '\' UNREACHABLE: ' + ' ansible playbook task ' + self.failed_task + ' host unreachable: ' + str(self.host_unreachable_log))
 
-    def v2_playbook_on_vars_prompt(self, varname, private=True, prompt=None, encrypt=None, confirm=False, salt_size=None, salt=None, default=None, unsafe=None):
-        logger.debug('v2_playbook_on_vars_prompt {0}'.format(varname))
-
-    def v2_runner_item_on_ok(self, result):
-        logger.debug('v2_runner_item_on_ok {0}'.format(result))
-
-    def v2_runner_item_on_failed(self, result):
-        logger.debug('v2_runner_item_on_failed {0}'.format(result))
-
-    def v2_runner_item_on_skipped(self, result):
-        logger.debug('v2_runner_item_on_skipped {0}'.format(result))
-
-    def runner_on_no_hosts(self):
-        logger.debug('runner_on_no_hosts')
-
-    def v2_runner_retry(self, result):
-        logger.debug('v2_runner_retry {0}'.format(result))
-
-    def v2_runner_on_start(self, host, task):
-        logger.debug('v2_runner_on_start {0} {1}'.format(host, task))
-
-    def runner_on_failed(self, host, res, ignore_errors=False):
-        logger.debug('runner_on_failed {0} {1}'.format(host, res))
+    def _log_unreachable_event(self, result):
+        if self.ansible_properties.log_progress_events:
+            task_name = result._task.get_name()
+            self._clean_results(result._result, result._task.action)
+            task_result = result._result
+            event = HostUnreachableEvent(task_name=task_name, host_name=result._host.get_name().strip(), task_result=task_result)
+            delegated_vars = result._result.get('_ansible_delegated_vars', None)
+            if delegated_vars is not None:
+                event.delegated_host_name = delegated_vars['ansible_host']
+            self.event_logger.add(event)
 
     def __handle_unreachable(self, result):
-        # TODO do not overwrite if already set
         self.failed_task = result._task.get_name()
         self.host_unreachable_log.append(dict(task=self.failed_task, result=result._result))
         self.host_unreachable = True
         self.failure_reason = 'Resource unreachable (task ' + str(self.failed_task) + ' failed: ' + str(result._result) + ')'
         self.failure_details = FailureDetails(FAILURE_CODE_RESOURCE_NOT_FOUND, self.failure_reason)
         self.playbook_failed = True
+        self._log_unreachable_event(result)
+
+    def v2_playbook_on_vars_prompt(self, varname, private=True, prompt=None, encrypt=None, confirm=False, salt_size=None, salt=None, default=None, unsafe=None):
+        """
+        Called when a var_prompt is used in a playbook, which we can't support because the playbook is not running in an interactive shell
+        """
+        logger.debug('v2_playbook_on_vars_prompt: {0}'.format(varname))
+        if self.ansible_properties.log_progress_events:
+            event = VarPromptEvent(var_name=varname)
+            self.event_logger.add(event)
+
+    def runner_on_no_hosts(self):
+        logger.debug('runner_on_no_hosts')
+
+    def v2_runner_retry(self, result):
+        """
+        Called when a task is retried
+        """
+        logger.debug('v2_runner_retry: {0}'.format(result))
+        if self.ansible_properties.log_progress_events:
+            host_name = result._host.get_name().strip()
+            delegated_vars = result._result.get('_ansible_delegated_vars', None)
+            if delegated_vars is not None:
+                delegated_host_name = delegated_vars['ansible_host']
+            else:
+                delegated_host_name = None
+            self._clean_results(result._result, result._task.action)
+            task_name = result._task.get_name().strip()
+            event = TaskRetryOnHostEvent(task_name, host_name, result._result, delegated_host_name=delegated_host_name)
+            self.event_logger.add(event)
+
+    def v2_runner_on_start(self, host, task):
+        """
+        Called when a task starts on a particular host (Ansible v2.8+)
+        """
+        logger.debug('v2_runner_on_start: host={0}, task={1}'.format(host, task))
+        if self.ansible_properties.log_progress_events:
+            task_name = task.get_name().strip()
+            host_name = host.get_name().strip()
+            event = TaskStartedOnHostEvent(task_name=task_name, host_name=host_name)
+            if not task.no_log:
+              # Include args if the task has not been configured with the no_log option
+              for arg_name, arg_value in task.args.items():
+                event.args[str(arg_name)] = str(arg_value)
+            else:
+              event.args_hidden = True
+            self.event_logger.add(event)
+
+    def runner_on_failed(self, host, res, ignore_errors=False):
+        logger.debug('runner_on_failed: host={0}, result={1}'.format(host, res))
+    
+    def _log_event_for_failed_task(self, result, is_item=False):
+        if self.ansible_properties.log_progress_events:
+            host_name = result._host.get_name().strip()
+            delegated_vars = result._result.get('_ansible_delegated_vars', None)
+            if delegated_vars is not None:
+                delegated_host_name = delegated_vars['ansible_host']
+            else:
+                delegated_host_name = None
+            if is_item:
+                item_label = self._get_item_label(result._result)
+            else:
+                item_label = None
+            self._clean_results(result._result, result._task.action)
+            task_name = result._task.get_name().strip()
+            event = TaskFailedOnHostEvent(task_name, host_name, result._result, item_label=item_label, delegated_host_name=delegated_host_name)
+            self.event_logger.add(event)
+
+    def v2_runner_item_on_failed(self, result):
+        """
+        Called when task execution fails for an item in a loop (e.g. with_items)
+        """
+        logger.debug('v2_runner_item_on_failed: {0}'.format(result))
+        self._log_event_for_failed_task(result, is_item=True)
 
     def v2_runner_on_failed(self, result, *args, **kwargs):
         """
-        ansible task failed
+        Called when a task fails
+        Note: even when a loop is used (so v2_runner_item_on_failed/v2_runner_item_on_ok is called for each item) this function is called at the end, when all items have been attempted but one has failed
         """
-        logger.debug("v2_runner_on_failed {0} {1} {2}".format(result._task, result._result, result._task_fields))
+        logger.debug("v2_runner_on_failed: task={0}, result={1}, task_fields={2}".format(result._task, result._result, result._task_fields))
+        # TODO: handle ignore_errors?
         self.failed_task = result._task.get_name()
         if 'msg' in result._result and 'Timeout' in result._result['msg'] and 'waiting for privilege escalation prompt' in result._result['msg']:
-            logger.debug('Failure to be treated as unreachable:  task ' + str(self.failed_task) + ' failed: ' + str(result._result))
+            logger.info('Failure to be treated as unreachable:  task ' + str(self.failed_task) + ' failed: ' + str(result._result))
             self.__handle_unreachable(result)
         elif 'module_stderr' in result._result and result._result['module_stderr'].startswith('ssh:') and 'Host is unreachable' in result._result['module_stderr']:
-            logger.debug('Failure to be treated as unreachable: task ' + str(self.failed_task) + ' failed: ' + str(result._result))
+            logger.info('Failure to be treated as unreachable: task ' + str(self.failed_task) + ' failed: ' + str(result._result))
             self.__handle_unreachable(result)
         else:
           self.host_failed = True
@@ -325,23 +429,77 @@ class ResultCallback(CallbackBase):
           self.host_failed_log.append(dict(task=self.failed_task, result=result._result))
           self.failure_details = FailureDetails(FAILURE_CODE_INFRASTRUCTURE_ERROR, self.failure_reason)
           self.playbook_failed = True
+          self._log_event_for_failed_task(result)
+
+    def _log_event_for_skipped_task(self, result, is_item=False):
+        if self.ansible_properties.log_progress_events:
+            host_name = result._host.get_name().strip()
+            delegated_vars = result._result.get('_ansible_delegated_vars', None)
+            if delegated_vars is not None:
+                delegated_host_name = delegated_vars['ansible_host']
+            else:
+                delegated_host_name = None
+            if is_item:
+                item_label = self._get_item_label(result._result)
+            else:
+                item_label = None
+            self._clean_results(result._result, result._task.action)
+            task_name = result._task.get_name().strip()
+            event = TaskSkippedOnHostEvent(task_name, host_name, result._result, item_label=item_label, delegated_host_name=delegated_host_name)
+            self.event_logger.add(event)
+        
+    def v2_runner_item_on_skipped(self, result):
+        """
+        Called when task execution is skipped an item in a loop (e.g. with_items)
+        """
+        logger.debug('v2_runner_item_on_skipped: {0}'.format(result))
+        self._log_event_for_skipped_task(result, is_item=True)
 
     def v2_runner_on_skipped(self, result):
-        logger.debug('v2_runner_on_skipped {0}'.format(result))
+        """
+        Called when task execution is skipped
+        """
+        logger.debug('v2_runner_on_skipped: {0}'.format(result))
+        self._log_event_for_skipped_task(result, is_item=True)
 
     def runner_on_ok(self, host, res):
-        self._display.display('runner_on_ok {0} {1}'.format(host, res))
-        logger.debug('runner_on_ok {0} {1}'.format(host, res))
+        logger.debug('runner_on_ok: host={0} res={1}'.format(host, res))
+
+    def _log_event_for_ok_task(self, result, is_item=False):
+        if self.ansible_properties.log_progress_events:
+            host_name = result._host.get_name().strip()
+            delegated_vars = result._result.get('_ansible_delegated_vars', None)
+            if delegated_vars is not None:
+                delegated_host_name = delegated_vars['ansible_host']
+            else:
+                delegated_host_name = None
+            if is_item:
+                item_label = self._get_item_label(result._result)
+            else:
+                item_label = None
+            self._clean_results(result._result, result._task.action)
+            task_name = result._task.get_name().strip()
+            event = TaskCompletedOnHostEvent(task_name, host_name, result._result, item_label=item_label, delegated_host_name=delegated_host_name)
+            self.event_logger.add(event)
+
+    def v2_runner_item_on_ok(self, result):
+        """
+        Called when task execution completes for an item in a loop (e.g. with_items)
+        """
+        logger.debug('v2_runner_item_on_ok: {0}'.format(result))
+        if isinstance(result._task, TaskInclude):
+            logger.debug('Skipping v2_runner_item_on_ok call for TaskInclude')
+            return
+        self._log_event_for_ok_task(result, is_item=True)
 
     def v2_runner_on_ok(self, result, *args, **kwargs):
-        """Print a json representation of the result
-
-        This method could store the result in an instance attribute for retrieval later
         """
-        logger.debug('v2_runner_on_ok {0}'.format(result))
+        Called when task execution completes (called for each host the task executes against)
+        Note: even when a loop is used (so v2_runner_item_on_ok is called for each successful item) this function is called at the end, when all items have succeeded
+        """
+        logger.debug('v2_runner_on_ok: {0}'.format(result))
 
         props = []
-        
         if 'results' in result._result.keys():
             self.facts = result._result['results']
             props = [ item['ansible_facts'] for item in self.facts if 'ansible_facts' in item ]
@@ -353,12 +511,12 @@ class ResultCallback(CallbackBase):
         for prop in props:
             for key, value in prop.items():
                 if key.startswith(self.ansible_properties.output_prop_prefix):
-                    output_facts = { key[8:]:value }
+                    output_facts = { key[len(self.ansible_properties.output_prop_prefix):]: value }
                     logger.debug('output props = {0}'.format(output_facts))
                     self.properties.update(output_facts)
                 elif key == 'associated_topology':
                     try:
-                        logger.debug('associated_topology = {0}'.format(associated_topology)) 
+                        logger.info('associated_topology = {0}'.format(associated_topology)) 
                         self.associated_topology = AssociatedTopology.from_dict(value)
                     except ValueError as ve:
                       self.failure_reason = f'An error has occurred while parsing the ansible fact \'{key}\'. {ve}'
@@ -368,6 +526,7 @@ class ResultCallback(CallbackBase):
                       self.failure_reason = f'An internal error has occurred. {e}'
                       self.failure_details = FailureDetails(FAILURE_CODE_INFRASTRUCTURE_ERROR, self.failure_reason)
                       self.playbook_failed = True
+        self._log_event_for_ok_task(result)
                 
     def get_result(self):
       if self.playbook_failed:
