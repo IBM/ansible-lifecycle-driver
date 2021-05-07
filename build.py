@@ -26,17 +26,24 @@ HELM_CHART_NAME_FORMAT = 'ansiblelifecycledriver-{0}.tgz'
 
 parser=argparse.ArgumentParser()
 
-parser.add_argument('--publish', default=False, action='store_true')
+parser.add_argument('--release', help='Include this flag to publish this build as an official release', default=False, action='store_true')
+parser.add_argument('--version', help='version to set for the release')
+parser.add_argument('--post-version', help='version to set after the release')
+parser.add_argument('--ignition-version', help='Set the ignition version for the release')
 parser.add_argument('--skip-tests', default=False, action='store_true')
-parser.add_argument('--skip-build', default=False, action='store_true')
 parser.add_argument('--skip-docker', default=False, action='store_true')
 parser.add_argument('--skip-helm', default=False, action='store_true')
-parser.add_argument('--ignition-whl')
+parser.add_argument('--ignition-whl', help='Add a custom Ignition whl to the build by path (useful when working with a dev version of Ignition)')
 
 args = parser.parse_args()
 
 class BuildError(Exception):
     pass
+
+class Secret:
+
+    def __init__(self, value):
+        self.value = value
 
 class Stage:
 
@@ -111,35 +118,72 @@ class Builder:
         self.stages.append(stage)
         return stage
 
-    def _establish_who_we_are(self):
+    def _announce_build_location(self):
         if self.project_path_is_current_dir:
             print('Building at: ./')
         else:
             print('Building at: {0}'.format(self.project_path))
 
     def doIt(self):
-        self._establish_who_we_are()
+        self._announce_build_location()
+        if args.release == True:
+            self.release()
+        else:
+            self.build()
+        self.report()
+
+    def build(self):
         self.determine_version()
         self.init_artifacts_directory()
-        if args.skip_tests is not True:
-            self.run_unit_tests()
-        if args.skip_build is not True:
-            self.build_python_wheel()
-            self.pkg_docs()
-            if args.skip_docker is not True:
-                self.build_docker_image()
-            if args.skip_helm is not True:
-                self.build_helm_chart()
-        if args.publish is True:
-            if args.skip_docker is not True:
-                self.push_docker_image()
-        self.report()
+        self.run_unit_tests()
+        self.build_python_wheel()
+        self.pkg_docs()
+        if args.skip_docker is not True:
+            self.build_docker_image()
+        if args.skip_helm is not True:
+            self.build_helm_chart()
+
+    def release(self):
+        if args.version is None:
+            raise ValueError('Must set --version when releasing')
+        if args.post_version is None:
+            raise ValueError('Must set --post-version when releasing')
+        self.set_version()
+        self.build()
+        if args.skip_docker is not True:
+            self.push_docker_image()
+        self.push_release_git_changes()
+        self.set_post_version()
+        self.push_post_release_git_changes()
 
     def init_artifacts_directory(self):
         self.artifacts_path = os.path.join(self.project_path, 'release-artifacts')
         if os.path.exists(self.artifacts_path):
             shutil.rmtree(self.artifacts_path)
         os.makedirs(self.artifacts_path)
+
+    def set_version(self):
+        with self.stage('Updating Release Version') as s:
+            pkg_info_path = os.path.join(self.project_path, PKG_ROOT, PKG_INFO)
+            print('Updating version in {0} to {1}'.format(pkg_info_path, args.version))
+            with open(pkg_info_path, 'r') as f:
+                pkg_info_data = json.load(f)
+            pkg_info_data['version'] = args.version
+            if args.ignition_version:
+                print('Updating Ignition version in {0} to {1}'.format(pkg_info_path, args.ignition_version))
+                pkg_info_data['ignition-version'] = '=={0}'.format(args.ignition_version)
+            with open(pkg_info_path, 'w') as f:
+                json.dump(pkg_info_data, f) 
+    
+    def set_post_version(self):
+        with self.stage('Updating Post Release Version') as s:
+            pkg_info_path = os.path.join(self.project_path, PKG_ROOT, PKG_INFO)
+            print('Updating version in {0} to {1}'.format(pkg_info_path, args.post_version))
+            with open(pkg_info_path, 'r') as f:
+                pkg_info_data = json.load(f)
+            pkg_info_data['version'] = args.post_version
+            with open(pkg_info_path, 'w') as f:
+                json.dump(pkg_info_data, f)
 
     def determine_version(self):
         with self.stage('Gathering Version') as s:
@@ -249,7 +293,7 @@ class Builder:
         with self.stage('Package Docs') as s:
             print('Packaging docs at {0}'.format(DOCS_DIR))
             docs_output = DOCS_FORMAT.format(version=self.project_version)
-            docs_output_file = docs_output + '.tgz'
+            docs_output_file = os.path.join(self.artifacts_path, docs_output + '.tgz')
             transform_command = 's/{0}/{1}/'.format(DOCS_DIR, docs_output)
             # Note that a system running on Mac will return 'Darwin' for platform.system()
             if platform.system() == 'Darwin':
@@ -257,6 +301,24 @@ class Builder:
                 s.run_cmd('tar', '-cvz', '-s', transform_command, '-f', docs_output_file, DOCS_DIR+'/')
             else:
                 s.run_cmd('tar', '-cvzf', docs_output_file, DOCS_DIR+'/', '--transform', transform_command)
+
+    def push_release_git_changes(self):
+        with self.stage('Commit Release Changes') as s:
+            repo = git.Repo(self.project_path)
+            repo.index.add([os.path.join(PKG_ROOT, PKG_INFO)])
+            repo.index.commit('Update version for release')
+            if args.version in repo.tags:
+                repo.delete_tag(args.version)
+            repo.create_tag(args.version)
+
+    def push_post_release_git_changes(self):
+        with self.stage('Commit Post Release Changes') as s:
+            repo = git.Repo(self.project_path)
+            repo.index.add([os.path.join(PKG_ROOT, PKG_INFO)])
+            repo.index.commit('Update version for development')
+            origin = repo.remote('origin')
+            origin.push(tags=True)
+            origin.push()
 
 def main():
   builder = Builder()

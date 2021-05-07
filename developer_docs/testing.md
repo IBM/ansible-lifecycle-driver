@@ -1,6 +1,14 @@
-# Unit Tests
+# Testing the Driver
 
-After installing the ansible-lifecycle-driver python package, you may run the unit tests by executing the `unittest` module from the root directory of this project
+## Unit Tests
+
+Unit tests are run with the `unittest` module of Python. Ensure you have it installed:
+
+```
+python3 -m pip install unittest
+```
+
+Now execute `unittest` to run the tests, it will detect the unit test files in the `tests` directory:
 
 ```
 python3 -m unittest
