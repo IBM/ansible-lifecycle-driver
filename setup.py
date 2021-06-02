@@ -10,21 +10,20 @@ with open("DESCRIPTION.md", "r") as description_file:
 setup(
     name='ansible-lifecycle-driver',
     version=_pkg_info['version'],
-    author='Accanto Systems',
+    author='IBM',
     description='Ansible implementation of a Lifecycle driver',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/accanto-systems/ansible-lifecycle-driver",
+    url="https://github.com/IBM/ansible-lifecycle-driver",
     packages=find_namespace_packages(include=['ansibledriver*']),
     include_package_data=True,
     install_requires=[
         'ignition-framework{0}'.format(_pkg_info['ignition-version']),
         'ansible==2.7.16',
-        'Jinja2>=2.10.1,<3.0',
-        'uwsgi>=2.0.18,<3.0',
-        'gunicorn>=19.9.0,<20.0',
-        'testfixtures>=6.12.1,<7.0',
-        'openstacksdk>=0.48.0'
+        'uwsgi==2.0.19.1',
+        'gunicorn==20.1.0',
+        'testfixtures==6.17.1',
+        'openstacksdk==0.57.0'
     ],
     entry_points='''
         [console_scripts]
