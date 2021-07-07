@@ -1,0 +1,13 @@
+---
+- hosts: testhost
+  gather_facts: no
+  tasks:
+  - name: debug
+    debug:
+      # note: use both "base" property names and property names prefixed
+      # msg: "associated topology: {{ associated_topology.apache1.id }} {{ associated_topology.apache1.type }} {{ associated_topology.apache2.id }} {{ associated_topology.apache2.type }}"
+      msg: "associated topology: {{ associated_topology.apache1.id }} {{ associated_topology.apache1.type }} {{ associated_topology.apache2.id }} {{ associated_topology.apache2.type }}"
+      
+  - name: set fact
+    set_fact:
+      output__msg: "hello there!"

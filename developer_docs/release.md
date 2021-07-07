@@ -1,109 +1,72 @@
-# Release
+# Releasing the Driver
 
-The following steps detail how the Ansible Lifecycle driver release is produced. This may only be performed by a user with admin rights to this Github, Docker and Pypi repository.
+The following guide details the steps for releasing the Ansible Lifecycle Driver. This may only be performed by a user with admin rights to this Git repository and the ibmcom docker registry.
 
-## 1. Setting the Version
+**Ensure you've followed the steps in [configure your development environment](dev-env.md) as there are libraries required to complete the release.**
 
-1.1. Start by setting the version of the release and ignition-framework version (if update needed) in `ansibledriver/pkg_info.json`:
+## 1. Ensure Milestone
 
-```
-{
-  "version": "<release version number>",
-  "ignition-version": "==0.1.0"
-}
-```
+Ensure there is a milestone created for the release at: [https://github.com/IBM/ansible-lifecycle-driver/milestones](https://github.com/IBM/ansible-lifecycle-driver/milestones).
 
-1.2. Ensure the `docker.version` in `helm/ansiblelifecycledriver/values.yaml` includes the correct version number.
+Also ensure all issues going into this release are assigned to this milestone. **Move any issues from unreleased milestones into this release if the code has been merged**
 
-1.3. Ensure the `version` and `appVersion` in `helm/ansiblelifecycledriver/Chart.yaml` includes the correct version number
+## 2. Update CHANGELOG (on develop)
 
-1.4 Push all version number changes to Github so the may be tagged by the release
+Update the `CHANGELOG.md` file with a list of issues fixed by this release (see other items in this file to get an idea of the desired format).
 
-## 2. Build Python Wheel
+Commit and push these changes.
 
-Build the python wheel by navigating to the root directory of this project and executing:
+## 3. Merge Develop to Master
 
-```
-python3 setup.py bdist_wheel
-```
+Development work is normally carried out on the `develop` branch. Merge this branch to `master`, by creating a PR.
 
-The whl file is created in `dist/`
+Then perform the release from the `master` branch. This ensures the `master` branch is tagged correctly. 
 
-## 3. Package the docs
+> Note: do NOT delete the `develop` branch
+ 
+## 4. Build and Release (on master)
 
-Create a TAR of the docs directory:
+The `build.py` script automates the following steps: 
 
-```
-tar -cvzf ansible-lifecycle-driver-<release version number>-docs.tgz docs/ --transform s/docs/ansible-lifecycle-driver-<release version number>-docs/
-```
+- Update the release version in pkg_info.json
+- Build the Python whl for the driver library
+- Build and Tag Docker Image
+- Build Helm Chart
+- Package Documentation
+- Push Docker Image to ibmcom group on Dockerhub
+- Create a tagged commit in the git repository to mark this release
 
-On a Mac:
-
-```
-tar -cvz -s '/docs/ansible-lifecycle-driver-<release version number>-docs/' -f ansible-lifecycle-driver-<release version number>-docs.tgz docs/
-```
-
-tar -cvz -s '/docs/ansible-lifecycle-driver-2.0.2-docs/' -f ansible-lifecycle-driver-2.0.2-docs.tgz docs/
-
-## 4. Build Docker Image
-
-4.1. Move the whl now in `dist` to the `docker/whls` directory (ensure no additional whls are in the docker directory)
+To perform a release, run `build.py` and set the following options:
 
 ```
-cp dist/ansible_lifecycle_driver-<release version number>-py3-none-any.whl docker/whls/
+python3 build.py --release --version <THE VERSION TO BE RELEASED> --post-version <VERSION TO BE USED AFTER THE RELEASE> --ignition-version <VERSION OF IGNITION TO BE USED>
 ```
 
-4.2. Navigate to the `docker` directory
+> Note: check the `ignition-version` in `pkg_info.json`, if it's already at the correct version then you do not need to include `--ignition-version`
 
+For example:
 ```
-cd docker
-```
-
-4.3. Build the docker image (**tag with release version number and accanto repository**)
-
-```
-docker build -t accanto/ansible-lifecycle-driver:<release version number> .
+python3 build.py --release --version 1.0.0 --post-version 1.0.1.dev0
 ```
 
-## 5. Build Helm Chart
+## 5. Release artifacts
 
-Package the helm chart (**don't forget to ensure the Chart.yaml and values.yaml have correct version numbers**)
+The Docker image has been pushed by the `build.py` script but the documentation and Helm chart packages must be uploaded manually to Github.
 
-```
-helm package helm/ansiblelifecycledriver
-```
+Complete the following:
 
-## 6. Create release on Github
+- Visit the [releases](https://github.com/IBM/openstack-vim-driver/releases) section of the driver repository
+- Click `Draft a new release`
+- Input the version the `--version` option earlier as the tag e.g. 1.0.0
+- Use the same value for the `Release title` e.g. 1.0.0
+- Add release notes in the description of the release. Look at previous releases to see the format. Usually, we will list the issues fixed. This is essentially the same content you have already added to `CHANGELOG.md` so just copy and paste the entry for this release, edit the header to say `Release Notes`.
+- Attach the Helm chart `tgz` file produced by `build.py` in the `release-artifacts` directory
+- Attach the documentation `tgz` file produced by `build.py` in the `release-artifacts` directory
 
-5.1 Navigate to Releases on the Github repository for this project and create a new release.
+## 6. Cleanup
 
-5.2 Ensure the version tag and title correspond with the version number set in the pkg_info file earlier. Include release notes in the description of the release.
+Complete the following steps to ensure development can continue as normal:
 
-5.3 Attach the docs archive to the release
-
-5.4 Attach the helm chart archive to the release
-
-5.5 Push the docker image to Dockerhub with:
-
-```
-docker push accanto/ansible-lifecycle-driver:<release version number>
-```
-
-## 7. Set next development version
-
-Usually the next dev version should be an minor increment of the previous, with `dev0` added. For example, after releasing 0.1.0 it would be `0.2.0.dev0`.
-
-7.1 Set the version of the next development version in `ansibledriver/pkg_info.json`:
-
-```
-{
-  "version": "<next development version number>",
-  "ignition-version": "<next ignition version number if different>"
-}
-```
-
-7.2. Update the `docker.version` in `helm/ansiblelifecycledriver/values.yaml` to the next development version number.
-
-7.3. Update the `version` and `appVersion` in `helm/ansiblelifecycledriver/Chart.yaml` to the next development version number.
-
-7.4 Push version number changes to Github
+- Merge `master` to `develop` (so any release updates and the post-version are copied over from master)
+- Close the Milestone for this release on [Github](https://github.com/IBM/openstack-vim-driver/milestones)
+- Create a new Milestone for next release (if one does not exist). Use the value of the `--post-version` option from earlier

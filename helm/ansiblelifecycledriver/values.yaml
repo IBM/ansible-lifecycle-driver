@@ -1,8 +1,15 @@
+global:
+  # While the driver pod can run within Openshift's restricted SCC, if
+  # another SCC is applied to the pod via a service account that doesn't support
+  # the correct runAsUser type (i.e. MustRunAsNonRoot), arbitraryUids can be
+  # disabled. Otherwise, the default value (true) shouldn't need to be updated.
+  arbitraryUids: true
+
 ## Docker Image for the osslm-ansible-rm application
 docker:
   ## Make this the full path, including registry host and port if using one
-  image: accanto/ansible-lifecycle-driver
-  version: 2.1.0.dev0
+  image: ibmcom/ansible-lifecycle-driver
+  version: ${version}
   imagePullPolicy: IfNotPresent
 
 ## Configuration for the application deployment
@@ -84,7 +91,7 @@ app:
       ## There is an additional option for configuring access to Kafka by fixed IP. This is added as a host entry to the container.
       hostEnabled: false
       ## the host must match the value of 'app.config.override.messaging.connection_address', if it is set
-      host: "foundation-kafka"
+      host: "iaf-system-kafka-bootstrap"
       ## this must be set to the Kafka IP address
       ip:
 
@@ -127,6 +134,9 @@ app:
         ## output properties are set using set_fact in the Ansible script and prefixed with this string
         ## so that the driver knows they are intended to be exported to Brent.
         output_prop_prefix: 'output__'
+        
+        ## Disable logs from Ansible playbook execution
+        #log_progress_events: True
 
       process:
         ## whether to a process pool to read and process transition requests
@@ -136,10 +146,25 @@ app:
         process_pool_size: 10
 
       messaging:
-        connection_address: foundation-kafka:9092
+        connection_address: iaf-system-kafka-bootstrap:9092
         # timeout waiting for initial version check on Kafka producer/consumer initialisation
         # 5000ms is usually sufficient, increase if problems with NoBrokersAvailable occur
         api_version_auto_timeout_ms: 5000
+        topics:
+          lifecycle_execution_events:
+            name: lm_vnfc_lifecycle_execution_events
+            auto_create: True
+            num_partitions: 1
+            replication_factor: 1
+          job_queue:
+            auto_create: True
+            num_partitions: 100
+            replication_factor: 1
+            config:
+              retention.ms: 60000
+              message.timestamp.difference.max.ms: 60000
+              file.delete.delay.ms: 60000
+#              api_version_auto_timeout_ms: 10000
 
       resource_driver:
         ## workspace for holding lifecycle scripts

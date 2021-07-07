@@ -121,3 +121,6 @@ docker/module_utils/*
 
 # IDEs
 .vscode
+
+# Packaged Artifacts
+release-artifacts

@@ -5,12 +5,13 @@ from ignition.service.framework import ServiceRegistration
 from ignition.service.resourcedriver import LifecycleMessagingCapability
 from ignition.service.requestqueue import LifecycleRequestQueueCapability
 from ignition.service.templating import TemplatingCapability, ResourceTemplateContextCapability 
+from ignition.service.progress_events import ProgressEventLogWriterCapability
 import ansibledriver.api_specs as api_specs
 from ansibledriver.service.process import AnsibleProcessorCapability, AnsibleProcessorService
 from ansibledriver.service.ansible import AnsibleClientCapability, AnsibleClient
 from ansibledriver.service.resourcedriver import AnsibleDriverHandler, AdditionalResourceDriverProperties
 from ansibledriver.service.rendercontext import ExtendedResourceTemplateContextService
-
+from ansibledriver.service.progress_events import AnsibleYAMLProgressEventLogSerializer
 
 class AnsibleServiceConfigurator():
 
@@ -18,10 +19,12 @@ class AnsibleServiceConfigurator():
         pass
 
     def configure(self, configuration, service_register):
+        service_register.add_service(ServiceRegistration(AnsibleYAMLProgressEventLogSerializer))
         service_register.add_service(ServiceRegistration(ExtendedResourceTemplateContextService))
         service_register.add_service(ServiceRegistration(AnsibleClient, configuration,
             render_context_service=ResourceTemplateContextCapability,
-            templating=TemplatingCapability))
+            templating=TemplatingCapability,
+            event_logger=ProgressEventLogWriterCapability))
         service_register.add_service(ServiceRegistration(AnsibleProcessorService, configuration,
             ansible_client=AnsibleClientCapability,
             request_queue_service=LifecycleRequestQueueCapability,
