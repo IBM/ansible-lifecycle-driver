@@ -1,6 +1,6 @@
 name: ansiblelifecycledriver
-version: 3.0.0
-appVersion: 3.0.0
+version: ${version}
+appVersion: ${version}
 apiVersion: v1
 description: A Helm chart for the Ansible Lifecycle Driver
 keywords:

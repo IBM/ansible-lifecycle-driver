@@ -3,8 +3,8 @@ branches:
   - master
 language: python
 python:
-- '3.6'
-- '3.7'
+- '3.8'
+- '3.9'
 install:
 - pip install .
 script:
@@ -17,4 +17,4 @@ notifications:
     on_success: change
     on_failure: always
     rooms:
-      secure: WI3tGIXyHZQHiPhfXMDfvUtb5Yytz8HkGKNvPBU/rRvpdgfr67EvwqJLJGHWv/Qmfn/ewX+zoVv1ovcHfY9MxyiuGMfTBNlrslUh0AXLxp5L61YSKUxhBI/cDkkRLOslD5WQZ1f5jdE7X8Ym2y96RbHx11fRPjeHomcuFWQFs4TvG+oGlZcYDLa+OYbjm9grD0XbclruXRa8pF1eO9p6xksGrFor6KG8D+ZMRCXF0vFzcdkIZAcf5JbWWt2SCvoPz+K12V/RCQwMTseG+RIdVqnYAJVT/HHCUjZRGTn+pNwnN2mAIG0ij9FF/8fpaOnt110/1Tc+pe+pqJ11xDBf6jJWyYnS72DxP8JKlsvJRfurd7W9ctdVucg79xqtY+nyx26f3WWtWYaFZKRxBKwS3YEh6vxNKxvZkjLFc+yx28Fx0cVrSH2ihehWZaVPf5lq76adljT6mHVR3FNY98cFXoQLgmaZ3wPRoL2ev1CuUy30MK3SgQlmhCPlOaP296pDQp+D+IcTFYzWMhOzbkGbV7+Rn7uClV29ja/G5+OjbuxXVoezVQIkpOmtBa2v0d2616S2ZHBDzcuCwtwanC/r8vTechwphNX652mjbIl0jt5uK/j8xsHX5UhP9dDRCwxSCVXE8OVxISAzEIgl/6XkWt42f+iO/QGChGVvl7ERcBc=
+      secure: HtKSJ/KB/Crj83fMhpMCD9KJJ5lnEEN8hJ4N0EfexPMtvQ1Jsc2H6o0CqAaEZBn+HW/hpRR1XO6ILH23UEJTbmOvzFnt9Gk4k5tYIOUoirL80YM7T4SG6H4K6GbihT6PtzCKXAGAHUVsBcbCAZT97OtaZdhVf2FR2IYu7KXdTXLe/CuwxUD2hGRufrAoOlZ7tvVkxvqJjMMCWh4//KL/dHK3lOns5HfXherr/yNqEwN1w4Joui3sqPQ5eXPm1ROx53zNbInH7FAFmG6ozYjylrZ1D24HfBtahD4Ch8zvp/kua+22tLWx1EWFJhH0ibzSBj1jeDVtyRIzVa+8JOA2Nujv+98GWXFFmZAz6c0itZLe7IayJDfAf1f5u5g5wsFtiC+W6jl6YJTrEbJCyKq3GsDmgeaYy4Wnb3OAi3zUTXwxrkyQBiVMepIPHryLDDQcLzxgFl7nA1/RNDITmnK9+BneQMiDVdPpVx/j5CWsoEFOGW4Gx3vfLLBj5d3fn8ZeSpVrv8mXW8dJ/xLEHu+QHayRoSUWrOO8RxPmcrMrux2HEfSWkhch8h7FimYPXWqMaIHoaFJ7lAoc9qPEmqLUPNEdUFbc9f4gc8lpci8cEwPQ0ZOTL+ykHwfiXIuJA0Id6W5uL8CHy74npbYzs0Zy9DuNK8X5SGSgUzjmRzl/cgI=

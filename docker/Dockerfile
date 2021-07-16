@@ -1,4 +1,4 @@
-FROM python:3.7-alpine
+FROM python:3.9-alpine
 
 ARG DRIVER_PORT
 ENV DRIVER_PORT ${DRIVER_PORT:-8293}
@@ -12,7 +12,7 @@ ENV WSGI_CONTAINER ${WSGI_CONTAINER:-gunicorn}
 COPY whls/*.whl /whls/
 
 RUN addgroup -S ald \
- && adduser -S ald -G ald -u 100 \
+ && adduser -S ald -G ald -u 101 \
  && mkdir -p /var/ald/lifecycle_scripts \
  && chown -R ald:0 /var/ald \
  && chmod -R 775 /var/ald \
