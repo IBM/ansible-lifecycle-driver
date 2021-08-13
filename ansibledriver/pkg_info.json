@@ -1,4 +1,1 @@
-{
-  "version": "3.2.0.dev0",
-  "ignition-version": "==3.1.0.dev0"
-}
+{"version": "3.2.0", "ignition-version": "==3.1.0"}
