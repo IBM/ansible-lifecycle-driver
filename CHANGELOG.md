@@ -1,5 +1,11 @@
 # Change Log
 
+## [3.2.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.2.0) (2021-08-13)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.1.0...3.2.0)
+
+**Implemented enhancements:**
+- Uplift dependency versions [\#119](https://github.com/IBM/ansible-lifecycle-driver/issues/119)
+
 ## [3.0.1](https://github.com/IBM/ansible-lifecycle-driver/tree/3.0.1) (2021-07-16)
 [Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.0.0...3.0.1)
 
