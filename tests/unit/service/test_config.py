@@ -1,7 +1,7 @@
 import unittest
 import logging
 import sys
-from unittest.mock import call, patch, MagicMock, ANY, DEFAULT
+from unittest.mock import call, patch, MagicMock, ANY, DEFAULT, Mock
 from ignition.boot.config import BootstrapApplicationConfiguration, BootProperties
 from ignition.service.messaging import MessagingProperties
 from ignition.service.resourcedriver import ResourceDriverProperties
@@ -12,12 +12,16 @@ logger.setLevel(logging.DEBUG)
 stream_handler = logging.StreamHandler(sys.stdout)
 logger.addHandler(stream_handler)
 
+class PickableMock(Mock):
+    def __reduce__(self):
+        return (Mock, ())
+    
 class TestConfig(unittest.TestCase):
 
     def setUp(self):
-        self.mock_request_queue_service = MagicMock()
-        self.mock_messaging_service = MagicMock()
-        self.mock_ansible_client = MagicMock()
+        self.mock_request_queue_service = PickableMock()
+        self.mock_messaging_service = PickableMock()
+        self.mock_ansible_client = PickableMock()
 
         self.configuration = BootstrapApplicationConfiguration()
         self.configuration.app_name = "TestApp"
