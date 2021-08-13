@@ -6,6 +6,7 @@ import json
 import argparse
 import jinja2 as jinja
 import platform
+import git
 
 PKG_ROOT = 'ansibledriver'
 PKG_INFO = 'pkg_info.json'
