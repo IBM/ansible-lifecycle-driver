@@ -51,8 +51,9 @@ class AnsibleProcessorService(Service, AnsibleProcessorCapability):
         # lifecycle requests are placed on this queue
         self.request_queue_service = kwargs.get('request_queue_service')
 
-        # gracefully deal with SIGINT
+        # gracefully deal with SIGINT and SIGTERM
         signal(SIGINT, self.sigint_handler)
+        signal(SIGTERM, self.sigint_handler)
         self.sigchld_handler = getsignal(SIGCHLD)
 
         self.active = True
@@ -112,7 +113,9 @@ class AnsibleProcess(Process):
     def run(self):
       try:
         if threading.main_thread():
+          # gracefully deal with SIGINT and SIGTERM
           signal(SIGINT, self.sigint_handler)
+          signal(SIGTERM, self.sigint_handler)
           # make sure Ansible processes are acknowledged to avoid zombie processes
           signal(SIGCHLD, self.sigchld_handler)
 
