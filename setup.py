@@ -28,6 +28,5 @@ setup(
     entry_points='''
         [console_scripts]
         ald-dev=ansibledriver.__main__:main
-    ''',
-    scripts=['ansibledriver/bin/ald-uwsgi', 'ansibledriver/bin/ald-gunicorn', 'ansibledriver/bin/ald']
+    '''
 )
