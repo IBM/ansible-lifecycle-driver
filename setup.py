@@ -20,7 +20,6 @@ setup(
     install_requires=[
         'ignition-framework{0}'.format(_pkg_info['ignition-version']),
         'ansible==2.9.13',
-        'uwsgi==2.0.19.1',
         'gunicorn==20.1.0',
         'testfixtures==6.17.1',
         'openstacksdk==0.57.0'
