@@ -3,9 +3,9 @@
 The Docker image for this driver includes the following features:
 
 - Installs the driver from a `whl` file created with standard Python setuptools
-- Runs the `ald` command to start the driver application with a uwsgi container (standard for Python production applications)
+- Runs the `gunicorn --workers $NUM_PROCESSES --bind :$DRIVER_PORT $SSL "ansibledriver:create_wsgi_app()"` command to start the driver application with a Gunicorn based container (standard for Python production applications)
 - Supports installing a development version of Ignition from a `whl` file
-- Supports configuring the uWSGI container implementation used at both build and runtime (also includes configuring the number of processes and threads used by uWSGI container)
+- Supports configuring the Gunicorn implementation used at both build and runtime (also includes configuring the number of processes and threads used by container)
 
 ## Automated
 
