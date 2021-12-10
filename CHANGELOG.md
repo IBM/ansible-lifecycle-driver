@@ -1,5 +1,11 @@
 # Change Log
 
+## [3.3.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.3.0) (2021-12-10)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.2.0...3.3.0)
+
+**Implemented enhancements:**
+- Remove uwsgi and support graceful shutdown [\#123](https://github.com/IBM/ansible-lifecycle-driver/issues/123)
+
 ## [3.2.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.2.0) (2021-08-13)
 [Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.1.0...3.2.0)
 
