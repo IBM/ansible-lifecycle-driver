@@ -10,7 +10,6 @@ The Helm chart for this driver includes the following features:
     - Number of replicas of the driver
     - Property groups configured on your application (i.e. override the properties in the default_config file)
     - Log level
-    - uWSGI container used by your application
     - Pod affinity/anti-affinity
     - Node affinity/anti/affinity
     - NodePort
