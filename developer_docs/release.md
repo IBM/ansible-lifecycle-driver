@@ -55,7 +55,7 @@ The Docker image has been pushed by the `build.py` script but the documentation 
 
 Complete the following:
 
-- Visit the [releases](https://github.com/IBM/openstack-vim-driver/releases) section of the driver repository
+- Visit the [releases](https://github.com/IBM/ansible-lifecycle-driver/releases) section of the driver repository
 - Click `Draft a new release`
 - Input the version the `--version` option earlier as the tag e.g. 1.0.0
 - Use the same value for the `Release title` e.g. 1.0.0
@@ -68,5 +68,5 @@ Complete the following:
 Complete the following steps to ensure development can continue as normal:
 
 - Merge `master` to `develop` (so any release updates and the post-version are copied over from master)
-- Close the Milestone for this release on [Github](https://github.com/IBM/openstack-vim-driver/milestones)
+- Close the Milestone for this release on [Github](https://github.com/IBM/ansible-lifecycle-driver/milestones)
 - Create a new Milestone for next release (if one does not exist). Use the value of the `--post-version` option from earlier
