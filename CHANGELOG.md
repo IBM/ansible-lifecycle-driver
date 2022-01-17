@@ -1,5 +1,10 @@
 # Change Log
 
+## [3.4.1](https://github.com/IBM/ansible-lifecycle-driver/tree/3.4.1) (2022-01-17)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.4.0...3.4.1)
+
+Replaces `3.4.0`, which did not include expected fixes due to Git merge issues.
+
 ## [3.4.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.4.0) (2022-01-13)
 [Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.3.0...3.4.0)
 
