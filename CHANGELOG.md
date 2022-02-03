@@ -1,5 +1,11 @@
 # Change Log
 
+## [3.5.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.5.0) (2022-02-03)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.4.1...3.5.0)
+
+**Implemented enhancements:**
+- Update kubectl version to fix Ansible Driver's vulnerabilities issues [\#134](https://github.com/IBM/ansible-lifecycle-driver/issues/134)
+
 ## [3.4.1](https://github.com/IBM/ansible-lifecycle-driver/tree/3.4.1) (2022-01-17)
 [Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.4.0...3.4.1)
 
