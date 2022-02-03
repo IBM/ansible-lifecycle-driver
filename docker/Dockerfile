@@ -22,7 +22,7 @@ RUN addgroup -S ald \
  && for i in /whls/ignition*.whl; do if [ "$i" != "/whls/ignition*.whl" ]; then pip install --no-warn-script-location "$i"; fi done \
  && for i in /whls/*.whl; do pip install "$i"; done \
  && apk del .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git \
- && curl -L https://storage.googleapis.com/kubernetes-release/release/v1.19.0/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
+ && curl -L https://storage.googleapis.com/kubernetes-release/release/v1.23.1/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
  && chmod +x /usr/local/bin/kubectl
 
 COPY --chown=ald:0 ansible.cfg /etc/ansible/ansible.cfg
