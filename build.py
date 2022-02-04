@@ -127,14 +127,34 @@ class Builder:
 
     def doIt(self):
         self._announce_build_location()
+        self.validate()
+        self.prepare()
         if args.release == True:
             self.release()
         else:
             self.build()
+        self.tidy_up()
         self.report()
 
-    def build(self):
+    def validate(self):
+        if args.release:
+            if args.version is None:
+                raise ValueError('Must set --version when releasing')
+            if args.post_version is None:
+                raise ValueError('Must set --post-version when releasing')
+
+    def prepare(self):
+        if args.version is not None:
+            self.set_version()
         self.determine_version()
+    
+    def tidy_up(self):
+        if args.post_version is not None:
+            self.set_post_version()
+            if args.release:
+                self.push_post_release_git_changes()
+  
+    def build(self):
         self.init_artifacts_directory()
         self.run_unit_tests()
         self.build_python_wheel()
@@ -145,17 +165,10 @@ class Builder:
             self.build_helm_chart()
 
     def release(self):
-        if args.version is None:
-            raise ValueError('Must set --version when releasing')
-        if args.post_version is None:
-            raise ValueError('Must set --post-version when releasing')
-        self.set_version()
         self.build()
         if args.skip_docker is not True:
             self.push_docker_image()
         self.push_release_git_changes()
-        self.set_post_version()
-        self.push_post_release_git_changes()
 
     def init_artifacts_directory(self):
         self.artifacts_path = os.path.join(self.project_path, 'release-artifacts')
@@ -164,7 +177,7 @@ class Builder:
         os.makedirs(self.artifacts_path)
 
     def set_version(self):
-        with self.stage('Updating Release Version') as s:
+        with self.stage('Updating Version') as s:
             pkg_info_path = os.path.join(self.project_path, PKG_ROOT, PKG_INFO)
             print('Updating version in {0} to {1}'.format(pkg_info_path, args.version))
             with open(pkg_info_path, 'r') as f:
@@ -172,12 +185,12 @@ class Builder:
             pkg_info_data['version'] = args.version
             if args.ignition_version:
                 print('Updating Ignition version in {0} to {1}'.format(pkg_info_path, args.ignition_version))
-                pkg_info_data['ignition-version'] = '=={0}'.format(args.ignition_version)
+                pkg_info_data['ignition-version'] = args.ignition_version
             with open(pkg_info_path, 'w') as f:
                 json.dump(pkg_info_data, f) 
     
     def set_post_version(self):
-        with self.stage('Updating Post Release Version') as s:
+        with self.stage('Updating Post Build Version') as s:
             pkg_info_path = os.path.join(self.project_path, PKG_ROOT, PKG_INFO)
             print('Updating version in {0} to {1}'.format(pkg_info_path, args.post_version))
             with open(pkg_info_path, 'r') as f:
