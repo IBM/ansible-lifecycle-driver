@@ -18,7 +18,7 @@ setup(
     packages=find_namespace_packages(include=['ansibledriver*']),
     include_package_data=True,
     install_requires=[
-        'ignition-framework{0}'.format(_pkg_info['ignition-version']),
+        'ignition-framework=={0}'.format(_pkg_info['ignition-version']),
         'ansible==2.9.23',
         'gunicorn==20.1.0',
         'testfixtures==6.17.1',

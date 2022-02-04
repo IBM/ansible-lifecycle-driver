@@ -185,7 +185,7 @@ class Builder:
             pkg_info_data['version'] = args.version
             if args.ignition_version:
                 print('Updating Ignition version in {0} to {1}'.format(pkg_info_path, args.ignition_version))
-                pkg_info_data['ignition-version'] = '=={0}'.format(args.ignition_version)
+                pkg_info_data['ignition-version'] = args.ignition_version
             with open(pkg_info_path, 'w') as f:
                 json.dump(pkg_info_data, f) 
     
