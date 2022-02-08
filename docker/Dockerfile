@@ -4,10 +4,6 @@ ARG DRIVER_PORT
 ENV DRIVER_PORT ${DRIVER_PORT:-8293}
 ARG NUM_PROCESSES
 ENV NUM_PROCESSES ${NUM_PROCESSES:-4}
-ARG NUM_THREADS
-ENV NUM_THREADS ${NUM_THREADS:-2}
-ARG WSGI_CONTAINER
-ENV WSGI_CONTAINER ${WSGI_CONTAINER:-gunicorn}
 
 COPY whls/*.whl /whls/
 
@@ -26,7 +22,7 @@ RUN addgroup -S ald \
  && for i in /whls/ignition*.whl; do if [ "$i" != "/whls/ignition*.whl" ]; then pip install --no-warn-script-location "$i"; fi done \
  && for i in /whls/*.whl; do pip install "$i"; done \
  && apk del .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git \
- && curl -L https://storage.googleapis.com/kubernetes-release/release/v1.19.0/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
+ && curl -L https://storage.googleapis.com/kubernetes-release/release/v1.23.1/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
  && chmod +x /usr/local/bin/kubectl
 
 USER ald
@@ -58,4 +54,5 @@ WORKDIR /home/ald
 
 EXPOSE 8293
 
-CMD ["ald"]
+CMD if [ $SSL_ENABLED | tr [:upper:] [:lower:] == "true" ]; then SSL="--certfile /var/ald/certs/tls.crt --keyfile /var/ald/certs/tls.key" ; fi \
+&& gunicorn --workers $NUM_PROCESSES --bind :$DRIVER_PORT $SSL "ansibledriver:create_wsgi_app()"
