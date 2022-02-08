@@ -16,12 +16,13 @@ Navigate to the `docker` repo of this repository, to find the source files for t
 cd docker
 ```
 
-There are 4 types of libraries you can add:
+There are 5 types of libraries you can add:
 
 1. Ansible modules
 2. Ansible roles
 3. Ansible module utils
-4. Python libraries
+4. Ansible collections
+5. Python libraries
 
 To add Ansible modules, copy the `.py` for each module into the `library` directory:
 
@@ -40,6 +41,20 @@ To add Ansible module utils, copy the `.py` for each into the `library` director
 
 ```
 cp path/to/my/module_utils/*.py library/
+```
+
+To add Ansible collections, copy the collection into the `collections/ansible_collections` directory:
+
+```
+cp path/to/my/collection/*.py collections/ansible_collections
+```
+
+It's importan that the collection directories are structured correctly, usually `namespace/name` e.g. `dellemc/openmanage`.
+
+You can use `ansible-galaxy` to install the collection for you, with the below command (replace `dellemc.openmanage` with the name of a collection): 
+
+```
+ansible-galaxy collection install dellemc.openmanage -p docker/collections/
 ```
 
 To add Python libraries, add entires for them into the `extra-requirements.txt` file:

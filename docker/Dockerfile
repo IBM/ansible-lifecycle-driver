@@ -33,11 +33,7 @@ COPY --chown=ald:ald ald_config.yml /var/ald/ald_config.yml
 COPY --chown=ald:ald library /etc/ansible/library
 COPY --chown=ald:ald module_utils /etc/ansible/module_utils
 COPY --chown=ald:ald roles /etc/ansible/roles
-
-RUN for i in /home/ald/whls/ignition*.whl; do if [ "$i" != "/home/ald/whls/ignition*.whl" ]; then pip install --no-warn-script-location --user "$i"; fi done \
- && for i in /home/ald/whls/*.whl; do pip install --no-warn-script-location --user "$i"; done \
- && curl -L https://storage.googleapis.com/kubernetes-release/release/v1.16.0/bin/linux/amd64/kubectl -o /home/ald/.local/bin/kubectl \
- && chmod +x /home/ald/.local/bin/kubectl
+COPY --chown=ald:ald collections /etc/ansible/collections 
 
 # Install extra requirements to be built into the driver
 RUN pip install -r /home/ald/extra-requirements.txt
@@ -54,5 +50,4 @@ WORKDIR /home/ald
 
 EXPOSE 8293
 
-CMD if [ $SSL_ENABLED | tr [:upper:] [:lower:] == "true" ]; then SSL="--certfile /var/ald/certs/tls.crt --keyfile /var/ald/certs/tls.key" ; fi \
-&& gunicorn --workers $NUM_PROCESSES --bind :$DRIVER_PORT $SSL "ansibledriver:create_wsgi_app()"
+CMD gunicorn --workers $NUM_PROCESSES --bind :$DRIVER_PORT "ansibledriver:create_wsgi_app()"
