@@ -1,4 +1,5 @@
 FROM python:3.9-alpine
+RUN apk update && apk upgrade
 
 ARG DRIVER_PORT
 ENV DRIVER_PORT ${DRIVER_PORT:-8293}
