@@ -34,3 +34,7 @@ helm install ansiblelifecycledriver-<version>.tgz --name ansible-lifecycle-drive
 The Ansible Lifecycle Driver uses an Ignition [Request Queue](https://github.com/IBM/ignition/blob/master/docs/user-guide/framework/bootstrap-components/request_queue.md) to process transitions. Note the overrides for the Kafka request queue topic number of partitions and replication factory. The number of partitions determines an upper limit on how many transitions can be run in parallel, the replication factor improves fault tolerance and should be set to less than or equal to the number of Kafka brokers in your cluster.
 
 The driver runs with SSL enabled by default. The installation will generate a self-signed certificate and key by default, adding them to the Kubernetes secret "ald-tls". To use a custom certificate and key in your own secret, override the properties under "apps.config.security.ssl.secret".
+
+### Confirm
+
+You can confirm the driver is working accessing: ```http://<kubernetes-node-ip>:{(helm.node_port)}/management/health```
