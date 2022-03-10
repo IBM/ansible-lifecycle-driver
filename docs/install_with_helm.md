@@ -37,4 +37,4 @@ The driver runs with SSL enabled by default. The installation will generate a se
 
 ### Confirm
 
-You can confirm the driver is working accessing: ```http://<kubernetes-node-ip>:31680/management/health```
+You can confirm the driver is working by accessing: ```http://<kubernetes-node-ip>:31680/management/health```
