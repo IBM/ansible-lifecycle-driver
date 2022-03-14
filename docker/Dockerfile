@@ -1,5 +1,6 @@
 FROM python:3.9-alpine
-RUN apk update && apk upgrade
+RUN apk update && apk upgrade \
+&& rm -rf /var/cache/apk/*
 
 ARG DRIVER_PORT
 ENV DRIVER_PORT ${DRIVER_PORT:-8293}
@@ -38,4 +39,4 @@ WORKDIR /home/ald
 EXPOSE 8293
 
 CMD if [ $SSL_ENABLED | tr [:upper:] [:lower:] == "true" ]; then SSL="--certfile /var/ald/certs/tls.crt --keyfile /var/ald/certs/tls.key" ; fi \
-&& gunicorn --workers $NUM_PROCESSES --bind :$DRIVER_PORT $SSL "ansibledriver:create_wsgi_app()"
+&& gunicorn --workers $NUM_PROCESSES --bind [::]:$DRIVER_PORT $SSL "ansibledriver:create_wsgi_app()"
