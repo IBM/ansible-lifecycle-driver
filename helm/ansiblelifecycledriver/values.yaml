@@ -110,13 +110,6 @@ app:
       ## number of processes is 1 because the driver handles process management
       NUM_PROCESSES: "1"
 
-    ingress:
-      ## The host used to access the service externally i.e. http://<server.ingress.hostname>/
-      ## If not making use of a DNS to resolve this host you must add this to the client hosts file with the K8s IP
-      ## E.g.
-      ## 10.220.1.2     ald.lm
-      host: ald.lm
-
     ## ald-config.yml (driver configuration) overrides
     override:
       ansible:
