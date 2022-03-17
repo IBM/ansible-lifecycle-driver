@@ -1,5 +1,13 @@
 # Change Log
 
+## [3.5.1](https://github.com/IBM/ansible-lifecycle-driver/tree/3.5.1) (2022-03-17)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.5.0...3.5.1)
+
+**Implemented enhancements:**
+- Ansible Vulnerabilities New Issues  [\#140](https://github.com/IBM/ansible-lifecycle-driver/issues/140)
+- Support IPv6  [\#142](https://github.com/IBM/ansible-lifecycle-driver/issues/142)
+- Removal of ingress and its references  [\#144](https://github.com/IBM/ansible-lifecycle-driver/issues/144)
+
 ## [3.5.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.5.0) (2022-02-03)
 [Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.4.1...3.5.0)
 
