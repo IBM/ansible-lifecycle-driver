@@ -4,7 +4,6 @@ The Helm chart for this driver includes the following features:
 
 - A Deployment to create pods for your driver application
 - A Service to expose your application internally and externally (with a NodePort)
-- Ingress rule to expose your application externally with Ingress (Ingress controller required on Kubernetes cluster. By default, LM installs an Ingress controller for you)
 - Configurable options for:
     - Location and version of Docker image
     - Number of replicas of the driver
@@ -13,7 +12,6 @@ The Helm chart for this driver includes the following features:
     - Pod affinity/anti-affinity
     - Node affinity/anti/affinity
     - NodePort
-    - Ingress Host
 - Necessary Deployment labels so logs from the driver may be viewed in the dashboard provided with LM (Kibana)
 
 # Build Helm Chart

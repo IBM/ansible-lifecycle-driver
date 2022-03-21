@@ -37,4 +37,4 @@ The driver runs with SSL enabled by default. The installation will generate a se
 
 ### Confirm
 
-The Swagger UI can be found at `https://your_host:31680/api/driver/ui` e.g. `http://localhost:31680/api/driver/ui`
+You can confirm the driver is working by accessing: ```http://<kubernetes-node-ip>:31680/management/health```
