@@ -1,6 +1,6 @@
 # Releasing the Driver
 
-The following guide details the steps for releasing the Ansible Lifecycle Driver. This may only be performed by a user with admin rights to this Git repository and the ibmcom docker registry.
+The following guide details the steps for releasing the Ansible Lifecycle Driver. This may only be performed by a user with admin rights to this Git repository and the `icr.io/cp4na-drivers` IBM Cloud Container Registry.
 
 **Ensure you've followed the steps in [configure your development environment](dev-env.md) as there are libraries required to complete the release.**
 
@@ -33,7 +33,7 @@ The `build.py` script automates the following steps:
 - Build and Tag Docker Image
 - Build Helm Chart
 - Package Documentation
-- Push Docker Image to ibmcom group on Dockerhub
+- Push Docker Image to `icr.io/cp4na-drivers` group on IBM Cloud Container Registry
 - Create a tagged commit in the git repository to mark this release
 
 To perform a release, run `build.py` and set the following options:
