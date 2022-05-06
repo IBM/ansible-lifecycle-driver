@@ -8,7 +8,7 @@ global:
 ## Docker Image for the osslm-ansible-rm application
 docker:
   ## Make this the full path, including registry host and port if using one
-  image: icr.io/cp4na-drivers/ansible-lifecycle-driver
+  image: ibmcom/ansible-lifecycle-driver
   version: ${version}
   imagePullPolicy: IfNotPresent
 

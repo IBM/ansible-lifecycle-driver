@@ -19,7 +19,7 @@ DOCS_DIR = 'docs'
 DOCKER_WHLS_DIR = 'whls'
 DOCKER_PATH = 'docker'
 DOCKER_IMG_NAME = 'ansible-lifecycle-driver'
-DOCKER_REGISTRY = 'icr.io/cp4na-drivers'
+DOCKER_REGISTRY = 'ibmcom'
 
 HELM_CHART_PATH = os.path.join('helm', 'ansiblelifecycledriver')
 HELM_CHART_NAME = 'ansiblelifecycledriver'
