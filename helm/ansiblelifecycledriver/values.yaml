@@ -91,7 +91,7 @@ app:
       ## There is an additional option for configuring access to Kafka by fixed IP. This is added as a host entry to the container.
       hostEnabled: false
       ## the host must match the value of 'app.config.override.messaging.connection_address', if it is set
-      host: "iaf-system-kafka-bootstrap"
+      host: "cp4na-o-events-kafka-bootstrap"
       ## this must be set to the Kafka IP address
       ip:
 
@@ -134,7 +134,7 @@ app:
         process_pool_size: 10
 
       messaging:
-        connection_address: iaf-system-kafka-bootstrap:9092
+        connection_address: cp4na-o-events-kafka-bootstrap:9092
         # timeout waiting for initial version check on Kafka producer/consumer initialisation
         # 5000ms is usually sufficient, increase if problems with NoBrokersAvailable occur
         api_version_auto_timeout_ms: 5000
