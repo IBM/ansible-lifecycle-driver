@@ -1,7 +1,7 @@
 # Change Log
 
-## [3.6.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.6.0) (2022-05-31)
-[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.5.1...3.6.0)
+## [3.5.2](https://github.com/IBM/ansible-lifecycle-driver/tree/3.5.2) (2022-05-31)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.5.1...3.5.2)
 
 **Implemented enhancements:**
 - Ansible vulnerability fix  [\#155](https://github.com/IBM/ansible-lifecycle-driver/issues/155)
