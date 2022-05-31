@@ -1,5 +1,12 @@
 # Change Log
 
+## [3.6.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.6.0) (2022-05-31)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.5.1...3.6.0)
+
+**Implemented enhancements:**
+- Ansible vulnerability fix  [\#155](https://github.com/IBM/ansible-lifecycle-driver/issues/155)
+- Update kafka connection address and pkg_info for latest ignition version  [\#153](https://github.com/IBM/ansible-lifecycle-driver/issues/153)
+
 ## [3.5.1](https://github.com/IBM/ansible-lifecycle-driver/tree/3.5.1) (2022-03-17)
 [Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.5.0...3.5.1)
 
