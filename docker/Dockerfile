@@ -16,7 +16,7 @@ RUN addgroup -S ald \
  && chmod -R 775 /var/ald \
  && chown -R ald:0 /home/ald \
  && chmod -R 775 /home/ald \
- && apk add --no-cache bash openssh sshpass curl binutils libc-dev \
+ && apk add --no-cache bash openssh sshpass curl binutils libc-dev expect \
  # These packages need to be installed so that we can install the Python dependencies.
  # We make this virtual so that we can remove them later
  && apk add --no-cache --virtual .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git cargo \
