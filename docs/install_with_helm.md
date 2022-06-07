@@ -25,6 +25,8 @@ Install the chart using the helm CLI:
 helm install ansiblelifecycledriver-<version>.tgz --name ansible-lifecycle-driver [--set app.config.override.lifecycle.request_queue.topic.num_partitions=100,app.config.override.lifecycle.request_queue.topic.replication_factor=1]
 ```
 
+Is using the latest version of the driver with a pre CP4NA 2.3 version, Note the kafka address should be changed to iaf-system-kafka-bootstrap:9092, as it is cp4na-o-events-kafka-bootstrap:9092 when using with CP4NA v2.3 +.
+
 By default, the driver will attempt to connect to Kafka with the address `alm-kafka:9092`.  For [All In One](https://github.com/accanto-systems/lm-allinone) it should be set to `foundation-kafka:9092`:
 
 ```
