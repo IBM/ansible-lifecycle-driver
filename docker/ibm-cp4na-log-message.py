@@ -6,7 +6,6 @@ __metaclass__ = type
 # This custom module is for printing some specified logs
 
 from ansible.module_utils.basic import AnsibleModule
-import requests
 
 def run_module():
     # defining available arguments/parameters a user can pass to the module
