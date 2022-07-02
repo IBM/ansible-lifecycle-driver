@@ -332,6 +332,7 @@ class ResultCallback(CallbackBase):
             if delegated_vars is not None:
                 event.delegated_host_name = delegated_vars['ansible_host']
             self.event_logger.add(event)
+            self._generate_additional_logs(result)
 
     def __handle_unreachable(self, result):
         self.failed_task = result._task.get_name()
@@ -407,6 +408,7 @@ class ResultCallback(CallbackBase):
             task_name = result._task.get_name().strip()
             event = TaskFailedOnHostEvent(task_name, host_name, result._result, item_label=item_label, delegated_host_name=delegated_host_name)
             self.event_logger.add(event)
+            self._generate_additional_logs(result)
 
     def v2_runner_item_on_failed(self, result):
         """
@@ -453,6 +455,7 @@ class ResultCallback(CallbackBase):
             task_name = result._task.get_name().strip()
             event = TaskSkippedOnHostEvent(task_name, host_name, result._result, item_label=item_label, delegated_host_name=delegated_host_name)
             self.event_logger.add(event)
+            self._generate_additional_logs(result)
         
     def v2_runner_item_on_skipped(self, result):
         """
@@ -485,29 +488,9 @@ class ResultCallback(CallbackBase):
                 item_label = None
             self._clean_results(result._result, result._task.action)
             task_name = result._task.get_name().strip()
-
-            # Added logic to printing logs for custom ansible module : ibm-cp4na-log-message
-            try:
-                if('message_direction' in result._result and 'external_request_id' in result._result):
-                    message_direction = result._result['message_direction']
-                    external_request_id = result._result['external_request_id']
-                    content_type = result._result['content_type']
-                    message_data = result._result['message_data']
-
-                    logging_context_dict = {'messageDirection' : message_direction, 'tracectx.externalRequestId' : external_request_id, 'ContentType' : content_type}
-                    logging_context.set_from_dict(logging_context_dict)
-
-                    logger.info(message_data)
-            finally:
-                if('messageDirection' in logging_context.data):
-                    logging_context.data.pop("messageDirection")
-                if('tracectx.externalRequestId' in logging_context.data):
-                    logging_context.data.pop("tracectx.externalRequestId")
-                if('ContentType' in logging_context.data):
-                    logging_context.data.pop("ContentType")
-
             event = TaskCompletedOnHostEvent(task_name, host_name, result._result, item_label=item_label, delegated_host_name=delegated_host_name)
             self.event_logger.add(event)
+            self._generate_additional_logs(result)
 
     def v2_runner_item_on_ok(self, result):
         """
@@ -560,6 +543,27 @@ class ResultCallback(CallbackBase):
         return LifecycleExecution(self.request_id, STATUS_FAILED, self.failure_details, self.properties)
       else:
         return LifecycleExecution(self.request_id, STATUS_COMPLETE, None, self.properties, self.associated_topology)
+
+    def _generate_additional_logs(self, result):
+      # Added logic to print logs for custom ansible module : ibm-cp4na-log-message
+      try:
+          if('message_direction' in result._result and 'external_request_id' in result._result):
+              message_direction = result._result['message_direction']
+              external_request_id = result._result['external_request_id']
+              content_type = result._result['content_type']
+              message_data = result._result['message_data']
+
+              logging_context_dict = {'messageDirection' : message_direction, 'tracectx.externalRequestId' : external_request_id, 'ContentType' : content_type}
+              logging_context.set_from_dict(logging_context_dict)
+
+              logger.info(message_data)
+      finally:
+          if('messageDirection' in logging_context.data):
+              logging_context.data.pop("messageDirection")
+          if('tracectx.externalRequestId' in logging_context.data):
+              logging_context.data.pop("tracectx.externalRequestId")
+          if('ContentType' in logging_context.data):
+              logging_context.data.pop("ContentType")
 
 class InvalidRequestException(Exception):
   """Raised when a REST request is invalid
