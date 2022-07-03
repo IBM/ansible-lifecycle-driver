@@ -64,7 +64,6 @@ class TestAnsible(unittest.TestCase):
         render_context_service = ExtendedResourceTemplateContextService()
         templating = Jinja2TemplatingService()
         self.ansible_client = AnsibleClient(self.configuration, templating=templating, render_context_service=render_context_service, event_logger=EmptyEventLogger())
-        # get the module path and copy the new module from docker folder to the path
 
     def __copy_directory_tree(self, src):
         temp_dir = tempfile.mkdtemp(prefix="")
