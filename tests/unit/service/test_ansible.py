@@ -1,4 +1,5 @@
 import logging
+import sysconfig
 import unittest
 import time
 import uuid
@@ -63,6 +64,7 @@ class TestAnsible(unittest.TestCase):
         render_context_service = ExtendedResourceTemplateContextService()
         templating = Jinja2TemplatingService()
         self.ansible_client = AnsibleClient(self.configuration, templating=templating, render_context_service=render_context_service, event_logger=EmptyEventLogger())
+        # get the module path and copy the new module from docker folder to the path
 
     def __copy_directory_tree(self, src):
         temp_dir = tempfile.mkdtemp(prefix="")
@@ -705,6 +707,62 @@ class TestAnsible(unittest.TestCase):
             }
 
             self.assertLifecycleExecutionEqual(resp, LifecycleExecution(request_id, STATUS_COMPLETE, None, expected_outputs))
+            self.assertFalse(os.path.exists(dst))
+        finally:
+            logger.removeHandler(stream_handler)
+
+    '''
+    ibm-cp4na-log-message module test
+    '''
+    def test_run_lifecycle_with_ibm_cp4na_log_message_module(self):
+        # copying ibm-cp4na-log-message module in the ansible module directory 
+        ansible_module_path = sysconfig.get_paths()["purelib"] + r"/ansible/modules"
+        print("ansible_module_path", ansible_module_path)
+        shutil.copy(r"docker/ibm-cp4na-log-message.py", ansible_module_path)
+
+        stream_handler = logging.StreamHandler(sys.stdout)
+        logger.addHandler(stream_handler)
+        try:
+            request_id = uuid.uuid4().hex
+
+            properties = PropValueMap({
+                'hello_world_private_ip': {
+                    'value': '10.220.217.113',
+                    'type': 'string'
+                },
+                'ansible_ssh_user': {
+                    'value': 'accanto',
+                    'type': 'string'
+                },
+                'ansible_ssh_pass': {
+                    'value': 'accanto',
+                    'type': 'string'
+                },
+                'ansible_become_pass': {
+                    'value': 'accanto',
+                    'type': 'string'
+                }
+            })
+            system_properties = PropValueMap({
+            })
+
+            dst = self.__copy_directory_tree(os.getcwd() + '/tests/resources/ansible_with_ibm-cp4na-log-message_module')
+
+            resp = self.ansible_client.run_lifecycle_playbook({
+            'lifecycle_name': 'install',
+            'driver_files': DirectoryTree(dst),
+            'system_properties': system_properties,
+            'resource_properties': properties,
+            'deployment_location': {
+                'name': 'winterfell',
+                'type': "Kubernetes",
+                'properties': PropValueMap({
+                })
+            },
+            'request_id': request_id
+            })
+
+            self.assertLifecycleExecutionEqual(resp, LifecycleExecution(request_id, STATUS_COMPLETE, None, {}))
             self.assertFalse(os.path.exists(dst))
         finally:
             logger.removeHandler(stream_handler)
