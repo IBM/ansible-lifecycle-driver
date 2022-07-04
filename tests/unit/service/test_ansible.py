@@ -64,7 +64,6 @@ class TestAnsible(unittest.TestCase):
         render_context_service = ExtendedResourceTemplateContextService()
         templating = Jinja2TemplatingService()
         self.ansible_client = AnsibleClient(self.configuration, templating=templating, render_context_service=render_context_service, event_logger=EmptyEventLogger())
-        # get the module path and copy the new module from docker folder to the path
 
     def __copy_directory_tree(self, src):
         temp_dir = tempfile.mkdtemp(prefix="")
@@ -718,7 +717,7 @@ class TestAnsible(unittest.TestCase):
         # copying ibm-cp4na-log-message module in the ansible module directory 
         ansible_module_path = sysconfig.get_paths()["purelib"] + r"/ansible/modules"
         print("ansible_module_path", ansible_module_path)
-        shutil.copy(r"docker/ibm-cp4na-log-message.py", ansible_module_path)
+        shutil.copy(r"ansibledriver/ibm-cp4na-log-message.py", ansible_module_path)
 
         stream_handler = logging.StreamHandler(sys.stdout)
         logger.addHandler(stream_handler)

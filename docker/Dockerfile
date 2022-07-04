@@ -30,7 +30,7 @@ RUN addgroup -S ald \
 COPY --chown=ald:0 ansible.cfg /etc/ansible/ansible.cfg
 COPY --chown=ald:0 ald_config.yml /var/ald/ald_config.yml
 
-COPY --chown=ald:0 ibm-cp4na-log-message.py /usr/local/lib/python3.9/site-packages/ansible/modules
+RUN cp /usr/local/lib/python3.9/site-packages/ansibledriver/ibm-cp4na-log-message.py /usr/local/lib/python3.9/site-packages/ansible/modules
 
 # Set HOME variable for OCP arbitrary user
 ENV HOME /home/ald
