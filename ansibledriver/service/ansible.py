@@ -545,7 +545,7 @@ class ResultCallback(CallbackBase):
         return LifecycleExecution(self.request_id, STATUS_COMPLETE, None, self.properties, self.associated_topology)
 
     def _generate_additional_logs(self, result):
-      # Added logic to print logs for custom ansible module : ibm-cp4na-log-message
+      # Added logic to print logs for custom ansible module : ibm_cp4na_log_message
       try:
           if('message_direction' in result._result and 'external_request_id' in result._result):
               message_direction = result._result['message_direction']

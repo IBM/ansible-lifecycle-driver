@@ -1,12 +1,12 @@
 ---
-- name: ibm-cp4na-log-message module test
+- name: ibm_cp4na_log_message module test
   hosts: localhost
   become: false
   gather_facts: False
   tasks:
     - name: log api request
-      ibm-cp4na-log-message:
+      ibm_cp4na_log_message:
         message_direction: request
         external_request_id: 5d1cd9ca-f6d9-11ec-8084-00000a0b650b
         content_type: application/json
-        message_data: {"name": "test", "job": "ibm-cp4na-log-message"}
+        message_data: {"name": "test", "job": "ibm_cp4na_log_message"}

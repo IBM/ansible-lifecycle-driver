@@ -19,6 +19,7 @@ from ignition.service.templating import ResourceTemplateContextService, Jinja2Te
 from ansibledriver.service.rendercontext import ExtendedResourceTemplateContextService
 from ignition.model.associated_topology import AssociatedTopology
 from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_ERROR
+import ansibledriver.ibm_cp4na_log_message as ibm_cp4na_log_message
 
 logger = logging.getLogger()
 logger.level = logging.DEBUG
@@ -711,13 +712,14 @@ class TestAnsible(unittest.TestCase):
             logger.removeHandler(stream_handler)
 
     '''
-    ibm-cp4na-log-message module test
+    ibm_cp4na_log_message module test
     '''
     def test_run_lifecycle_with_ibm_cp4na_log_message_module(self):
-        # copying ibm-cp4na-log-message module in the ansible module directory 
-        ansible_module_path = sysconfig.get_paths()["purelib"] + r"/ansible/modules"
-        print("ansible_module_path", ansible_module_path)
-        shutil.copy(r"ansibledriver/ibm-cp4na-log-message.py", ansible_module_path)
+        # copying ibm_cp4na_log_message module in ansible module directory under site-packages 
+        site_packages_path = sysconfig.get_paths()["purelib"]
+        ansible_module_path = os.path.join(site_packages_path, 'ansible', 'modules')
+        print("ansible_module_path - ", ansible_module_path)
+        shutil.copy(ibm_cp4na_log_message.__file__, ansible_module_path)
 
         stream_handler = logging.StreamHandler(sys.stdout)
         logger.addHandler(stream_handler)
@@ -745,7 +747,7 @@ class TestAnsible(unittest.TestCase):
             system_properties = PropValueMap({
             })
 
-            dst = self.__copy_directory_tree(os.getcwd() + '/tests/resources/ansible_with_ibm-cp4na-log-message_module')
+            dst = self.__copy_directory_tree(os.getcwd() + '/tests/resources/ansible_with_ibm_cp4na_log_message_module')
 
             resp = self.ansible_client.run_lifecycle_playbook({
             'lifecycle_name': 'install',
