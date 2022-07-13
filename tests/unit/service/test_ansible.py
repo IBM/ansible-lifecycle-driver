@@ -747,8 +747,8 @@ class TestAnsible(unittest.TestCase):
             system_properties = PropValueMap({
             })
 
-            dst = self.__copy_directory_tree(os.getcwd() + '/tests/resources/ansible_with_ibm_cp4na_log_message_module')
-
+            resource_path = os.path.join(os.getcwd(), 'tests', 'resources', 'ansible_with_ibm_cp4na_log_message_module')
+            dst = self.__copy_directory_tree(resource_path)
             resp = self.ansible_client.run_lifecycle_playbook({
             'lifecycle_name': 'install',
             'driver_files': DirectoryTree(dst),

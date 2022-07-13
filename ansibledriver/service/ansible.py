@@ -332,7 +332,6 @@ class ResultCallback(CallbackBase):
             if delegated_vars is not None:
                 event.delegated_host_name = delegated_vars['ansible_host']
             self.event_logger.add(event)
-            self._generate_additional_logs(result)
 
     def __handle_unreachable(self, result):
         self.failed_task = result._task.get_name()
@@ -455,7 +454,6 @@ class ResultCallback(CallbackBase):
             task_name = result._task.get_name().strip()
             event = TaskSkippedOnHostEvent(task_name, host_name, result._result, item_label=item_label, delegated_host_name=delegated_host_name)
             self.event_logger.add(event)
-            self._generate_additional_logs(result)
         
     def v2_runner_item_on_skipped(self, result):
         """
