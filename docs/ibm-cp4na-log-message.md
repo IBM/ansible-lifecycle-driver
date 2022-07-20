@@ -15,6 +15,7 @@ The module will accept the following parameters:
 | Name | Type | Description | Required |
 | --- | --- | --- | --- | 
 | message_direction | str | the `message_direction` to be included in the logs | Yes |
+| message_type | str | the `message_type` to be included in the logs | Yes |
 | message_data | str | the `message_data` to be included in the logs | No |
 | content_type | str | the `content_type` to be included in the logs | Yes if `message_data` is provided |
 | protocol | str | the `protocol` to be included in the logs | Yes |
@@ -42,6 +43,7 @@ The module will accept the following parameters:
         external_request_id: 5d1cd9ca-f6d9-11ec-8084-00000a0b650b
         content_type: application/json
         message_data: {"name": "Suryadip", "job": "Developer"}
+        message_type: sample_type
         protocol: http
         protocol_metadata: 
           url: "{{ server }}{{ endpoint }}"
@@ -65,6 +67,7 @@ The module will accept the following parameters:
         external_request_id: 5d1cd9ca-f6d9-11ec-8084-00000a0b650b
         content_type: application/json
         message_data: "{{ testout.json }}"
+        message_type: sample_type
         protocol: http
 
 ```
@@ -72,4 +75,4 @@ Before the actual task ('cp4na api call') executes, 'log api request' task is ge
 
 This output result will be useful to print the logs from ansible-driver. Sample logs which is generated from ansible-driver for 'log api request' task having 'ibm_cp4na_log_message' module.
    
-{"@timestamp": "2022-07-14T11:52:59.063Z", "@version": "1", "**message**": "{'name': 'Suryadip', 'job': 'Developer'}", "host": "ansible-lifecycle-driver-57bbbc5dd9-9wmtr", "path": "/usr/local/lib/python3.9/site-packages/ansibledriver/service/ansible.py", "tags": [], "type": "logstash", "thread_name": "MainThread", "level": "INFO", "logger_name": "ansibledriver.service.ansible", "tracectx.processid": "36927a71-c901-46d3-8d6a-dccafbac88bf", "tracectx.transactionid": "31f4ec1f-6830-481a-9df0-b3b5f47dd26e", "tracectx.taskid": "13", "**messageDirection**": "sent", "**tracectx.externalRequestId**": "5d1cd9ca-f6d9-11ec-8084-00000a0b650b", "**ContentType**": "application/json", "**protocol**": "http", "**protocol_metadata**": {"url": "https://reqres.in/api/users"}, "**tracectx.driverrequestid**": "05f7ce14-9988-47ae-af44-2e6f15bc3231"}
+{"@timestamp": "2022-07-14T11:52:59.063Z", "@version": "1", "**message**": "{'name': 'Suryadip', 'job': 'Developer'}", "host": "ansible-lifecycle-driver-57bbbc5dd9-9wmtr", "path": "/usr/local/lib/python3.9/site-packages/ansibledriver/service/ansible.py", "tags": [], "type": "logstash", "thread_name": "MainThread", "level": "INFO", "logger_name": "ansibledriver.service.ansible", "tracectx.processid": "36927a71-c901-46d3-8d6a-dccafbac88bf", "tracectx.transactionid": "31f4ec1f-6830-481a-9df0-b3b5f47dd26e", "tracectx.taskid": "13", "**messageDirection**": "sent", "**tracectx.externalRequestId**": "5d1cd9ca-f6d9-11ec-8084-00000a0b650b", "**ContentType**": "application/json", "**messageType**": "sample_type", "**protocol**": "http", "**protocol_metadata**": {"url": "https://reqres.in/api/users"}, "**tracectx.driverrequestid**": "05f7ce14-9988-47ae-af44-2e6f15bc3231"}
