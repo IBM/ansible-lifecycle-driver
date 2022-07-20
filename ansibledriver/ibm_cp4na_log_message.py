@@ -13,6 +13,7 @@ def run_module():
         message_direction=dict(type='str', required=True, choices=['sent', 'received']),
         external_request_id=dict(type='str', required=True),
         message_data=dict(type='str'),
+        message_type=dict(type='str', required=True),
         content_type=dict(type='str'),
         protocol=dict(type='str', required=True),
         protocol_metadata=dict(type='dict', default={})
@@ -32,6 +33,7 @@ def run_module():
     message_direction = module.params['message_direction']
     external_request_id = module.params['external_request_id'] 
     message_data = module.params['message_data']
+    message_type = module.params['message_type']
     content_type = module.params['content_type']
     protocol = module.params['protocol']
     protocol_metadata = module.params['protocol_metadata']
@@ -44,6 +46,7 @@ def run_module():
     result['message_direction'] = message_direction
     result['external_request_id'] = external_request_id
     result['message_data'] = message_data
+    result['message_type'] = message_type
     result['content_type'] = content_type
     result['protocol'] = protocol
     result['protocol_metadata'] = protocol_metadata

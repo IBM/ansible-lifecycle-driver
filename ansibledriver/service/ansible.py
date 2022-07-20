@@ -544,16 +544,17 @@ class ResultCallback(CallbackBase):
     def _generate_additional_logs(self, result):
       # Added logic to print logs for custom ansible module : ibm_cp4na_log_message
       try:
-          if('message_direction' in result._result and 'external_request_id' in result._result and 'protocol' in result._result):
+          if('message_direction' in result._result and 'external_request_id' in result._result and 'message_type' in result._result and 'protocol' in result._result):
               message_direction = result._result['message_direction']
               external_request_id = result._result['external_request_id']
               content_type = result._result['content_type']
               message_data = result._result['message_data']
+              message_type = result._result['message_type']
               protocol = result._result['protocol']
               protocol_metadata = result._result['protocol_metadata']
 
               logging_context_dict = {'messageDirection' : message_direction, 'tracectx.externalRequestId' : external_request_id, 'ContentType' : content_type,
-                                      'protocol' : protocol.lower(), 'protocol_metadata' : protocol_metadata, 'tracectx.driverrequestid' : self.request_id}
+                                      'messageType' : message_type, 'protocol' : protocol.lower(), 'protocol_metadata' : protocol_metadata, 'tracectx.driverrequestid' : self.request_id}
               logging_context.set_from_dict(logging_context_dict)
 
               logger.info(message_data)
@@ -564,6 +565,8 @@ class ResultCallback(CallbackBase):
               logging_context.data.pop("tracectx.externalRequestId")
           if('ContentType' in logging_context.data):
               logging_context.data.pop("ContentType")
+          if('messageType' in logging_context.data):
+              logging_context.data.pop("messageType")
           if('protocol' in logging_context.data):
               logging_context.data.pop("protocol")
           if('protocol_metadata' in logging_context.data):
