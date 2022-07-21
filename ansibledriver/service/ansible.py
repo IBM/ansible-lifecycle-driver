@@ -553,20 +553,20 @@ class ResultCallback(CallbackBase):
               protocol = result._result['protocol']
               protocol_metadata = result._result['protocol_metadata']
 
-              logging_context_dict = {'messageDirection' : message_direction, 'tracectx.externalRequestId' : external_request_id, 'ContentType' : content_type,
-                                      'messageType' : message_type, 'protocol' : protocol.lower(), 'protocol_metadata' : protocol_metadata, 'tracectx.driverrequestid' : self.request_id}
+              logging_context_dict = {'message_direction' : message_direction, 'tracectx.externalrequestid' : external_request_id, 'content_type' : content_type,
+                                      'message_type' : message_type, 'protocol' : protocol.lower(), 'protocol_metadata' : protocol_metadata, 'tracectx.driverrequestid' : self.request_id}
               logging_context.set_from_dict(logging_context_dict)
 
               logger.info(message_data)
       finally:
-          if('messageDirection' in logging_context.data):
-              logging_context.data.pop("messageDirection")
-          if('tracectx.externalRequestId' in logging_context.data):
-              logging_context.data.pop("tracectx.externalRequestId")
-          if('ContentType' in logging_context.data):
-              logging_context.data.pop("ContentType")
-          if('messageType' in logging_context.data):
-              logging_context.data.pop("messageType")
+          if('message_direction' in logging_context.data):
+              logging_context.data.pop("message_direction")
+          if('tracectx.externalrequestid' in logging_context.data):
+              logging_context.data.pop("tracectx.externalrequestid")
+          if('content_type' in logging_context.data):
+              logging_context.data.pop("content_type")
+          if('message_type' in logging_context.data):
+              logging_context.data.pop("message_type")
           if('protocol' in logging_context.data):
               logging_context.data.pop("protocol")
           if('protocol_metadata' in logging_context.data):
