@@ -28,6 +28,7 @@ from ansibledriver.model.inventory import Inventory
 from ignition.model import associated_topology
 from ignition.model.associated_topology import AssociatedTopology
 from ansibledriver.model.progress_events import *
+from ignition.service.logging import logging_context
 
 
 logger = logging.getLogger(__name__)
@@ -486,6 +487,7 @@ class ResultCallback(CallbackBase):
             task_name = result._task.get_name().strip()
             event = TaskCompletedOnHostEvent(task_name, host_name, result._result, item_label=item_label, delegated_host_name=delegated_host_name)
             self.event_logger.add(event)
+            self._generate_additional_logs(result)
 
     def v2_runner_item_on_ok(self, result):
         """
@@ -538,6 +540,39 @@ class ResultCallback(CallbackBase):
         return LifecycleExecution(self.request_id, STATUS_FAILED, self.failure_details, self.properties)
       else:
         return LifecycleExecution(self.request_id, STATUS_COMPLETE, None, self.properties, self.associated_topology)
+
+    def _generate_additional_logs(self, result):
+      # Added logic to print logs for custom ansible module : ibm_cp4na_log_message
+      try:
+          if('message_direction' in result._result and 'external_request_id' in result._result and 'message_type' in result._result and 'protocol' in result._result):
+              message_direction = result._result['message_direction']
+              external_request_id = result._result['external_request_id']
+              content_type = result._result['content_type']
+              message_data = result._result['message_data']
+              message_type = result._result['message_type']
+              protocol = result._result['protocol']
+              protocol_metadata = result._result['protocol_metadata']
+
+              logging_context_dict = {'message_direction' : message_direction, 'tracectx.externalrequestid' : external_request_id, 'content_type' : content_type,
+                                      'message_type' : message_type, 'protocol' : protocol.lower(), 'protocol_metadata' : protocol_metadata, 'tracectx.driverrequestid' : self.request_id}
+              logging_context.set_from_dict(logging_context_dict)
+
+              logger.info(message_data)
+      finally:
+          if('message_direction' in logging_context.data):
+              logging_context.data.pop("message_direction")
+          if('tracectx.externalrequestid' in logging_context.data):
+              logging_context.data.pop("tracectx.externalrequestid")
+          if('content_type' in logging_context.data):
+              logging_context.data.pop("content_type")
+          if('message_type' in logging_context.data):
+              logging_context.data.pop("message_type")
+          if('protocol' in logging_context.data):
+              logging_context.data.pop("protocol")
+          if('protocol_metadata' in logging_context.data):
+              logging_context.data.pop("protocol_metadata")
+          if('tracectx.driverrequestid' in logging_context.data):
+              logging_context.data.pop("tracectx.driverrequestid")
 
 class InvalidRequestException(Exception):
   """Raised when a REST request is invalid
