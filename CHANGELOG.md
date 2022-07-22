@@ -1,5 +1,12 @@
 # Change Log
 
+## [3.6.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.6.0) (2022-07-22)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.5.2...3.6.0)
+
+**Implemented enhancements:**
+- Adding expect module in Dockerfile [\#160](https://github.com/IBM/ansible-lifecycle-driver/issues/160)
+- Enable Request Response Logging with ExternalRequestId, ContentType, Payload and MessageDirection [\#163](https://github.com/IBM/ansible-lifecycle-driver/issues/163)
+
 ## [3.5.2](https://github.com/IBM/ansible-lifecycle-driver/tree/3.5.2) (2022-05-31)
 [Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.5.1...3.5.2)
 
