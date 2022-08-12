@@ -22,7 +22,7 @@ wget https://github.com/IBM/ansible-lifecycle-driver/releases/download/<version>
 Install the chart using the helm CLI:
 
 ```
-helm install ansiblelifecycledriver-<version>.tgz --name ansible-lifecycle-driver [--set app.config.override.lifecycle.request_queue.topic.num_partitions=100,app.config.override.lifecycle.request_queue.topic.replication_factor=1]
+helm install ansible-lifecycle-driver ansiblelifecycledriver-<version>.tgz [--set app.config.override.lifecycle.request_queue.topic.num_partitions=100,app.config.override.lifecycle.request_queue.topic.replication_factor=1]
 ```
 
 kafka host value must be set as follows, in values.yaml file of the helm package, depending on the CP4NA versions:
