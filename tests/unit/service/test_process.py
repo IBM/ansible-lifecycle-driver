@@ -94,7 +94,8 @@ class TestProcess(unittest.TestCase):
           'resource_properties': PropValueMap({
           }),
           'deployment_location': PropValueMap({
-          })
+          }),
+          'tenant_id': '1234'
         })
         self.check_response_only(LifecycleExecution(None, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a request_id"), {}))
 
@@ -113,7 +114,8 @@ class TestProcess(unittest.TestCase):
           'resource_properties': PropValueMap({
           }),
           'deployment_location': PropValueMap({
-          })
+          }),
+          'tenant_id': '1234'
         })
         self.check_response_only(LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a lifecycle_name"), {}))
 
@@ -132,7 +134,8 @@ class TestProcess(unittest.TestCase):
           'resource_properties': PropValueMap({
           }),
           'deployment_location': {
-          }
+          },
+          'tenant_id': '1234'
         })
         self.check_response_only(LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a driver_files"), {}))
 
@@ -159,7 +162,8 @@ class TestProcess(unittest.TestCase):
               'testPropA': 'A'
             }
           },
-          'request_id': request_id
+          'request_id': request_id,
+          'tenant_id': '1234'
         })
 
         self.check_response_only(LifecycleExecution(request_id, STATUS_COMPLETE, None, {
