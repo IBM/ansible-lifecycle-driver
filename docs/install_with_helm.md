@@ -31,11 +31,7 @@ kafka host value must be set as follows, in values.yaml file of the helm package
 
 * For CP4NA v2.3/v2.3+, the kafka host must be cp4na-o-events-kafka-bootstrap  
 
-By default, the driver will attempt to connect to Kafka with the address `alm-kafka:9092`.  For [All In One](https://github.com/accanto-systems/lm-allinone) it should be set to `foundation-kafka:9092`:
-
-```
-helm install ansiblelifecycledriver-<version>.tgz --name ansible-lifecycle-driver --set app.config.override.messaging.connection_address=foundation-kafka:9092
-```
+By default, the driver will attempt to connect to Kafka with the address `cp4na-o-events-kafka-bootstrap:9092`.
 
 The Ansible Lifecycle Driver uses an Ignition [Request Queue](https://github.com/IBM/ignition/blob/master/docs/user-guide/framework/bootstrap-components/request_queue.md) to process transitions. Note the overrides for the Kafka request queue topic number of partitions and replication factory. The number of partitions determines an upper limit on how many transitions can be run in parallel, the replication factor improves fault tolerance and should be set to less than or equal to the number of Kafka brokers in your cluster.
 
