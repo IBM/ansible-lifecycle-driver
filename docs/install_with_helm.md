@@ -5,7 +5,7 @@ The following guide details how to install the Ansible Lifecycle Driver into a K
 ## Prerequisites
 To complete the install you will need a Kubernetes cluster.
 
-You will also need a controller machine (can be one of the Kubernetes cluster nodes) to perform the installation from. This machine must have the Helm CLI tool installed and initialised with access to your cluster.
+You will also need a controller machine (can be one of the Kubernetes cluster nodes) to perform the installation from. This machine must have the Helm CLI tool installed and initialised with access to your cluster. Please note that `Helm v3` is required.
 
 ## Installation
 
@@ -24,8 +24,6 @@ Install the chart using the helm CLI:
 ```
 helm install ansible-lifecycle-driver ansiblelifecycledriver-<version>.tgz [--set app.config.override.lifecycle.request_queue.topic.num_partitions=100,app.config.override.lifecycle.request_queue.topic.replication_factor=1]
 ```
-
-Please note that `Helm v3` is required to execute the above helm install command.
 
 kafka host value must be set as follows, in values.yaml file of the helm package, depending on the CP4NA versions:
 
