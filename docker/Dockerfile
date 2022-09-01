@@ -1,4 +1,4 @@
-FROM python:3.9-alpine
+FROM python:3.10-alpine
 RUN apk update && apk upgrade \
 && rm -rf /var/cache/apk/*
 
@@ -30,7 +30,7 @@ RUN addgroup -S ald \
 COPY --chown=ald:0 ansible.cfg /etc/ansible/ansible.cfg
 COPY --chown=ald:0 ald_config.yml /var/ald/ald_config.yml
 
-RUN cp /usr/local/lib/python3.9/site-packages/ansibledriver/ibm_cp4na_log_message.py /usr/local/lib/python3.9/site-packages/ansible/modules
+RUN cp /usr/local/lib/python3.10/site-packages/ansibledriver/ibm_cp4na_log_message.py /usr/local/lib/python3.10/site-packages/ansible/modules
 
 # Set HOME variable for OCP arbitrary user
 ENV HOME /home/ald
