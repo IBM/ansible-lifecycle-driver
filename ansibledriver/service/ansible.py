@@ -11,7 +11,6 @@ from ansible.vars.manager import VariableManager
 from ansible.inventory.manager import InventoryManager
 from ansible.executor.playbook_executor import PlaybookExecutor
 from ansible.plugins.callback import CallbackBase
-from ansible.plugins.callback.json import CallbackModule
 from ansible.plugins.loader import connection_loader
 from ansible.inventory.host import Host
 from ansible.playbook.task_include import TaskInclude
