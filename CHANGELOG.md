@@ -1,5 +1,14 @@
 # Change Log
 
+## [3.7.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.7.0) (2022-09-07)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.6.0...3.7.0)
+
+**Implemented enhancements:**
+- Update Ignition version to latest 3.4.0 [\#177](https://github.com/IBM/ansible-lifecycle-driver/issues/177)
+- Fix Vulnerabilities [\#174](https://github.com/IBM/ansible-lifecycle-driver/issues/174)
+- Update install instructions for Ansible Resource Driver [\#170](https://github.com/IBM/ansible-lifecycle-driver/issues/170)
+- Support Multi Tenancy for Ansible Driver [\#168](https://github.com/IBM/ansible-lifecycle-driver/issues/168)
+
 ## [3.6.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.6.0) (2022-07-22)
 [Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.5.2...3.6.0)
 
