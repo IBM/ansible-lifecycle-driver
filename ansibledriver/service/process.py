@@ -144,18 +144,18 @@ class AnsibleRequestHandler(RequestHandler):
               logging_context.set_from_dict(request['logging_context'])
 
           if 'request_id' not in request:
-            self.messaging_service.send_lifecycle_execution(LifecycleExecution(None, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a request_id"), {}))
+            self.messaging_service.send_lifecycle_execution(LifecycleExecution(None, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a request_id"), {}), tenant_id=request['tenant_id'])
           if 'lifecycle_name' not in request:
-            self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a lifecycle_name"), {}))
+            self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a lifecycle_name"), {}), tenant_id=request['tenant_id'])
           if 'driver_files' not in request:
-            self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a driver_files"), {}))
+            self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a driver_files"), {}), tenant_id=request['tenant_id'])
  
           # run the playbook and send the response to the response queue
           logger.debug('Ansible worker running request {0}'.format(request))
           result = self.ansible_client.run_lifecycle_playbook(request)
           if result is not None:
             logger.debug('Ansible worker finished for request {0}: {1}'.format(request, result))
-            self.messaging_service.send_lifecycle_execution(result)
+            self.messaging_service.send_lifecycle_execution(result, tenant_id=request['tenant_id'])
           else:
             logger.warning("Empty response from Ansible worker for request {0}".format(request))
         else:
@@ -165,7 +165,7 @@ class AnsibleRequestHandler(RequestHandler):
         traceback.print_exc(file=sys.stderr)
         # don't want the worker to die without knowing the cause, so catch all exceptions
         if request is not None:
-          self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {}))
+          self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Unexpected exception: {0}".format(e)), {}), tenant_id=request['tenant_id'])
       finally:
         # clean up zombie processes (Ansible can leave these behind)
         for p in active_children():
