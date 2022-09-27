@@ -16,15 +16,15 @@ Update the `CHANGELOG.md` file with a list of issues fixed by this release (see 
 
 Commit and push these changes.
 
-## 3. Merge Develop to Master
+## 3. Merge Develop to Main
 
-Development work is normally carried out on the `develop` branch. Merge this branch to `master`, by creating a PR.
+Development work is normally carried out on the `develop` branch. Merge this branch to `main`, by creating a PR.
 
-Then perform the release from the `master` branch. This ensures the `master` branch is tagged correctly. 
+Then perform the release from the `main` branch. This ensures the `main` branch is tagged correctly. 
 
 > Note: do NOT delete the `develop` branch
  
-## 4. Build and Release (on master)
+## 4. Build and Release (on main)
 
 The `build.py` script automates the following steps: 
 
@@ -67,6 +67,6 @@ Complete the following:
 
 Complete the following steps to ensure development can continue as normal:
 
-- Merge `master` to `develop` (so any release updates and the post-version are copied over from master)
+- Merge `main` to `develop` (so any release updates and the post-version are copied over from main)
 - Close the Milestone for this release on [Github](https://github.com/IBM/ansible-lifecycle-driver/milestones)
 - Create a new Milestone for next release (if one does not exist). Use the value of the `--post-version` option from earlier
