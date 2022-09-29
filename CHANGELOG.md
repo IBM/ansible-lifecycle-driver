@@ -1,5 +1,12 @@
 # Change Log
 
+## [3.7.1](https://github.com/IBM/ansible-lifecycle-driver/tree/3.7.1) (2022-09-29)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.7.0...3.7.1)
+
+**Implemented enhancements:**
+- Update Ignition version to latest 3.4.1 [\#185](https://github.com/IBM/ansible-lifecycle-driver/issues/185)
+- Add MCNP dependent libraries [\#183](https://github.com/IBM/ansible-lifecycle-driver/issues/183)
+
 ## [3.7.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.7.0) (2022-09-07)
 [Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.6.0...3.7.0)
 
