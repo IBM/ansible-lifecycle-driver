@@ -22,7 +22,12 @@ setup(
         'ansible==4.2.0',
         'gunicorn==20.1.0',
         'testfixtures==6.17.1',
-        'openstacksdk==0.57.0'
+        'openstacksdk==0.57.0',
+        'boto==2.49.0',
+        'boto3==1.18.42',
+        'botocore==1.21.42',
+        'itsdangerous==2.0.1',
+        'azure-ansible-base==1.0.0'
     ],
     entry_points='''
         [console_scripts]
