@@ -249,7 +249,7 @@ class Builder:
                 print('Copying Ignition whl at {0} to {1}'.format(args.ignition_whl, dest_ign_whl))
                 shutil.copyfile(args.ignition_whl, dest_ign_whl)
             img_tag = '{0}:{1}'.format(docker_img_name, self.project_version)
-            s.run_cmd('docker', 'build', '-t', img_tag, '{0}'.format(docker_context_path))
+            s.run_cmd('docker', 'build', '--pull', '-t', img_tag, '{0}'.format(docker_context_path))
 
     def build_helm_chart(self):
         with self.stage('Build Helm Chart') as s:
