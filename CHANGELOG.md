@@ -1,5 +1,12 @@
 # Change Log
 
+## [3.7.2](https://github.com/IBM/ansible-lifecycle-driver/tree/3.7.2) (2022-12-08)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.7.1...3.7.2)
+
+**Implemented enhancements:**
+- Update Ignition version to latest 3.4.2 [\#193](https://github.com/IBM/ansible-lifecycle-driver/issues/193)
+- Fix vulnerability [\#191](https://github.com/IBM/ansible-lifecycle-driver/issues/191)
+- 
 ## [3.7.1](https://github.com/IBM/ansible-lifecycle-driver/tree/3.7.1) (2022-09-29)
 [Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.7.0...3.7.1)
 
