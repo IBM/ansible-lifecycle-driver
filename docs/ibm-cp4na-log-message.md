@@ -69,6 +69,8 @@ The module will accept the following parameters:
         message_data: "{{ testout.json }}"
         message_type: response
         protocol: http
+        protocol_metadata: 
+          status_code: "{{ testout.status }}"
 
 ```
 Before the actual task ('cp4na api call') executes, 'log api request' task is getting executed and capturing some information of 'cp4na api call' task (message_direction, external_request_id etc) and also same way 'log api response' captures the output data of 'cp4na api call' task along with other information. Whatever parameter we are setting in the ibm_cp4na_log_message module, all are getting stored in module output result.
