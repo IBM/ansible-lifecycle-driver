@@ -16,7 +16,7 @@ The module will accept the following parameters:
 | --- | --- | --- | --- | 
 | message_direction | str | the `message_direction` to be included in the logs | Yes |
 | message_type | str | the `message_type` to be included in the logs | Yes |
-| message_data | str | the `message_data` to be included in the logs | No |
+| message_data | str | the `message` to be included in the logs | No |
 | content_type | str | the `content_type` to be included in the logs | Yes if `message_data` is provided |
 | protocol | str | the `protocol` to be included in the logs | Yes |
 | protocol_metadata | dict | the `protocol_metadata` to be included in the logs (will be formatted as a JSON string by the module/driver) | No |
