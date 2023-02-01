@@ -26,7 +26,7 @@ The module will accept the following parameters:
   1. Supported values for `message_direction` are : `sent` and `received`.
   2. Supported values for `message_type` are : `request`, `response` and `message`.
   3. Supported values for `protocol` are : `http` and `cmd`.
-  4. protocol_metadata for Http Request & Response can have following properties.
+  4. `protocol_metadata` for Http Request & Response can have following properties.
  
      ```
      Http Request: 
