@@ -47,6 +47,7 @@ The module will accept the following parameters:
         protocol: http
         protocol_metadata: 
           uri: "{{ server }}{{ endpoint }}"
+          method: POST
 
     - name: cp4na api call
       ansible.builtin.uri:
