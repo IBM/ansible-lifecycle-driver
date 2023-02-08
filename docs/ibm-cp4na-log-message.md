@@ -26,18 +26,19 @@ The module will accept the following parameters:
   1. Supported values for `message_direction` are : `sent` and `received`.
   2. Supported values for `message_type` are : `request`, `response` and `message`.
   3. Supported values for `protocol` is : `http`.
-  4. `protocol_metadata` for Http Request & Response can have following properties.
+  4. `protocol_metadata` for `message_type` request & response can have following properties.
  
      ```
-     Http Request: 
+     For `message_type` request: 
        uri - The URL of the request
        headers - Name/value pair of any relevant headers included in the request (should not include headers with sensitive data, such as `Authorization`)
        method - HTTP method of the request
-     Http Response:
+     For `message_type` response:
        status_code - HTTP status code
        status_reason_phrase - HTTP status meaning, if provided (e.g. 200 OK)
        headers - Name/value pair of any relevant headers included in the response (should not include headers with sensitive data, such as `Authorization`)
      ```
+  5. If `message_type` is message, then `protocol_metadata` values will be decided by users.
 
 ## Example:
 
