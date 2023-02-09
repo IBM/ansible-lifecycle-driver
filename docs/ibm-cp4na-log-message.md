@@ -38,8 +38,7 @@ The module will accept the following parameters:
        status_reason_phrase - HTTP status meaning, if provided (e.g. 200 OK)
        headers - Name/value pair of any relevant headers included in the response (should not include headers with sensitive data, such as `Authorization`)
      ```
-  5. If `message_type` is message, then `protocol_metadata` values will be decided by users.
-  6. If `protocol` is `cmd`, following request & response properties can be used.
+  5. If `protocol` is `cmd`, following request & response properties can be used.
 
      ```
      For `message_type` request: 
@@ -48,7 +47,8 @@ The module will accept the following parameters:
      For `message_type` response:
        exit_code - Exit code of the command
      ```
-   7. For any other `protocols`, `protocol_metadata` can have relevant properties.
+  6. If `message_type` is message, then `protocol_metadata` values will be decided by users.
+  7. For any other `protocols`, `protocol_metadata` can have relevant properties.
 
 ## Example:
 
