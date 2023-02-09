@@ -25,8 +25,8 @@ The module will accept the following parameters:
 **Notes**: 
   1. Supported values for `message_direction` are : `sent` and `received`.
   2. Supported values for `message_type` are : `request`, `response` and `message`.
-  3. Supported values for `protocol` is : `http`.
-  4. `protocol_metadata` for `message_type` request & response can have following properties.
+  3. Supported values for `protocol` are : `http`, `cmd` or any other protocols.
+  4. If `protocol` is `http`, `protocol_metadata` for `message_type` request & response can have following properties.
  
      ```
      For `message_type` request: 
@@ -39,6 +39,16 @@ The module will accept the following parameters:
        headers - Name/value pair of any relevant headers included in the response (should not include headers with sensitive data, such as `Authorization`)
      ```
   5. If `message_type` is message, then `protocol_metadata` values will be decided by users.
+  6. If `protocol` is `cmd`, following request & response properties can be used.
+
+     ```
+     For `message_type` request: 
+       command - The command used for executing the request
+
+     For `message_type` response:
+       exit_code - Exit code of the command
+     ```
+   7. For any other `protocols`, `protocol_metadata` can have relevant properties.
 
 ## Example:
 
