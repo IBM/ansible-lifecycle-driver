@@ -47,7 +47,7 @@ The module will accept the following parameters:
      For message_type response:
        exit_code - Exit code of the command
      ```
-  6. If `message_type` is message, then `protocol_metadata` can have protocol specific properties.
+  6. If `message_type` is message, then `protocol_metadata` values will be decided by users.
   7. For any other `protocols`, `protocol_metadata` can have relevant properties.
 
 ## Example:
