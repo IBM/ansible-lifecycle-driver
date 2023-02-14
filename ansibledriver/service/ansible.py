@@ -3,6 +3,7 @@ import logging
 import time
 import os
 import tempfile
+import copy
 from datetime import datetime
 from tempfile import NamedTemporaryFile
 from collections import namedtuple
@@ -552,11 +553,19 @@ class ResultCallback(CallbackBase):
               protocol = result._result['protocol']
               protocol_metadata = result._result['protocol_metadata']
 
+              # Removing sensitive data from logs
+              filtered_protocol_metadata = copy.deepcopy(protocol_metadata)
+              if 'headers' in protocol_metadata.keys():
+                  for key in protocol_metadata['headers']:
+                      if(key.lower() == "authorization" or key.lower() == "set-cookie"):
+                          filtered_protocol_metadata['headers'].pop(key)
+
               logging_context_dict = {'message_direction' : message_direction, 'tracectx.externalrequestid' : external_request_id, 'content_type' : content_type,
-                                      'message_type' : message_type, 'protocol' : protocol.lower(), 'protocol_metadata' : protocol_metadata, 'tracectx.driverrequestid' : self.request_id}
+                                      'message_type' : message_type, 'protocol' : protocol.lower(), 'protocol_metadata' : str(filtered_protocol_metadata).replace("'", '\"'), 'tracectx.driverrequestid' : self.request_id}
               logging_context.set_from_dict(logging_context_dict)
 
-              logger.info(message_data)
+              logger.info(message_data.replace("'", '\"'))
+
       finally:
           if('message_direction' in logging_context.data):
               logging_context.data.pop("message_direction")

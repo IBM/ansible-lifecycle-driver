@@ -13,7 +13,7 @@ def run_module():
         message_direction=dict(type='str', required=True, choices=['sent', 'received']),
         external_request_id=dict(type='str', required=True),
         message_data=dict(type='str'),
-        message_type=dict(type='str', required=True),
+        message_type=dict(type='str', required=True, choices=['request', 'response', 'message']),
         content_type=dict(type='str'),
         protocol=dict(type='str', required=True),
         protocol_metadata=dict(type='dict', default={})
