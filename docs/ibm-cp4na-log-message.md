@@ -107,14 +107,14 @@ The module will accept the following parameters:
             Content-Type: "{{ testout.content_type }}" 
 
 ```
-Before the actual task (`cp4na api call`) executes, `log api request` task is getting executed and capturing some information of `cp4na api call` task (`message_direction`, `external_request_id` etc) and also same way `log api response` captures the output data of `cp4na api call` task along with other information. Whatever parameter we are setting in the `ibm_cp4na_log_message` ansible module, all are getting stored in module output result.
+Before the actual task (`cp4na api call`) executes, `log api request` task is getting executed and capturing some information of `cp4na api call` task (`message_direction`, `external_request_id` etc) and also same way `log api response` captures the output data of `cp4na api call` task along with other information. Whatever parameter user sets in the `ibm_cp4na_log_message` ansible module, all are getting stored in module output result.
 
 This output result will be useful to print the logs from ansible-driver. 
 
 **Important :** 
-1.  We need to add `ignore_errors: true` mandatorily in the actual task (in the above example the actual task name is `cp4na api call` as it is calling the api with `ansible.builtin.uri`). If we do not add `ignore_errors: true` and if failure occurrs in the actual task, then next task (in the example `log api response`) will not be executed and we will not be able to get the response logs. Ansible by default does not allow to proceed with next task if failure occurs in current task so we need to use `ignore_errors: true`.
+1.  `ignore_errors: true` property must be added in the actual task (in the above example the actual task name is `cp4na api call` as it is calling the api with `ansible.builtin.uri`). If `ignore_errors: true` is not added and if failure occurrs in the actual task, then next task (in the example `log api response`) will not be executed and response logs will not be generated. Ansible by default does not allow to proceed with next task if failure occurs in current task.
 
-2.  If user wants to stop the playbook in case of any error in any of the ansible task (Say, in our example - `cp4na api call` task has failed due to some api error), then `failed_when` can be used in next task (if any) after executing the response log task (In our example - `log api response` task). In the above example, after `log api response` task if we have any other task (say, task name is `Some task`)  which we don't want to execute if `cp4na api call` task fails, we can add `failed_when: testout.status >= 400` in `Some task` to stop the playbook execution. This is just an example. There are many other ways to stop the execution in Ansible.
+2.  If user wants to stop the playbook in case of any error in any of the ansible task (Say, in our example - `cp4na api call` task has failed due to some api error), then `failed_when` can be used in next task (if any) after executing the response log task (In our example - `log api response` task). In the above example, after `log api response` task, if there are any other task (say, task name is `Some task`)  which user doesn't want to execute if `cp4na api call` task fails, then `failed_when: testout.status >= 400` can be added in `Some task` to stop the playbook execution. This is just an example. There are many other ways to stop the execution in Ansible.
 
 **Sample Logs generated from 'log api request' task having 'ibm_cp4na_log_message' module:**
 
