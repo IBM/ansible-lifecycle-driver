@@ -25,7 +25,7 @@ The module will accept the following parameters:
 **Notes**: 
   1. Supported values for `message_direction` are : `sent` and `received`.
   2. Supported values for `message_type` are : `request`, `response` and `message`.
-  3. Supported values for `protocol` are : `http`, `cmd` or any other protocols.
+  3. The `protocol` value is user defined based on the type of request/response you intend to log. However, please note that `http` and `cmd` are known protocols in Network Automation, with suggested `protocol_metadata` attributes and a tailored user experience. See below for more details and also consult the documentation of your Network Automation installation.
   4. If `protocol` is `http`, `protocol_metadata` can have following properties:
  
      ```
@@ -48,8 +48,7 @@ The module will accept the following parameters:
      For message_type response:
        exit_code - Exit code of the command
      ```
-  6. If `message_type` is message, then `protocol_metadata` values will be decided by users.
-  7. For any other protocols, `protocol_metadata` can have relevant properties.
+  7. For any other protocols, `protocol_metadata` can have relevant properties which will be decided by the users.
 
 ## Example:
 
