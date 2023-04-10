@@ -1,12 +1,22 @@
 # Change Log
 
+## [3.8.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.8.0) (2023-04-10)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.7.2...3.8.0)
+
+**Implemented enhancements:**
+- Fix vulnerability : wheel - CVE-2022-40898 [\#197](https://github.com/IBM/ansible-lifecycle-driver/issues/197)
+- Update ibm-cp4na-log-message documentation [\#199](https://github.com/IBM/ansible-lifecycle-driver/issues/199)
+- Bug regarding external Log request and response payloads [\#203](https://github.com/IBM/ansible-lifecycle-driver/issues/203)
+- Install azure and ansible-utils collections [\#205](https://github.com/IBM/ansible-lifecycle-driver/issues/205)
+- Fix security vulnerabilities [\#207](https://github.com/IBM/ansible-lifecycle-driver/issues/207)
+
 ## [3.7.2](https://github.com/IBM/ansible-lifecycle-driver/tree/3.7.2) (2022-12-08)
 [Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.7.1...3.7.2)
 
 **Implemented enhancements:**
 - Update Ignition version to latest 3.4.2 [\#193](https://github.com/IBM/ansible-lifecycle-driver/issues/193)
 - Fix vulnerability [\#191](https://github.com/IBM/ansible-lifecycle-driver/issues/191)
-- 
+ 
 ## [3.7.1](https://github.com/IBM/ansible-lifecycle-driver/tree/3.7.1) (2022-09-29)
 [Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.7.0...3.7.1)
 
