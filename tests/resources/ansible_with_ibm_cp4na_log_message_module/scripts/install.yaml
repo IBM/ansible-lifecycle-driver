@@ -13,7 +13,11 @@
         external_request_id: 5d1cd9ca-f6d9-11ec-8084-00000a0b650b
         content_type: application/json
         message_data: {"name": "test", "job": "ibm_cp4na_log_message"}
-        message_type: sample_type
+        message_type: request
         protocol: http
         protocol_metadata: 
           url: "{{ server }}{{ endpoint }}"
+          headers:
+            Content-Type: application/json
+            Authorization: "xxx"
+            Set-Cookie: "yyy"
