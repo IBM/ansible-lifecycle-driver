@@ -151,13 +151,13 @@ class AnsibleRequestHandler(RequestHandler):
             self.messaging_service.send_lifecycle_execution(LifecycleExecution(request['request_id'], STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "Request must have a driver_files"), {}), tenant_id=request['tenant_id'])
  
           # run the playbook and send the response to the response queue
-          logger.debug('Ansible worker running request {0}'.format(request))
+          logger.debug('Ansible worker running request with request id {0}'.format(request.get('request_id')))
           result = self.ansible_client.run_lifecycle_playbook(request)
           if result is not None:
-            logger.debug('Ansible worker finished for request {0}: {1}'.format(request, result))
+            logger.debug('Ansible worker finished for request {0}:'.format(result))
             self.messaging_service.send_lifecycle_execution(result, tenant_id=request['tenant_id'])
           else:
-            logger.warning("Empty response from Ansible worker for request {0}".format(request))
+            logger.warning("Empty response from Ansible worker for request with request id {0}".format(request.get('request_id')))
         else:
           logger.warning('Null lifecycle request from request queue')
       except Exception as e:
