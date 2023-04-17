@@ -154,7 +154,7 @@ class AnsibleRequestHandler(RequestHandler):
           logger.debug('Ansible worker running request with request id {0}'.format(request.get('request_id')))
           result = self.ansible_client.run_lifecycle_playbook(request)
           if result is not None:
-            logger.debug('Ansible worker finished for request {0}:'.format(result))
+            logger.debug('Ansible worker finished with result {0}'.format(result))
             self.messaging_service.send_lifecycle_execution(result, tenant_id=request['tenant_id'])
           else:
             logger.warning("Empty response from Ansible worker for request with request id {0}".format(request.get('request_id')))
