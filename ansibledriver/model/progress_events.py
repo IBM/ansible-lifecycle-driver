@@ -2,7 +2,17 @@ from ignition.model.progress_events import ResourceTransitionProgressEvent
 from collections import OrderedDict
 
 class AnsibleEvent(ResourceTransitionProgressEvent):
-    pass
+    
+    def _convert_result_to_log_safe_dict(self, task_result):
+        return {
+            'msg': task_result.get('msg', None),
+            'changed': task_result.get('changed', None),
+            'failed': task_result.get('failed', None),
+            'skipped': task_result.get('skipped', None),
+            'rc': task_result.get('rc', None),
+            'results': [self._convert_result_to_log_safe_dict(r) for r in task_result.get('results', [])]
+        }
+
 
 class PlaybookResultEvent(AnsibleEvent):
     """
@@ -115,7 +125,7 @@ class TaskCompletedOnHostEvent(AnsibleEvent):
             'itemLabel': self.item_label,
             'hostName': self.host_name,
             'delegatedHostName': self.delegated_host_name,
-            'taskResult': self.task_result
+            'taskResult': self._convert_result_to_log_safe_dict(self.task_result)
         })
 
 class TaskRetryOnHostEvent(AnsibleEvent):
@@ -137,7 +147,7 @@ class TaskRetryOnHostEvent(AnsibleEvent):
             'taskName': self.task_name,
             'hostName': self.host_name,
             'delegatedHostName': self.delegated_host_name,
-            'taskResult': self.task_result
+            'taskResult': self._convert_result_to_log_safe_dict(self.task_result)
         })
 
 class TaskFailedOnHostEvent(AnsibleEvent):
@@ -160,7 +170,7 @@ class TaskFailedOnHostEvent(AnsibleEvent):
             'itemLabel': self.item_label,
             'hostName': self.host_name,
             'delegatedHostName': self.delegated_host_name,
-            'taskResult': self.task_result
+            'taskResult': self._convert_result_to_log_safe_dict(self.task_result)
         })
 
 class TaskSkippedOnHostEvent(AnsibleEvent):
@@ -183,7 +193,7 @@ class TaskSkippedOnHostEvent(AnsibleEvent):
             'itemLabel': self.item_label,
             'hostName': self.host_name,
             'delegatedHostName': self.delegated_host_name,
-            'taskResult': self.task_result
+            'taskResult': self._convert_result_to_log_safe_dict(self.task_result)
         })
 
 class HostUnreachableEvent(AnsibleEvent):
@@ -204,7 +214,7 @@ class HostUnreachableEvent(AnsibleEvent):
             'taskName': self.task_name,
             'hostName': self.host_name,
             'delegatedHostName': self.delegated_host_name,
-            'taskResult': self.task_result
+            'taskResult': self._convert_result_to_log_safe_dict(self.task_result)
         })
 
 class VarPromptEvent(AnsibleEvent):
