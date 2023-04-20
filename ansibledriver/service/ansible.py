@@ -130,7 +130,7 @@ class AnsibleClient(Service, AnsibleClientCapability):
       system_properties = request.get('system_properties', {})
       request_properties = request.get('request_properties', {})
       associated_topology = request.get('associated_topology', None)
-      
+      sys_props = PropValueMap(system_properties)
       location = DeploymentLocation.from_request(request)
 
       config_path = driver_files.get_directory_tree('config')
@@ -149,7 +149,7 @@ class AnsibleClient(Service, AnsibleClientCapability):
         # entry to the property dictionary that maps the "[key_name].path" to the key file path
         key_property_processor.process_key_properties()
 
-        logger.debug(f'Handling request {request_id} with config_path: {config_path.get_path()} driver files path: {scripts_path.get_path()} resource properties: {resource_properties} system properties {system_properties} request properties {request_properties}')
+        logger.debug(f'Handling request {request_id} with config_path: {config_path.get_path()} driver files path: {scripts_path.get_path()} resource name: {sys_props.get("resourceName")} resource id: {sys_props.get("resourceId")}')
 
         all_properties = self.render_context_service.build(system_properties, resource_properties, request_properties, location.deployment_location(), associated_topology)
 

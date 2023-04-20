@@ -1,5 +1,13 @@
 # Change Log
 
+## [3.9.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.9.0) (2023-04-20)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.8.0...3.9.0)
+
+**Implemented enhancements:**
+- Remove or mask sensitive information from application logs [\#215](https://github.com/IBM/ansible-lifecycle-driver/issues/215)
+- Update Ignition to latest version 3.5.1 [\#218](https://github.com/IBM/ansible-lifecycle-driver/issues/218)
+- Fix security vulnerabilities [\#220](https://github.com/IBM/ansible-lifecycle-driver/issues/220)
+
 ## [3.8.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.8.0) (2023-04-10)
 [Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.7.2...3.8.0)
 
