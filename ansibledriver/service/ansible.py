@@ -175,7 +175,7 @@ class AnsibleClient(Service, AnsibleClientCapability):
 
         return ret.get_result()
       else:
-        msg = "No playbook to run at {0} for lifecycle {1} for request {2}".format(playbook_path, lifecycle, request_id)
+        msg = "No playbook found to run for lifecycle {0} for request {1}".format(lifecycle, request_id)
         logger.debug(msg)
         return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, msg), {})
     except InvalidRequestException as ire:
@@ -600,7 +600,16 @@ def get_lifecycle_playbook_path(root_path, transition_name):
         return root_path.get_file_path(transition_name + ".yml")
       except ValueError as e:
         # no playbook
-        return None
+        try:
+          transition_name = transition_name[0].lower() + transition_name[1:]
+          return root_path.get_file_path(transition_name + ".yaml")
+        except ValueError as e:
+          # no playbook
+          try:
+            return root_path.get_file_path(transition_name + ".yml")
+          except ValueError as e:
+            # no playbook
+            return None
 
 def process_templates(parent_dir, templating, all_properties):
   path = parent_dir.get_path()
