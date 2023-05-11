@@ -1,0 +1,8 @@
+---
+- hosts: testhost
+  gather_facts: no
+  tasks:
+
+  - name: set fact
+    set_fact:
+      output__msg: "hello there!"
