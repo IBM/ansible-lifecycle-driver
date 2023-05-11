@@ -18,7 +18,7 @@ from ignition.utils.propvaluemap import PropValueMap
 from ignition.service.templating import ResourceTemplateContextService, Jinja2TemplatingService
 from ansibledriver.service.rendercontext import ExtendedResourceTemplateContextService
 from ignition.model.associated_topology import AssociatedTopology
-from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_ERROR
+from ignition.model.failure import FailureDetails, FAILURE_CODE_INFRASTRUCTURE_ERROR, FAILURE_CODE_INTERNAL_ERROR
 import ansibledriver.ibm_cp4na_log_message as ibm_cp4na_log_message
 
 logger = logging.getLogger()
@@ -767,3 +767,106 @@ class TestAnsible(unittest.TestCase):
             self.assertFalse(os.path.exists(dst))
         finally:
             logger.removeHandler(stream_handler)
+
+    '''
+    invalid lifecycle name failure test
+    '''
+    def test_run_lifecycle_with_invalid_lifecycle(self):
+
+        stream_handler = logging.StreamHandler(sys.stdout)
+        logger.addHandler(stream_handler)
+        try:
+            request_id = uuid.uuid4().hex
+
+            properties = PropValueMap({
+                'hello_world_private_ip': {
+                    'value': '10.220.217.113',
+                    'type': 'string'
+                },
+                'ansible_ssh_user': {
+                    'value': 'accanto',
+                    'type': 'string'
+                },
+                'ansible_ssh_pass': {
+                    'value': 'accanto',
+                    'type': 'string'
+                },
+                'ansible_become_pass': {
+                    'value': 'accanto',
+                    'type': 'string'
+                }
+            })
+            system_properties = PropValueMap({
+            })
+
+            dst = self.__copy_directory_tree(str(pathlib.Path(__file__).parent.absolute()) + '/../../resources/ansible_with_invalid_lifecycle_name_in_playbook')
+            resp = self.ansible_client.run_lifecycle_playbook({
+            'lifecycle_name': 'inStall',
+            'driver_files': DirectoryTree(dst),
+            'system_properties': system_properties,
+            'resource_properties': properties,
+            'deployment_location': {
+                'name': 'winterfell',
+                'type': "Kubernetes",
+                'properties': PropValueMap({
+                })
+            },
+            'request_id': request_id
+            })
+
+            self.assertLifecycleExecutionMatches(resp, LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "No playbook found to run for lifecycle inStall for request "+request_id), {}))
+            self.assertFalse(os.path.exists(dst))
+        finally:
+            logger.removeHandler(stream_handler)
+
+    '''
+    Valid lifecycle name success test
+    '''
+    def test_run_lifecycle_with_valid_lifecycle(self):
+
+        stream_handler = logging.StreamHandler(sys.stdout)
+        logger.addHandler(stream_handler)
+        try:
+            request_id = uuid.uuid4().hex
+
+            properties = PropValueMap({
+                'hello_world_private_ip': {
+                    'value': '10.220.217.113',
+                    'type': 'string'
+                },
+                'ansible_ssh_user': {
+                    'value': 'accanto',
+                    'type': 'string'
+                },
+                'ansible_ssh_pass': {
+                    'value': 'accanto',
+                    'type': 'string'
+                },
+                'ansible_become_pass': {
+                    'value': 'accanto',
+                    'type': 'string'
+                }
+            })
+            system_properties = PropValueMap({
+            })
+
+            dst = self.__copy_directory_tree(str(pathlib.Path(__file__).parent.absolute()) + '/../../resources/ansible_with_invalid_lifecycle_name_in_playbook')
+            resp = self.ansible_client.run_lifecycle_playbook({
+            'lifecycle_name': 'Install',
+            'driver_files': DirectoryTree(dst),
+            'system_properties': system_properties,
+            'resource_properties': properties,
+            'deployment_location': {
+                'name': 'winterfell',
+                'type': "Kubernetes",
+                'properties': PropValueMap({
+                })
+            },
+            'request_id': request_id
+            })
+
+            self.assertLifecycleExecutionEqual(resp, LifecycleExecution(request_id, STATUS_COMPLETE, None, {'msg': "hello there!"}))
+            self.assertFalse(os.path.exists(dst))
+        finally:
+            logger.removeHandler(stream_handler)
+
