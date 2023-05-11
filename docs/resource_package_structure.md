@@ -15,7 +15,7 @@ The scripts directory contains your Ansible scripts. The naming must reflect the
 
 For example, the formats supported for `Configure` transition are as follows.
 
-`configure.yml or Configure.yml or configure.yaml or Configure.yaml`
+`configure.yml` or `Configure.yml` or `configure.yaml` or `Configure.yaml`
 
 
 ## Idempotency
