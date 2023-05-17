@@ -870,3 +870,104 @@ class TestAnsible(unittest.TestCase):
         finally:
             logger.removeHandler(stream_handler)
 
+    '''
+    Failed task with ignore errors test
+    '''
+    def test_run_lifecycle_with_ignore_errors(self):
+
+        stream_handler = logging.StreamHandler(sys.stdout)
+        logger.addHandler(stream_handler)
+        try:
+            request_id = uuid.uuid4().hex
+
+            properties = PropValueMap({
+                'hello_world_private_ip': {
+                    'value': '10.220.217.113',
+                    'type': 'string'
+                },
+                'ansible_ssh_user': {
+                    'value': 'accanto',
+                    'type': 'string'
+                },
+                'ansible_ssh_pass': {
+                    'value': 'accanto',
+                    'type': 'string'
+                },
+                'ansible_become_pass': {
+                    'value': 'accanto',
+                    'type': 'string'
+                }
+            })
+            system_properties = PropValueMap({
+            })
+
+            dst = self.__copy_directory_tree(str(pathlib.Path(__file__).parent.absolute()) + '/../../resources/ansible_with_ignore_error_in_playbook')
+            resp = self.ansible_client.run_lifecycle_playbook({
+            'lifecycle_name': 'Install',
+            'driver_files': DirectoryTree(dst),
+            'system_properties': system_properties,
+            'resource_properties': properties,
+            'deployment_location': {
+                'name': 'winterfell',
+                'type': "Kubernetes",
+                'properties': PropValueMap({
+                })
+            },
+            'request_id': request_id
+            })
+
+            self.assertLifecycleExecutionEqual(resp, LifecycleExecution(request_id, STATUS_COMPLETE, None, {'msg': "hello there again!"}))
+            self.assertFalse(os.path.exists(dst))
+        finally:
+            logger.removeHandler(stream_handler)
+
+    '''
+    Failed task without ignore errors test
+    '''
+    def test_run_lifecycle_without_ignore_errors(self):
+
+        stream_handler = logging.StreamHandler(sys.stdout)
+        logger.addHandler(stream_handler)
+        try:
+            request_id = uuid.uuid4().hex
+
+            properties = PropValueMap({
+                'hello_world_private_ip': {
+                    'value': '10.220.217.113',
+                    'type': 'string'
+                },
+                'ansible_ssh_user': {
+                    'value': 'accanto',
+                    'type': 'string'
+                },
+                'ansible_ssh_pass': {
+                    'value': 'accanto',
+                    'type': 'string'
+                },
+                'ansible_become_pass': {
+                    'value': 'accanto',
+                    'type': 'string'
+                }
+            })
+            system_properties = PropValueMap({
+            })
+
+            dst = self.__copy_directory_tree(str(pathlib.Path(__file__).parent.absolute()) + '/../../resources/ansible_without_ignore_error_in_playbook')
+            resp = self.ansible_client.run_lifecycle_playbook({
+            'lifecycle_name': 'Install',
+            'driver_files': DirectoryTree(dst),
+            'system_properties': system_properties,
+            'resource_properties': properties,
+            'deployment_location': {
+                'name': 'winterfell',
+                'type': "Kubernetes",
+                'properties': PropValueMap({
+                })
+            },
+            'request_id': request_id
+            })
+
+            self.assertLifecycleExecutionMatches(resp, LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INFRASTRUCTURE_ERROR, "failed - invalid machine."), {'msg': 'hello there!'}))
+            self.assertFalse(os.path.exists(dst))
+        finally:
+            logger.removeHandler(stream_handler)
