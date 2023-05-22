@@ -871,7 +871,7 @@ class TestAnsible(unittest.TestCase):
             logger.removeHandler(stream_handler)
 
     '''
-    Failed task with ignore errors test
+    Test complete playbook execution with failed task having ignore_errors as true
     '''
     def test_run_lifecycle_with_ignore_errors(self):
 
@@ -922,7 +922,7 @@ class TestAnsible(unittest.TestCase):
             logger.removeHandler(stream_handler)
 
     '''
-    Failed task without ignore errors test
+    Test failed playbook execution with failed task not having ignore_errors
     '''
     def test_run_lifecycle_without_ignore_errors(self):
 
@@ -974,9 +974,9 @@ class TestAnsible(unittest.TestCase):
 
 
     '''
-    Failed task without ignore errors test
+    Test failed playbook execution with failed task having ignore_errors as false
     '''
-    def test_run_lifecycle_without_ignore_errors(self):
+    def test_run_lifecycle_with_ignore_errors_false(self):
 
         stream_handler = logging.StreamHandler(sys.stdout)
         logger.addHandler(stream_handler)
