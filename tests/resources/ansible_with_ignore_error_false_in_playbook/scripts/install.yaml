@@ -1,0 +1,17 @@
+---
+- hosts: testhost
+  gather_facts: no
+  tasks:
+
+  - name: test task
+    set_fact:
+      output__msg: "hello there!"
+
+  - name: fail message
+    fail:
+      msg: "failed - invalid machine."
+    ignore_errors: false
+
+  - name: set fact again
+    set_fact:
+      output__msg: "hello there again!"
