@@ -1,5 +1,14 @@
 # Change Log
 
+## [3.10.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.10.0) (2023-06-06)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.9.0...3.10.0)
+
+**Implemented enhancements:**
+- The assembly instance status remains in failure state even the ansible package execution has completed successfully [\#225](https://github.com/IBM/ansible-lifecycle-driver/issues/225)
+- Ansible task with ignore errors argument should not fail the playbook [\#228](https://github.com/IBM/ansible-lifecycle-driver/issues/228)
+- Build the ansible-lifecycle driver with 'rc' tag [\#230](https://github.com/IBM/ansible-lifecycle-driver/issues/230)
+- Fix security vulnerabilities [\#232](https://github.com/IBM/ansible-lifecycle-driver/issues/232)
+
 ## [3.9.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.9.0) (2023-04-20)
 [Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.8.0...3.9.0)
 
