@@ -213,6 +213,7 @@ class Builder:
                 self.py_normalized_version = pkg_info_data['version']
                 self.py_normalized_version = self.py_normalized_version.replace('-alpha-', 'a')
                 self.py_normalized_version = self.py_normalized_version.replace('-beta-', 'b')
+                self.py_normalized_version = self.py_normalized_version.replace('-rc', 'rc')
 
     def run_unit_tests(self):
         with self.stage('Run Unit Tests') as s:

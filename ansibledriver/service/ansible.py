@@ -175,7 +175,7 @@ class AnsibleClient(Service, AnsibleClientCapability):
 
         return ret.get_result()
       else:
-        msg = "No playbook to run at {0} for lifecycle {1} for request {2}".format(playbook_path, lifecycle, request_id)
+        msg = "No playbook found to run for lifecycle {0} for request {1}".format(lifecycle, request_id)
         logger.debug(msg)
         return LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, msg), {})
     except InvalidRequestException as ire:
@@ -421,9 +421,11 @@ class ResultCallback(CallbackBase):
         Note: even when a loop is used (so v2_runner_item_on_failed/v2_runner_item_on_ok is called for each item) this function is called at the end, when all items have been attempted but one has failed
         """
         logger.debug("v2_runner_on_failed: task={0}, result={1}, task_fields={2}".format(result._task, result._result, result._task_fields))
-        # TODO: handle ignore_errors?
         self.failed_task = result._task.get_name()
-        if 'msg' in result._result and 'Timeout' in result._result['msg'] and 'waiting for privilege escalation prompt' in result._result['msg']:
+        if 'ignore_errors' in kwargs and kwargs.get('ignore_errors'):
+            logger.info('ignoring failed task ' + str(self.failed_task) + ' as ignore_errors is true, failed: ' + str(result._result))
+            self._log_event_for_failed_task(result)
+        elif 'msg' in result._result and 'Timeout' in result._result['msg'] and 'waiting for privilege escalation prompt' in result._result['msg']:
             logger.info('Failure to be treated as unreachable:  task ' + str(self.failed_task) + ' failed: ' + str(result._result))
             self.__handle_unreachable(result)
         elif 'module_stderr' in result._result and result._result['module_stderr'].startswith('ssh:') and 'Host is unreachable' in result._result['module_stderr']:
@@ -600,7 +602,16 @@ def get_lifecycle_playbook_path(root_path, transition_name):
         return root_path.get_file_path(transition_name + ".yml")
       except ValueError as e:
         # no playbook
-        return None
+        try:
+          transition_name = transition_name[0].lower() + transition_name[1:]
+          return root_path.get_file_path(transition_name + ".yaml")
+        except ValueError as e:
+          # no playbook
+          try:
+            return root_path.get_file_path(transition_name + ".yml")
+          except ValueError as e:
+            # no playbook
+            return None
 
 def process_templates(parent_dir, templating, all_properties):
   path = parent_dir.get_path()

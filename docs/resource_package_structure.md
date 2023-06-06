@@ -11,7 +11,11 @@ scripts
 
 The config directory contains [Ansible inventory](https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html) related configuration files. This driver's [Ansible Inventory Guide](./ansible_inventory.md) describes how to construct these files.
 
-The scripts directory contains your Ansible scripts. The naming must reflect the naming of the lifcycle and operation scripts defined in your LM resource.yaml file; the naming is case-sensitive but the extension can be either 'yml' or 'yaml'. Ancillary files can be added under the scripts directory and these will be included in the payload to the Ansible Lifecycle Driver.
+The scripts directory contains your Ansible scripts. The naming must reflect the naming of the lifcycle and operation scripts defined in your LM resource.yaml file; the naming is case-sensitive and it supports only two formats i.e lower case or camel case but the extension can be either 'yml' or 'yaml'. Ancillary files can be added under the scripts directory and these will be included in the payload to the Ansible Lifecycle Driver.
+
+For example, the formats supported for `Configure` transition are as follows.
+
+`configure.yml` or `Configure.yml` or `configure.yaml` or `Configure.yaml`
 
 ## Idempotency
 
