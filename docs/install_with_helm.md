@@ -33,7 +33,7 @@ kafka host value must be set as follows, in values.yaml file of the helm package
 
 By default, the driver will attempt to connect to Kafka with the address `cp4na-o-events-kafka-bootstrap:9092`.
 
-The Ansible Lifecycle Driver uses an Ignition [Request Queue](https://github.com/IBM/ignition/blob/master/docs/user-guide/framework/bootstrap-components/request_queue.md) to process transitions. Note the overrides for the Kafka request queue topic number of partitions and replication factory. The number of partitions determines an upper limit on how many transitions can be run in parallel, the replication factor improves fault tolerance and should be set to less than or equal to the number of Kafka brokers in your cluster.
+The Ansible Lifecycle Driver uses an Ignition [Request Queue](https://github.com/IBM/ignition/blob/main/docs/user-guide/framework/bootstrap-components/request_queue.md) to process transitions. Note the overrides for the Kafka request queue topic number of partitions and replication factory. The number of partitions determines an upper limit on how many transitions can be run in parallel, the replication factor improves fault tolerance and should be set to less than or equal to the number of Kafka brokers in your cluster.
 
 The driver runs with SSL enabled by default. The installation will generate a self-signed certificate and key by default, adding them to the Kubernetes secret "ald-tls". To use a custom certificate and key in your own secret, override the properties under "apps.config.security.ssl.secret".
 
