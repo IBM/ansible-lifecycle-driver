@@ -17,3 +17,4 @@ Please read the following guides to get started with the Ansible Lifecycle Drive
 - [Property Handling](./property_handling.md) - details on property handling, in particular how properties are returned back to LM.
 - [Resource Transition Progress Events](./progress_events.md) - details of events logged during Ansible playbook execution
 - [Porting from Ansible 2.7 (Driver pre v3.0.1)](./porting-playbooks.md) - port playbooks from Ansible 2.7 to 2.9
+- [Enabling logs for Ansible )](./ibm-cp4na-log-message.md) - enable the logs for Ansible driver.
