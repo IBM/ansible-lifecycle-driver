@@ -30,7 +30,7 @@ RUN addgroup -S ald \
  && ansible-galaxy collection install ansible.utils -f -p /usr/local/lib/python3.10/site-packages/ansible_collections \
  && pip install netaddr \
  && apk del .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git \
- && curl -L https://storage.googleapis.com/kubernetes-release/release/v1.27.2/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
+ && curl -L https://storage.googleapis.com/kubernetes-release/release/v1.27.4/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
  && chmod +x /usr/local/bin/kubectl
 
 COPY --chown=ald:0 ansible.cfg /etc/ansible/ansible.cfg
