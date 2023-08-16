@@ -1,5 +1,13 @@
 # Change Log
 
+## [3.10.1](https://github.com/IBM/ansible-lifecycle-driver/tree/3.10.1) (2023-08-16)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.10.0...3.10.1)
+
+**Implemented enhancements:**
+- DOCUMENTATION: Add logging document link in User guide [\#240](https://github.com/IBM/ansible-lifecycle-driver/issues/240)
+- Update Ignition with latest version 3.5.2 [\#242](https://github.com/IBM/ansible-lifecycle-driver/issues/242)
+- Fix security vulnerabilities [\#244](https://github.com/IBM/ansible-lifecycle-driver/issues/244)
+  
 ## [3.10.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.10.0) (2023-06-06)
 [Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.9.0...3.10.0)
 
