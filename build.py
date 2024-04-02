@@ -157,7 +157,7 @@ class Builder:
   
     def build(self):
         self.init_artifacts_directory()
-        # self.run_unit_tests()
+        self.run_unit_tests()
         self.build_python_wheel()
         self.pkg_docs()
         if args.skip_docker is not True:
