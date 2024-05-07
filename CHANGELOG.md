@@ -1,5 +1,17 @@
 # Change Log
 
+## [3.11.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.11.0) (2024-04-18)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.10.4...3.11.0)
+
+**Implemented enhancements:**
+- Updated Ignition to 3.6.0 that uses connexion 3.0.5 (ASGI) [\#268](https://github.com/IBM/ansible-lifecycle-driver/issues/268)
+
+## [3.10.4](https://github.com/IBM/ansible-lifecycle-driver/tree/3.10.4) (2024-01-18)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.10.3...3.10.4)
+
+**Implemented enhancements:**
+- Fix security vulnerabilities [\#262](https://github.com/IBM/ansible-lifecycle-driver/issues/262)
+
 ## [3.10.3](https://github.com/IBM/ansible-lifecycle-driver/tree/3.10.3) (2023-11-29)
 [Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.10.2...3.10.3)
 
