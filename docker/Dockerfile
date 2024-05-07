@@ -30,7 +30,7 @@ RUN addgroup -S ald \
  && ansible-galaxy collection install ansible.utils -f -p /usr/local/lib/python3.10/site-packages/ansible_collections \
  && pip install netaddr \
  && apk del .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev make git \
- && curl -L https://storage.googleapis.com/kubernetes-release/release/v1.28.3/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
+ && curl -L https://storage.googleapis.com/kubernetes-release/release/v1.29.0/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
  && chmod +x /usr/local/bin/kubectl
 
 COPY --chown=ald:0 ansible.cfg /etc/ansible/ansible.cfg
@@ -47,4 +47,4 @@ WORKDIR /home/ald
 EXPOSE 8293
 
 CMD if [ $SSL_ENABLED | tr [:upper:] [:lower:] == "true" ]; then SSL="--certfile /var/ald/certs/tls.crt --keyfile /var/ald/certs/tls.key" ; fi \
-&& gunicorn --workers $NUM_PROCESSES --bind [::]:$DRIVER_PORT $SSL "ansibledriver:create_wsgi_app()"
+&& gunicorn -k uvicorn.workers.UvicornWorker --workers $NUM_PROCESSES --bind [::]:$DRIVER_PORT $SSL "ansibledriver:create_wsgi_app()"

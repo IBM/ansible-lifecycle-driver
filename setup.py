@@ -26,7 +26,8 @@ setup(
         'boto==2.49.0',
         'boto3==1.18.42',
         'botocore==1.21.42',
-        'itsdangerous==2.0.1'
+        'itsdangerous==2.0.1',
+        'uvicorn==0.29.0'
     ],
     entry_points='''
         [console_scripts]
