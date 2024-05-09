@@ -1,6 +1,6 @@
 #!/usr/bin/env groovy
 
-String tarquinBranch = "py-version-change"
+String tarquinBranch = "CPNA-1493"
 
 library "tarquin@$tarquinBranch"
 
