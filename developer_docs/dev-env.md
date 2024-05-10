@@ -4,7 +4,7 @@ These docs help you get a full dev environment setup for working on this driver,
 
 ## Install Python
 
-You need Python3.9+ and pip. Install those according to the instructions for your operating system. 
+You need Python3.10+ and pip. Install those according to the instructions for your operating system. 
 
 For Ubuntu, you can do this:
 
@@ -12,10 +12,10 @@ For Ubuntu, you can do this:
 sudo apt update
 sudo apt install software-properties-common
 sudo add-apt-repository ppa:deadsnakes/ppa
-sudo apt install python3.9
-sudo apt install python3.9-distutils
-sudo apt install libpython3.9-dev
-python3.9 --version
+sudo apt install python3.10
+sudo apt install python3.10-distutils
+sudo apt install libpython3.10-dev
+python3.10 --version
 ```
 
 If you run `python3 --version` and get a different version then you need to do the following, replacing `3.6` with the major and minor version you have:
@@ -23,10 +23,11 @@ If you run `python3 --version` and get a different version then you need to do t
 ```
 sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 1
 sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 2
+sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 3
 sudo update-alternatives --config python3
 ```
 
-Enter 2 for python3.9
+Enter 3 for python3.10
 
 For pip, use:
 
