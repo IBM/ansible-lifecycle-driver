@@ -1,6 +1,6 @@
 # Porting Playbooks
 
-In version 3.11.1+ we upgraded the version of Ansible used by this driver from 4.2.0 to 9.5.1
+In version 3.11.0+ we upgraded the version of Ansible used by this driver from 4.2.0 to 9.5.1
 
 Some playbook features may have changed between these two versions so we recommend that you read the Ansible porting guides to assess the impact:
 
