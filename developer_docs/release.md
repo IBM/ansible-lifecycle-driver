@@ -123,4 +123,4 @@ Complete the following:
 
 ## 7. Cleanup
 
-Complete step 7 from the main release instructions (found above).
+Complete step 8 from the main release instructions (found above).
