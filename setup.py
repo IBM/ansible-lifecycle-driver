@@ -19,8 +19,8 @@ setup(
     include_package_data=True,
     install_requires=[
         'ignition-framework=={0}'.format(_pkg_info['ignition-version']),
-        'ansible==4.2.0',
-        'gunicorn==21.2.0',
+        'ansible==9.5.1',
+        'gunicorn==22.0.0',
         'testfixtures==6.17.1',
         'openstacksdk==0.57.0',
         'boto==2.49.0',

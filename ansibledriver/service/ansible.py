@@ -64,6 +64,14 @@ class AnsibleClient(Service, AnsibleClientCapability):
       raise ValueError('event_logger argument not provided')
     self.event_logger = kwargs.get('event_logger')
 
+    try:
+        from ansible.plugins.loader import init_plugin_loader
+        
+        # Initialize the plugin filters and the collection loaders
+        init_plugin_loader()
+    except ImportError:
+        pass
+    
   def run_playbook(self, request_id, connection_type, inventory_path, playbook_path, lifecycle, all_properties):
     Options = namedtuple('Options', ['connection',
                                      'forks',

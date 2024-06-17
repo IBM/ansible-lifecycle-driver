@@ -1,5 +1,12 @@
 # Change Log
 
+## [3.11.1](https://github.com/IBM/ansible-lifecycle-driver/tree/3.11.1) (2024-06-17)
+[Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.11.0...3.11.1)
+
+**Bug Fixes:**
+- Update Ignition to 3.6.2 and ansible driver fix for CP4NA UI driver log messages
+- Security vulnerability CVE-2024-3177
+
 ## [3.11.0](https://github.com/IBM/ansible-lifecycle-driver/tree/3.11.0) (2024-04-18)
 [Full Changelog](https://github.com/IBM/ansible-lifecycle-driver/compare/3.10.4...3.11.0)
 

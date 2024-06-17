@@ -26,10 +26,10 @@ class PlaybookResultEvent(AnsibleEvent):
         self.host_stats = host_stats
 
     def _details(self):
-        return OrderedDict({
+        return  {
             'plays': self.plays,
             'hostStats': self.host_stats
-        })
+        }
 
 class PlayMatchedNoNoHostsEvent(AnsibleEvent):
     """
@@ -42,9 +42,9 @@ class PlayMatchedNoNoHostsEvent(AnsibleEvent):
         self.play_name = play_name
     
     def _details(self):
-        return OrderedDict({
+        return  {
             'playName': self.play_name
-        })
+        }
 
 class PlayStartedEvent(AnsibleEvent):
     """
@@ -58,9 +58,9 @@ class PlayStartedEvent(AnsibleEvent):
         self.play_name = play_name
 
     def _details(self):
-        return OrderedDict({
+        return  {
             'playName': self.play_name
-        })
+        }
 
 class TaskStartedEvent(AnsibleEvent):
     """
@@ -76,11 +76,11 @@ class TaskStartedEvent(AnsibleEvent):
         self.args_hidden = args_hidden
 
     def _details(self):
-        return OrderedDict({
+        return  {
             'taskName': self.task_name,
             'args': self.args,
             'argsHidden': self.args_hidden
-        })
+        }
 
 class TaskStartedOnHostEvent(AnsibleEvent):
     """
@@ -98,12 +98,12 @@ class TaskStartedOnHostEvent(AnsibleEvent):
         self.args_hidden = args_hidden
 
     def _details(self):
-        return OrderedDict({
+        return  {
             'taskName': self.task_name,
             'hostName': self.host_name,
             'args': self.args,
             'argsHidden': self.args_hidden
-        })
+        }
 
 class TaskCompletedOnHostEvent(AnsibleEvent):
     """
@@ -120,13 +120,13 @@ class TaskCompletedOnHostEvent(AnsibleEvent):
         self.item_label = item_label
     
     def _details(self):
-        return OrderedDict({
+        return  {
             'taskName': self.task_name,
             'itemLabel': self.item_label,
             'hostName': self.host_name,
             'delegatedHostName': self.delegated_host_name,
             'taskResult': self._convert_result_to_log_safe_dict(self.task_result)
-        })
+        }
 
 class TaskRetryOnHostEvent(AnsibleEvent):
     """
@@ -143,12 +143,12 @@ class TaskRetryOnHostEvent(AnsibleEvent):
         self.task_result = task_result
     
     def _details(self):
-        return OrderedDict({
+        return  {
             'taskName': self.task_name,
             'hostName': self.host_name,
             'delegatedHostName': self.delegated_host_name,
             'taskResult': self._convert_result_to_log_safe_dict(self.task_result)
-        })
+        }
 
 class TaskFailedOnHostEvent(AnsibleEvent):
     """
@@ -165,13 +165,13 @@ class TaskFailedOnHostEvent(AnsibleEvent):
         self.item_label = item_label
 
     def _details(self):
-        return OrderedDict({
+        return  {
             'taskName': self.task_name,
             'itemLabel': self.item_label,
             'hostName': self.host_name,
             'delegatedHostName': self.delegated_host_name,
             'taskResult': self._convert_result_to_log_safe_dict(self.task_result)
-        })
+        }
 
 class TaskSkippedOnHostEvent(AnsibleEvent):
     """
@@ -188,13 +188,13 @@ class TaskSkippedOnHostEvent(AnsibleEvent):
         self.item_label = item_label
 
     def _details(self):
-        return OrderedDict({
+        return  {
             'taskName': self.task_name,
             'itemLabel': self.item_label,
             'hostName': self.host_name,
             'delegatedHostName': self.delegated_host_name,
             'taskResult': self._convert_result_to_log_safe_dict(self.task_result)
-        })
+        }
 
 class HostUnreachableEvent(AnsibleEvent):
     """
@@ -210,12 +210,12 @@ class HostUnreachableEvent(AnsibleEvent):
         self.task_result = task_result
     
     def _details(self):
-        return OrderedDict({
+        return  {
             'taskName': self.task_name,
             'hostName': self.host_name,
             'delegatedHostName': self.delegated_host_name,
             'taskResult': self._convert_result_to_log_safe_dict(self.task_result)
-        })
+        }
 
 class VarPromptEvent(AnsibleEvent):
     """
@@ -228,6 +228,6 @@ class VarPromptEvent(AnsibleEvent):
         self.var_name = var_name
     
     def _details(self):
-        return OrderedDict({
+        return  {
             'varName': self.var_name
-        })
+        }
