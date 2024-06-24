@@ -1,0 +1,7 @@
+{
+  "settingsInheritedFrom": "TNC/whitesource-config@main",
+  "scanSettings": {
+    "configMode": "LOCAL"
+  }
+} 
+
