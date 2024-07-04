@@ -2,6 +2,9 @@
   "settingsInheritedFrom": "TNC/whitesource-config@main",
   "scanSettings": {
     "configMode": "LOCAL"
+  },
+  "issueSettings": {
+    "customLabels": ["FoundBy:Mend"],
+    "assignees": ["Lokanadham-Nalla1"]
   }
-} 
-
+}
