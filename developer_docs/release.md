@@ -70,7 +70,6 @@ Ensure the tag, title and changelog are all correct. Also ensure the documentati
 
 Complete the following steps to ensure development can continue as normal:
 
-- Merge `main` to `develop` so any release updates and the post-version are copied over from main (doesn't require a PR)
 - Close the Milestone for this release on [Github](https://github.com/IBM/ansible-lifecycle-driver/milestones)
 - Create a new Milestone for next release (if one does not exist).
 
