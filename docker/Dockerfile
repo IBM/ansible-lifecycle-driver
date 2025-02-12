@@ -46,5 +46,5 @@ WORKDIR /home/ald
 
 EXPOSE 8293
 
-CMD if [ $SSL_ENABLED | tr [:upper:] [:lower:] == "true" ]; then SSL="--certfile /var/ald/certs/tls.crt --keyfile /var/ald/certs/tls.key" ; fi \
+CMD SSL="--certfile /var/ald/certs/tls.crt --keyfile /var/ald/certs/tls.key" && if [ $SSL_DISABLED ]; then SSL="" ; fi \
     && gunicorn -k uvicorn.workers.UvicornWorker --workers $NUM_PROCESSES --bind [::]:$DRIVER_PORT $SSL "ansibledriver:create_wsgi_app()"
