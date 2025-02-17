@@ -1,0 +1,12 @@
+description: descriptor for kubectltest
+properties:
+  result: 
+    type: string 
+    read-only: true
+lifecycle:
+  Install: {}
+default-driver:
+  ansible:
+    selector:
+      infrastructure-type:
+      - '*'

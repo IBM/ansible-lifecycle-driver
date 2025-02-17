@@ -1,0 +1,11 @@
+---
+- name: Install
+  hosts: all
+  gather_facts: False
+
+  tasks:
+    - command: kubectl 
+      regsiter: kubectl_output
+
+    - set_fact:
+        output__result: "{{kubectl_output.stdout}}"
