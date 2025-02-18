@@ -1,15 +1,15 @@
+name: assembly::wrapper-kubectltest::1.0
 description: descriptor for wrapper
-properties: 
-  deploymentLocation: 
-    type: string 
+properties:
+  deploymentLocation:
+    type: string
     default: local
 
 composition:
-  node: 
+  node:
     type: resource::kubectltest::1.0
     properties:
-      deploymentLocation: 
+      deploymentLocation:
         value: ${deploymentLocation}
-      resourceManager: 
+      resourceManager:
         value: brent
-  
