@@ -7,6 +7,7 @@
 **Implemented enhancements:**
 
 - Upgrade Kubectl to version v1.32.1 (fixes CVE-2024-24790)
+- Uplift OpenstackSDK to compatible version for Openstack modules (also fixes CVE-2023-2953)
 - Switch use of flags to enable/disable SSL to ensure SSL is enabled by default and to remove failing if statement
 
 ## [3.11.3](https://github.com/IBM/ansible-lifecycle-driver/tree/3.11.3) (2024-11-11)
