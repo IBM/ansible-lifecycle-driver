@@ -1,0 +1,15 @@
+description: descriptor for wrapper
+properties: 
+  deploymentLocation: 
+    type: string 
+    default: local
+
+composition:
+  node: 
+    type: resource::kubectltest::1.0
+    properties:
+      deploymentLocation: 
+        value: ${deploymentLocation}
+      resourceManager: 
+        value: brent
+  

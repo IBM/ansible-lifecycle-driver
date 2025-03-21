@@ -22,7 +22,7 @@ setup(
         'ansible==9.5.1',
         'gunicorn==22.0.0',
         'testfixtures==6.17.1',
-        'openstacksdk==0.57.0',
+        'openstacksdk==4.2.0',
         'boto==2.49.0',
         'boto3==1.18.42',
         'botocore==1.21.42',

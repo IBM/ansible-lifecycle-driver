@@ -1,0 +1,10 @@
+schema: '2.0'
+name: kubectltest
+version: '1.0'
+packaging: tgz
+type: Resource
+resource-manager: lm
+contains:
+- name: wrapper
+  type: Assembly
+  directory: wrapper

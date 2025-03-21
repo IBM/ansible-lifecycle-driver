@@ -801,7 +801,7 @@ class TestAnsible(unittest.TestCase):
 
             dst = self.__copy_directory_tree(str(pathlib.Path(__file__).parent.absolute()) + '/../../resources/ansible_with_invalid_lifecycle_name_in_playbook')
             resp = self.ansible_client.run_lifecycle_playbook({
-            'lifecycle_name': 'inStall',
+            'lifecycle_name': 'downgrade',
             'driver_files': DirectoryTree(dst),
             'system_properties': system_properties,
             'resource_properties': properties,
@@ -814,7 +814,7 @@ class TestAnsible(unittest.TestCase):
             'request_id': request_id
             })
 
-            self.assertLifecycleExecutionMatches(resp, LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "No playbook found to run for lifecycle inStall for request "+request_id), {}))
+            self.assertLifecycleExecutionMatches(resp, LifecycleExecution(request_id, STATUS_FAILED, FailureDetails(FAILURE_CODE_INTERNAL_ERROR, "No playbook found to run for lifecycle downgrade for request "+request_id), {}))
             self.assertFalse(os.path.exists(dst))
         finally:
             logger.removeHandler(stream_handler)
